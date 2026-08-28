@@ -1,0 +1,42 @@
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: academious
+      POSTGRES_PASSWORD: academious
+      POSTGRES_DB: academious
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U academious -d academious"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: .
+    command: uvicorn academious.api.main:app --host 0.0.0.0 --port 8000
+    environment:
+      ACADEMIOUS_DATABASE_URL: postgresql+psycopg://academious:academious@db:5432/academious
+    env_file: [.env]
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  worker:
+    build: .
+    command: python -m academious.workers harvest --source all
+    environment:
+      ACADEMIOUS_DATABASE_URL: postgresql+psycopg://academious:academious@db:5432/academious
+    env_file: [.env]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  pgdata:

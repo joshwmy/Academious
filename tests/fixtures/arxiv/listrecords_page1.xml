@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd">
+    <responseDate>2026-08-28T02:47:33Z</responseDate>
+                <request verb="ListRecords" metadataPrefix="arXiv" from="2026-08-18" until="2026-08-19" set="cs">http://oaipmh.arxiv.org/oai</request>
+
+
+    <ListRecords>
+<record>
+                <header>
+        <identifier>oai:arXiv.org:1703.03594</identifier>
+        <datestamp>2026-08-18</datestamp>
+            <setSpec>cs:cs:DC</setSpec>
+    </header>
+
+            <metadata>
+                        <arXiv xmlns="http://arxiv.org/OAI/arXiv/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://arxiv.org/OAI/arXiv/ https://oaipmh.arxiv.org/OAI/arXiv.xsd">
+        <id>1703.03594</id>
+        <created>2017-03-10</created>
+            <updated>2026-08-18</updated>
+        <authors>
+                <author>
+                    <keyname>Poshtkohi</keyname>
+                        <forenames>Alireza</forenames>
+                </author>
+                <author>
+                    <keyname>Ghaznavi-Ghoushchi</keyname>
+                        <forenames>M. B.</forenames>
+                </author>
+        </authors>
+        <title>The xDotGrid Native, Cross-Platform, High-Performance xDFS File Transfer Framework</title>
+            <categories>cs.DC</categories>
+            <comments>25 pages, 20 figures</comments>
+            <acm-class>None</acm-class>
+            <license>http://arxiv.org/licenses/nonexclusive-distrib/1.0/</license>
+            <abstract>In this paper we introduce and describe the highly concurrent xDFS file transfer protocol and examine its cross-platform and cross-language implementation in native code for both Linux and Windows in 32 or 64-bit multi-core processor architectures. The implemented xDFS protocol based on xDotGrid.NET framework is fully compared with the Globus GridFTP protocol. We finally propose the xDFS protocol as a new paradigm of distributed systems for Internet services, and data-intensive Grid and Cloud applications. Also, we incrementally consider different developmental methods of the optimum file transfer systems, and their advantages and disadvantages. The vision of this paper tries as possible to minimize the overhead concerned with the file transfer protocol itself and to examine optimal software design patterns of that protocol. In all disk-to-disk tests for transferring a 2GB file with or without parallelism, the xDFS throughput at minimum 30% and at most 53% was superior to the GridFTP.</abstract>
+    </arXiv>
+
+            </metadata>
+        </record>
+<record>
+                <header>
+        <identifier>oai:arXiv.org:1905.04428</identifier>
+        <datestamp>2026-08-18</datestamp>
+            <setSpec>cs:cs:RO</setSpec>
+    </header>
+
+            <metadata>
+                        <arXiv xmlns="http://arxiv.org/OAI/arXiv/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://arxiv.org/OAI/arXiv/ https://oaipmh.arxiv.org/OAI/arXiv.xsd">
+        <id>1905.04428</id>
+        <created>2019-05-11</created>
+            <updated>2026-08-18</updated>
+        <authors>
+                <author>
+                    <keyname>Mower</keyname>
+                        <forenames>Christopher E.</forenames>
+                </author>
+                <author>
+                    <keyname>Merkt</keyname>
+                        <forenames>Wolfgang</forenames>
+                </author>
+                <author>
+                    <keyname>Davies</keyname>
+                        <forenames>Aled</forenames>
+                </author>
+                <author>
+                    <keyname>Vijayakumar</keyname>
+                        <forenames>Sethu</forenames>
+                </author>
+        </authors>
+        <title>Comparing Alternate Modes of Teleoperation for Constrained Tasks</title>
+            <categories>cs.RO</categories>
+            <doi>10.1109/COASE.2019.8843265</doi>
+            <license>http://arxiv.org/licenses/nonexclusive-distrib/1.0/</license>
+            <abstract>Teleoperation of heavy machinery in industry often requires operators to be in close proximity to the plant and issue commands on a per-actuator level using joystick input devices. However, this is non-intuitive and makes achieving desired job properties a challenging task requiring operators to complete extensive and costly training. Despite this, operator fatigue is common with implications for personal safety, project timeliness, cost, and quality. While full automation is not yet achievable due to unpredictability and the dynamic nature of the environment and task, shared control paradigms allow operators to issue high-level commands in an intuitive, task-informed control space while having the robot optimize for achieving desired job properties.
+  In this paper, we compare a number of modes of teleoperation, exploring both the number of dimensions of the control input as well as the most intuitive control spaces. Our experimental evaluations of the performance metrics were based on quantifying the difficulty of tasks based on the well known Fitts&#39; law as well as a measure of how well constraints affecting the task performance were met. Our experiments show that higher performance is achieved when humans submit commands in low-dimensional task spaces as opposed to joint space manipulations.</abstract>
+    </arXiv>
+
+            </metadata>
+        </record>
+<record>
+                <header>
+        <identifier>oai:arXiv.org:1910.04162</identifier>
+        <datestamp>2026-08-18</datestamp>
+            <setSpec>cs:cs:DM</setSpec>
+            <setSpec>cs:cs:CC</setSpec>
+    </header>
+
+            <metadata>
+                        <arXiv xmlns="http://arxiv.org/OAI/arXiv/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://arxiv.org/OAI/arXiv/ https://oaipmh.arxiv.org/OAI/arXiv.xsd">
+        <id>1910.04162</id>
+        <created>2026-08-16</created>
+            <updated>2026-08-18</updated>
+        <authors>
+                <author>
+                    <keyname>Chen</keyname>
+                        <forenames>Yizhen</forenames>
+                </author>
+        </authors>
+        <title>Note on the capacity and geometric realizability of combinatorial mobile sensor networks</title>
+            <categories>cs.DM cs.CC</categories>
+            <comments>10 pages, 5 figures. For additional results, see the previous version. Thm. 22 is incorrect in the previous version</comments>
+            <msc-class>68R05, 68Q17</msc-class>
+            <license>http://arxiv.org/licenses/nonexclusive-distrib/1.0/</license>
+            <abstract>We develop the mathematical theory of a model, constructed by C. Gu, I. Downes, O. Gnawali, and L. Guibas, of networks that diffuse continuously acquired information from mobile sensor nodes. We improve estimates of the expectation and variance of capacity of their model of restricted combinatorial mobile sensor networks (RCMSN) and geometric mobile sensor networks (GMSN), and give the maximum capacity of a variant of GMSN. We also show that the problem of deciding when an RCMSN is generated from a GMSN is NP-Hard, while a simple variant is solvable in polynomial time.</abstract>
+    </arXiv>
+
+            </metadata>
+        </record>
+    <resumptionToken expirationDate='2026-08-29T00:00:00Z'>verb%3DListRecords%26metadataPrefix%3DarXiv%26from%3D2026-08-18%26until%3D2026-08-19%26set%3Dcs%26skip%3D1300</resumptionToken>
+</ListRecords>
+</OAI-PMH>

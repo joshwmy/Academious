@@ -1,0 +1,55 @@
+{
+ "messages": [
+  {
+   "status": "ok",
+   "interval": "2024-01-01:2024-01-05",
+   "cursor": 0,
+   "count": 3,
+   "total": "276"
+  }
+ ],
+ "collection": [
+  {
+   "preprint_doi": "10.1101/2022.09.11.507474",
+   "published_doi": "10.1038/s41564-023-01548-y",
+   "published_journal": "Nature Microbiology",
+   "preprint_platform": "bioRxiv",
+   "preprint_title": "A new route for integron cassette dissemination among bacterial genomes",
+   "preprint_authors": "Loot, C.; Millot, G.; Richard, E.; Darracq, B.; Vit, C.; Parissi, V.; Lemoine, F.; Niault, T.; Cury, J.; Rocha, E. P.; Mazel, D.",
+   "preprint_category": "genetics",
+   "preprint_date": "2022-09-13",
+   "published_date": "2024-01-03",
+   "preprint_abstract": "Integrons are genetic elements involved in bacterial adaptation. They can capture, shuffle and express adaptive functions embedded in cassettes. These events are governed by the integron integrase through site-specific recombination between attC and attI integron sites. Here, we demonstrated that the integrase can efficiently catalyze insertion of cassettes in bacterial genomes, outside the att sites. We showed that, once inserted in genomes, cassettes can be expressed, if located near bacterial promoters, and can be excised at the insertion point and even outside, inducing chromosomal modifications in the latter case. Analysis of more than 5 x 105 independent insertion events revealed a very large genomic insertion landscape with recombination sites greatly different, in terms of sequence and structure, from classical att sites. We named these new sites attG. These results unveil a new efficient route for dissemination of adaptive functions and expand the role of integrons in bacterial evolution.",
+   "preprint_author_corresponding": "Celine Loot",
+   "preprint_author_corresponding_institution": "Institut Pasteur"
+  },
+  {
+   "preprint_doi": "10.1101/2022.09.23.509258",
+   "published_doi": "10.1089/crispr.2023.0040",
+   "published_journal": "The CRISPR Journal",
+   "preprint_platform": "bioRxiv",
+   "preprint_title": "Benchmark data and software for assessing genome-wide CRISPR-Cas9 screening pipelines",
+   "preprint_authors": "Iannuzzi, R.; Manipur, I.; Pacini, C.; Behan, F. M.; Guarracino, M. R.; Garnett, M. J.; Savino, A.; Iorio, F.",
+   "preprint_category": "bioinformatics",
+   "preprint_date": "2022-09-25",
+   "published_date": "2024-01-02",
+   "preprint_abstract": "Genome-wide recessive genetic screens using lentiviral CRISPR-guide RNA libraries are widely performed in mammalian cells to functionally characterise individual genes and for the discovery of new anti-cancer therapeutic targets. As the effectiveness of such powerful and precise tools for cancer pharmacogenomic is emerging, reference datasets for their quality assessment and the validation of the underlying experimental pipelines are becoming increasingly necessary. Here, we provide a dataset, an R package, and metrics for the assessment of novel experimental pipelines upon the execution of a single calibration viability screen of the HT-29 human colon cancer cell line, employing a commercially available genome-wide library of single guide RNAs: the Human Improved Genome-wide Knockout CRISPR (Sanger) Library. This dataset contains results from screening the HT-29 in multiple batches with the Sanger library, and outcomes from several levels of quality control tests on the resulting data. Data and accompanying R package can be used as a toolkit for benchmarking newly established experimental pipelines for CRISPR-Cas9 recessive screens, via the generation of a final quality-control report.",
+   "preprint_author_corresponding": "Francesco Iorio",
+   "preprint_author_corresponding_institution": "Human Technopole"
+  },
+  {
+   "preprint_doi": "10.1101/2023.04.12.536554",
+   "published_doi": "10.1002/advs.202305547",
+   "published_journal": "Advanced Science",
+   "preprint_platform": "bioRxiv",
+   "preprint_title": "TEAD1 regulates ITGA1 and ITGA2 to control prostate cancer progression",
+   "preprint_authors": "Cruz, S. P.; Zhang, Q.; Devarajan, R.; Paia, C.; Luo, B.; Zhang, K.; Xia, J.; Ahtikoski, A.; Vaarala, M. H.; Wenta, T.; Wei, G.-H.; Manninen, A.",
+   "preprint_category": "cancer biology",
+   "preprint_date": "2023-04-12",
+   "published_date": "2024-01-02",
+   "preprint_abstract": "The extracellular matrix (ECM) undergoes significant changes during prostate cancer (PCa) progression and actively regulates PCa growth and invasion. Here, we performed a meta-analysis of PCa cohorts and found that downregulation or loss of ITGA1 and ITGA2 integrin genes was associated with tumor progression to metastasis and poor prognosis in PCa patients. Genomic deletion of both 1- and 2-integrins activated epithelial-to-mesenchymal transition (EMT) in benign prostate epithelial cells, thereby enhancing their invasive potential in vitro and converting them into tumorigenic cells in vivo. Mechanistically, EMT was induced by enhanced secretion and subsequent activation of autocrine TGF{beta}1 and nuclear targeting of YAP1. Our unbiased genome-wide co-expression analysis of large PCa cohort datasets identified the transcription factor TEAD1 as a key regulator of ITGA1 and ITGA2 expression in PCa cells while TEAD1 loss phenocopied the dual loss of 2- and 2-integrins in vitro and in vivo. Notably, clinical data analysis revealed that TEAD1 downregulation or loss was associated with aggressive PCa and could synergize with ITGA1 and ITGA2 expression to impact PCa prognosis and progression. Altogether, our results demonstrate that loss of 1- and 2-integrins, either via deletion/inactivation of the ITGA1/ITGA2 locus or via loss of TEAD1, contributes to PCa progression by inducing TGF{beta}1-driven EMT.",
+   "preprint_author_corresponding": "Aki Manninen",
+   "preprint_author_corresponding_institution": "Faculty of Biochemistry and Molecular Medicine, Biocenter Oulu, University of Oulu, Finland"
+  }
+ ]
+}

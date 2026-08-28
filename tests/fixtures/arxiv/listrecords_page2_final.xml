@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/ http://www.openarchives.org/OAI/2.0/OAI-PMH.xsd">
+    <responseDate>2026-08-28T02:47:33Z</responseDate>
+                <request verb="ListRecords" metadataPrefix="arXiv" from="2026-08-18" until="2026-08-19" set="cs">http://oaipmh.arxiv.org/oai</request>
+
+
+    <ListRecords>
+<record>
+                <header>
+        <identifier>oai:arXiv.org:1703.03594</identifier>
+        <datestamp>2026-08-18</datestamp>
+            <setSpec>cs:cs:DC</setSpec>
+    </header>
+
+            <metadata>
+                        <arXiv xmlns="http://arxiv.org/OAI/arXiv/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://arxiv.org/OAI/arXiv/ https://oaipmh.arxiv.org/OAI/arXiv.xsd">
+        <id>1703.03594</id>
+        <created>2017-03-10</created>
+            <updated>2026-08-18</updated>
+        <authors>
+                <author>
+                    <keyname>Poshtkohi</keyname>
+                        <forenames>Alireza</forenames>
+                </author>
+                <author>
+                    <keyname>Ghaznavi-Ghoushchi</keyname>
+                        <forenames>M. B.</forenames>
+                </author>
+        </authors>
+        <title>The xDotGrid Native, Cross-Platform, High-Performance xDFS File Transfer Framework</title>
+            <categories>cs.DC</categories>
+            <comments>25 pages, 20 figures</comments>
+            <acm-class>None</acm-class>
+            <license>http://arxiv.org/licenses/nonexclusive-distrib/1.0/</license>
+            <abstract>In this paper we introduce and describe the highly concurrent xDFS file transfer protocol and examine its cross-platform and cross-language implementation in native code for both Linux and Windows in 32 or 64-bit multi-core processor architectures. The implemented xDFS protocol based on xDotGrid.NET framework is fully compared with the Globus GridFTP protocol. We finally propose the xDFS protocol as a new paradigm of distributed systems for Internet services, and data-intensive Grid and Cloud applications. Also, we incrementally consider different developmental methods of the optimum file transfer systems, and their advantages and disadvantages. The vision of this paper tries as possible to minimize the overhead concerned with the file transfer protocol itself and to examine optimal software design patterns of that protocol. In all disk-to-disk tests for transferring a 2GB file with or without parallelism, the xDFS throughput at minimum 30% and at most 53% was superior to the GridFTP.</abstract>
+    </arXiv>
+
+            </metadata>
+        </record>
+</ListRecords>
+</OAI-PMH>
