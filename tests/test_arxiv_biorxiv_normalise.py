@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from tests.conftest import load_json, load_text
-
 from academious.core.ids import IdType
 from academious.sources.arxiv.client import parse_list_records
 from academious.sources.arxiv.normalise import is_open_licence
@@ -17,6 +15,7 @@ from academious.sources.biorxiv.normalise import (
     split_authors,
 )
 from academious.sources.biorxiv.normalise import normalise as normalise_biorxiv
+from tests.conftest import load_json, load_text
 
 WHEN = datetime(2026, 8, 28, tzinfo=UTC)
 

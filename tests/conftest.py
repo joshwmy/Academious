@@ -4,9 +4,10 @@ Two tiers of test live here:
 
 * Pure tests - normalisation, rate limiting, HTTP behaviour, field precedence.
   No database, no network, runnable anywhere.
-* Database tests - marked `db`. They need PostgreSQL with pg_trgm because the
-  fuzzy dedup path is SQL. They are skipped, not failed, when no database is
-  configured, so `pytest` is always green on a bare checkout.
+* Database tests - marked `db`. They need PostgreSQL with pg_trgm (the fuzzy
+  dedup path is SQL) and pgvector (embedding storage and distance operators).
+  They are skipped, not failed, when no database is configured, so `pytest`
+  is always green on a bare checkout.
 
 Nothing in this suite touches the internet. Every external payload is a recorded
 fixture captured from the real API during Phase 0.
@@ -74,8 +75,11 @@ def engine(database_url: str | None):
     get_settings.cache_clear()
 
     engine = create_engine(database_url)
+    from academious.db.ddl import bootstrap_sql
+
     with engine.begin() as connection:
-        connection.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
+        for statement in bootstrap_sql():
+            connection.execute(text(statement))
 
     from academious.db.models import Base
 

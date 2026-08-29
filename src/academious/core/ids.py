@@ -13,7 +13,9 @@ a best-effort guess would create false merges, which are far worse than misses.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from enum import StrEnum
+from typing import cast
 
 
 class IdType(StrEnum):
@@ -123,7 +125,11 @@ _NORMALISERS = {
 
 def normalise(id_type: IdType, raw: str | int | None) -> str | None:
     """Dispatch to the normaliser for id_type."""
-    return _NORMALISERS[id_type](raw)  # type: ignore[operator]
+    # The table is heterogeneous: most normalisers take str | None, the
+    # numeric ones also accept int. Narrowing it further would mean widening
+    # every individual signature for the sake of the lookup.
+    normaliser = cast("Callable[[str | int | None], str | None]", _NORMALISERS[id_type])
+    return normaliser(raw)
 
 
 def arxiv_id_from_url(url: str | None) -> str | None:

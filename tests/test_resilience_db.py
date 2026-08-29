@@ -6,8 +6,6 @@ from datetime import timedelta
 
 import pytest
 from sqlalchemy import func, select
-from tests.conftest import load_json
-from tests.factories import StubConnector, raw
 
 from academious.core.clock import utcnow
 from academious.core.config import get_settings
@@ -16,6 +14,8 @@ from academious.db.models.paper import Paper
 from academious.ingest.pipeline import IngestPipeline, load_cursor
 from academious.jobs import queue
 from academious.sources.openalex.normalise import normalise as normalise_openalex
+from tests.conftest import load_json
+from tests.factories import StubConnector, raw
 
 pytestmark = pytest.mark.db
 

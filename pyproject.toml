@@ -16,9 +16,19 @@ dependencies = [
     "structlog>=24.4",
     "defusedxml>=0.7.1",
     "python-dateutil>=2.9",
+    "pgvector>=0.4",
+    "numpy>=2.0",
 ]
 
 [project.optional-dependencies]
+# The model stack is optional on purpose. Retrieval, the API and every test
+# outside test_specter2_slow.py run without torch; only actually generating
+# SPECTER2 vectors needs it, and it is ~2 GB installed.
+embed = [
+    "torch>=2.9,<3",
+    "transformers~=4.57.6",
+    "adapters>=1.3,<2",
+]
 dev = [
     "pytest>=8.3",
     "pytest-cov>=6.0",
@@ -38,6 +48,7 @@ where = ["src"]
 testpaths = ["tests"]
 markers = [
     "db: requires a live PostgreSQL (set ACADEMIOUS_TEST_DATABASE_URL); skipped otherwise",
+    "model: downloads and runs SPECTER2; needs the `embed` extra. Deselect with -m 'not model'",
 ]
 filterwarnings = ["error::DeprecationWarning"]
 
@@ -48,6 +59,11 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "N"]
 
+[tool.ruff.lint.isort]
+# `tests` is a real package here (tests/factories.py is imported by test
+# modules); without this, isort keeps moving it into the third-party block.
+known-first-party = ["academious", "tests"]
+
 [tool.mypy]
 python_version = "3.12"
 packages = ["academious"]
@@ -55,3 +71,16 @@ mypy_path = "src"
 strict = true
 warn_return_any = true
 disallow_untyped_defs = true
+
+# These ship no py.typed marker or stubs. Silencing them per-module keeps
+# `strict` in force everywhere else rather than weakening the whole config.
+[[tool.mypy.overrides]]
+module = ["defusedxml.*", "adapters.*", "pgvector.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# transformers is partially typed: several classmethods on the Auto* factories
+# are untyped, and calling them is unavoidable. The surrounding module keeps
+# every other strict check.
+module = "academious.embeddings.specter2"
+disallow_untyped_calls = false

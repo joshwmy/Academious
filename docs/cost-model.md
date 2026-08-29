@@ -253,10 +253,48 @@ estimated throughput = 20-35 documents/second   (ONNX Runtime, int8, batch 32)
 - Recommended: **(b), then (a)** — a working product sooner, and the bigger job
   deferred until the schema has stopped moving.
 - **These throughput figures are extrapolated from published benchmarks, not measured
-  on our hardware.** `scripts/bench_embed.py` ships in Phase 3 and must run on the
-  actual box before the backfill option is chosen.
+  on our hardware.** A benchmark must run on the actual box before the backfill
+  option is chosen.
 
 None of this affects Phase 1, which performs no embedding.
+
+### 8a. Measured in Phase 2 — the estimate above was optimistic
+
+`scripts/benchmark_phase2.py` now exists and has been run. The full numbers are
+in [performance.md](performance.md); the correction to this section is:
+
+| | Estimated above | Measured (Phase 2) |
+|---|---|---|
+| Runtime | ONNX Runtime, int8, batch 32 | **PyTorch, fp32, batch 16** |
+| Hardware | 4 vCPU dedicated | 4-core i5-1155G7 laptop, shared, under load |
+| Throughput | 20-35 papers/s | **1.41 papers/s** |
+| Daily delta (~5,000) | ~3.5 min | **~59 min** |
+| 6-month backfill (~900,000) | ~10 h | **~177 h (7.4 days)** |
+
+Two things are being compared that are not the same thing, and both matter:
+
+* **ONNX int8 was assumed and has not been implemented.** Phase 2 runs stock
+  PyTorch fp32. The published 2.7-3.4x int8 speedup is still available and
+  untested; it is the single largest lever on these numbers.
+* **The measurement hardware is not the deployment target.** A shared 15 W laptop
+  U-series chip is not a dedicated CX32 vCPU.
+
+Even granting both, the gap does not close: the fp32 baseline this section
+assumed (8-12 papers/s at 256 tokens on 4 vCPU) is itself ~6-8x above what was
+measured, on inputs of the expected length (median 276 tokens). **The honest
+reading is that the fp32 baseline was too generous, and every figure derived
+from it should be treated as an upper bound until re-measured on the real box.**
+
+What survives unchanged is the *shape* of the recommendation, which the
+measurement reinforces rather than overturns:
+
+* Daily embedding still fits on the box — an hour of off-peak CPU, not minutes.
+* The backfill still does not, and the case for option (a) is now stronger: at
+  7.4 days in place, a temporary high-CPU instance stops being a convenience.
+* Storage is unaffected and comes in cheaper than feared: **~2.0 GB** for a
+  6-month backfill and **~4.1 GB/year** thereafter, measured at 2,223 bytes per
+  vector including all row and index overhead (halfvec, see
+  [ADR 0007](adr/0007-halfvec-and-exact-search-first.md)).
 
 ---
 

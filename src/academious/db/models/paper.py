@@ -9,6 +9,7 @@ from typing import Any
 
 from sqlalchemy import (
     Boolean,
+    Computed,
     Date,
     DateTime,
     Float,
@@ -19,10 +20,11 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import ARRAY, JSONB
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB, TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from academious.db.base import Base, TimestampMixin, uuid_pk
+from academious.db.ddl import SEARCH_TSV_EXPRESSION
 
 
 class RetractionStatus(StrEnum):
@@ -79,6 +81,13 @@ class Paper(Base, TimestampMixin):
     topics: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
     keywords: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
 
+    # Lexical retrieval index, maintained by PostgreSQL itself so it can never
+    # drift from the row it describes. Field weights and the reason keywords
+    # need a helper function are in academious/db/ddl.py.
+    search_tsv: Mapped[str | None] = mapped_column(
+        TSVECTOR, Computed(SEARCH_TSV_EXPRESSION, persisted=True), nullable=True
+    )
+
     citation_count: Mapped[int | None] = mapped_column(Integer)
     citation_count_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
@@ -114,6 +123,7 @@ class Paper(Base, TimestampMixin):
         Index("ix_paper_title_norm_trgm", "title_norm", postgresql_using="gin",
               postgresql_ops={"title_norm": "gin_trgm_ops"}),
         Index("ix_paper_dedup_block", "first_author_surname", "published_year"),
+        Index("ix_paper_search_tsv", "search_tsv", postgresql_using="gin"),
     )
 
     def __repr__(self) -> str:

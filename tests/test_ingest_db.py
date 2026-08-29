@@ -9,8 +9,6 @@ from __future__ import annotations
 
 import pytest
 from sqlalchemy import func, select
-from tests.conftest import load_json, load_text
-from tests.factories import StubConnector, raw
 
 from academious.core.config import get_settings
 from academious.db.models.ops import RunStatus
@@ -20,6 +18,8 @@ from academious.ingest.pipeline import IngestPipeline
 from academious.sources.arxiv.normalise import normalise as normalise_arxiv
 from academious.sources.biorxiv.normalise import normalise as normalise_biorxiv
 from academious.sources.openalex.normalise import normalise as normalise_openalex
+from tests.conftest import load_json, load_text
+from tests.factories import StubConnector, raw
 
 pytestmark = pytest.mark.db
 

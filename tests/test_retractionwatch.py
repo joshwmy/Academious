@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from tests.conftest import load_text
-
 from academious.db.models.paper import RetractionStatus
 from academious.sources.retractionwatch.client import SEVERITY, parse_csv, parse_notice_date
+from tests.conftest import load_text
 
 
 def notices():

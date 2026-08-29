@@ -7,6 +7,8 @@ under what licence, and that is all (see docs/open-access.md).
 
 from __future__ import annotations
 
+from typing import cast
+
 from sqlalchemy.orm import Session
 
 from academious.core.clock import utcnow
@@ -81,4 +83,4 @@ def elect_best(paper: Paper) -> OaLocation | None:
     paper.best_oa_location_id = best.id
     if best.licence and not paper.fulltext_licence:
         paper.fulltext_licence = best.licence
-    return best
+    return cast("OaLocation", best)

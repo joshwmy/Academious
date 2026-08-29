@@ -6,7 +6,7 @@ broker and a result backend out of the deployment. See ADR 0002.
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 from sqlalchemy import select, text
@@ -105,3 +105,45 @@ def fail(session: Session, job: Job, error: str, *, retry_in: timedelta | None =
     job.status = JobStatus.PENDING.value
     job.run_after = now + backoff
     log.warning("job.retry", kind=job.kind, id=str(job.id), attempt=job.attempts)
+
+
+#: A worker that dies mid-job leaves its row in `running` with `locked_at` set and
+#: no process to finish it. Nothing else will ever claim that row, because the
+#: claim query only looks at `pending`. This is the only mechanism that returns
+#: such a job to the queue, so embedding work survives an OOM kill or a Ctrl-C.
+DEFAULT_STALE_AFTER = timedelta(minutes=30)
+
+
+def reap_stale(
+    session: Session, *, older_than: timedelta = DEFAULT_STALE_AFTER, now: datetime | None = None
+) -> int:
+    """Requeue jobs left `running` by a worker that never came back.
+
+    The job's attempt was already counted when it was claimed, so a job whose
+    worker keeps dying still exhausts `max_attempts` and lands in `failed`
+    rather than looping forever.
+    """
+    moment = now or utcnow()
+    cutoff = moment - older_than
+    stale = session.execute(
+        select(Job).where(
+            Job.status == JobStatus.RUNNING.value,
+            Job.locked_at.is_not(None),
+            Job.locked_at < cutoff,
+        )
+    ).scalars().all()
+
+    for job in stale:
+        job.locked_at = None
+        job.updated_at = moment
+        if job.attempts >= job.max_attempts:
+            job.status = JobStatus.FAILED.value
+            job.last_error = "worker did not report back before the stale-job timeout"
+            log.error("job.reaped_failed", kind=job.kind, id=str(job.id), attempts=job.attempts)
+        else:
+            job.status = JobStatus.PENDING.value
+            job.run_after = moment
+            log.warning("job.reaped", kind=job.kind, id=str(job.id), attempts=job.attempts)
+
+    session.flush()
+    return len(stale)

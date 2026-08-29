@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import pytest
 from sqlalchemy import select
-from tests.conftest import load_json, load_text
-from tests.factories import StubConnector, raw
 
 from academious.core.config import get_settings
 from academious.db.models.paper import Paper, RetractionStatus
@@ -14,6 +12,8 @@ from academious.ingest import retractions
 from academious.ingest.pipeline import IngestPipeline
 from academious.sources.openalex.normalise import normalise as normalise_openalex
 from academious.sources.retractionwatch.client import parse_csv
+from tests.conftest import load_json, load_text
+from tests.factories import StubConnector, raw
 
 pytestmark = pytest.mark.db
 

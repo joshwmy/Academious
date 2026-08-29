@@ -12,4 +12,8 @@ dist/
 build/
 *.egg-info/
 data/
+# Relevance judgments are an input to the project, not an artefact of a run:
+# they cost human time to produce and every reported metric depends on them.
+!data/eval/
+!data/eval/**
 *.log

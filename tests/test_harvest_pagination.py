@@ -5,7 +5,6 @@ from __future__ import annotations
 import httpx
 import pytest
 import respx
-from tests.conftest import load_text
 
 from academious.core.config import Settings
 from academious.core.http import SourceHttpClient
@@ -13,6 +12,7 @@ from academious.core.ratelimit import RateLimit, TokenBucket
 from academious.sources.arxiv.client import ArxivClient
 from academious.sources.biorxiv.client import BiorxivClient
 from academious.sources.openalex.client import OpenAlexClient
+from tests.conftest import load_text
 
 
 def fast_http(source: str, settings: Settings) -> SourceHttpClient:

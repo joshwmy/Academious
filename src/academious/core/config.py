@@ -41,6 +41,25 @@ class Settings(BaseSettings):
     dedup_title_similarity_threshold: float = Field(default=0.92, ge=0.0, le=1.0)
     dedup_author_jaccard_threshold: float = Field(default=0.50, ge=0.0, le=1.0)
 
+    # --- Embeddings and retrieval (Phase 2) -------------------------------
+    # Which stored vectors the read path uses. Changing this switches retrieval
+    # to a different model or preprocessing version; see embeddings/registry.py.
+    embedding_profile: str = "specter2-proximity@v1"
+    # Inference batch. 16 is the measured sweet spot on 4 cores: larger batches
+    # stop improving throughput and grow peak RSS (docs/performance.md).
+    embedding_batch_size: int = 16
+    # 0 leaves torch to pick. Pin it below the core count when embedding shares
+    # a machine with the API, so inference cannot starve request handling.
+    embedding_torch_threads: int = 0
+    # Papers per queued job. Bounds how much work one crash can cost.
+    embedding_job_batch_size: int = 32
+    # Where HuggingFace weights are cached. Empty uses the HuggingFace default.
+    embedding_cache_dir: str = ""
+    # Minutes a job may sit in `running` before a worker is presumed dead.
+    job_stale_after_minutes: int = 30
+
+    retrieval_default_limit: int = 20
+
     http_timeout_seconds: float = 30.0
     http_max_attempts: int = 5
 

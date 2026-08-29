@@ -4,11 +4,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from tests.conftest import load_json
-
 from academious.core.ids import IdType
 from academious.sources.base import RawRecord
 from academious.sources.openalex.normalise import normalise, reconstruct_abstract
+from tests.conftest import load_json
 
 
 def as_record(name: str) -> RawRecord:

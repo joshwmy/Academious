@@ -1,0 +1,222 @@
+{
+  "generated_at": "2026-08-29T02:47:34.560951+00:00",
+  "k": 10,
+  "profiles": {
+    "specter2-proximity@v1": {
+      "description": "title[SEP]abstract, title-only fallback",
+      "vectors": 2455
+    },
+    "specter2-title-only@v1": {
+      "description": "titles only, ablation",
+      "vectors": 2455
+    }
+  },
+  "corpus": {
+    "papers": 2455,
+    "papers_with_abstract": 2455,
+    "auto_strategy_breakdown": {
+      "title_abstract": 2455
+    }
+  },
+  "queries": [
+    {
+      "id": "bio-01",
+      "text": "cancer genomics machine learning",
+      "overlap_at_k": 0.5,
+      "top1_same": false,
+      "only_in_auto": [
+        "PINT: Pathway-pathway interactions for predicting interpretable clinical outcomes from gene expression",
+        "Novel Knowledge-Guided Generative Methods for Synthetic Transcriptomic Data",
+        "Structure-free, site-resolved contrastive learning extends small-molecule discovery beyond the reach of structure-based modeling"
+      ],
+      "only_in_title_only": [
+        "Recent Advances in Deep Learning-Based Drug-Target Binding Affinity Prediction",
+        "Pathryoshka: Compressing Pathology Foundation Models via Multi-Teacher Knowledge Distillation with Nested Embeddings",
+        "Resolving the immune response across clonal cancer evolution in situ with Atera whole transcriptome profiling"
+      ]
+    },
+    {
+      "id": "bio-02",
+      "text": "transcriptomic biomarkers in breast cancer",
+      "overlap_at_k": 0.4,
+      "top1_same": true,
+      "only_in_auto": [
+        "Proteoform Barcode: An Intuitive Visualization Framework for Top-Down Proteomics",
+        "In situ Discovery of Immune Repertoire Reveals Antitumor Immunity and Therapeutic Antibodies",
+        "Integration of proteomic data from cell lines and tumors"
+      ],
+      "only_in_title_only": [
+        "Circulating Microbial DNA as a Potential Cancer Biomarker: Technical Challenges and Controlled Evaluation",
+        "STEP-PTMs: Sequential TMT-based Enrichment and Profiling of Post-Translational Modifications",
+        "IsoAtlas: Visual interpretation of known and novel transcript isoforms using population-scale long-read evidence"
+      ]
+    },
+    {
+      "id": "bio-03",
+      "text": "Alzheimer's disease genetics",
+      "overlap_at_k": 0.6,
+      "top1_same": false,
+      "only_in_auto": [
+        "Data-driven techniques for translational neuroscience and personalized neuro-health",
+        "Biomarker Fidelity Score - A Quantitative Framework for Individual-Level Validation of Explainability Methods in 3D Alzheimer's Disease MRI Classification",
+        "Assessing the Reliability of LLM-Generated Phenotype-Genotype Associations Through External Validation"
+      ],
+      "only_in_title_only": [
+        "Genetic Insights of Image-Based Traits: Analysis Pipeline for AI-based Phenotyping, Combined-GWAS, and Federated Learning with Application to the Human Face",
+        "Clinically Relevant Biomarkers of Alzheimers Disease Are Associated with Age and Cortical Atrophy in Chimpanzees (Pan troglodytes)",
+        "SVlog: a logic programming framework for understanding structural variation in genomic disease"
+      ]
+    },
+    {
+      "id": "bio-04",
+      "text": "deep learning medical imaging",
+      "overlap_at_k": 0.5,
+      "top1_same": true,
+      "only_in_auto": [
+        "Generative Brownian Bridge Diffusion In Motion Space For Enhanced Myocardial Strain Analysis",
+        "Delta Marches: Generative AI based image synthesis to decode disease-driving morphologic transformations.",
+        "NAST: Improving Negation Handling in Medical Vision-Language Models through Negation-Aware Selective Training"
+      ],
+      "only_in_title_only": [
+        "A Generalizable Deep Learning Model for Automated 3D Segmentation of Orthopteran Head Anatomy in Micro-CT",
+        "Learning Class Difficulty via Dynamic Focal Attention for Histopathology Segmentation",
+        "The Next Layer: Augmenting Foundation Models with Structure-Preserving and Attention-Guided Learning for Local Patches to Global Context Awareness in Computational Pathology"
+      ]
+    },
+    {
+      "id": "bio-05",
+      "text": "public health diabetes risk prediction",
+      "overlap_at_k": 0.5,
+      "top1_same": true,
+      "only_in_auto": [
+        "General Bayesian Policy Learning",
+        "Inferring Protein Variant Impacts Across Contexts",
+        "Post-transcriptional regulatory mechanisms in human islets inferred from cell type-specific eQTLs detected by single-cell RNA-seq"
+      ],
+      "only_in_title_only": [
+        "Intervention-Aware Clinical World Model for Post-Op Outcome Forecasting in Cardiology",
+        "Genetic Insights of Image-Based Traits: Analysis Pipeline for AI-based Phenotyping, Combined-GWAS, and Federated Learning with Application to the Human Face",
+        "Can We Trust AI Agents in the Supermarket? Sugar Content Inference from Product Images"
+      ]
+    },
+    {
+      "id": "bio-06",
+      "text": "computational drug discovery",
+      "overlap_at_k": 0.5,
+      "top1_same": false,
+      "only_in_auto": [
+        "An AI System for Autonomous Algorithm Evolution in Drug Development",
+        "Systematic Benchmarking of AI-Based Molecular Generation Models for Structure-Based Drug Design",
+        "Automated Design Optimization via Strategic Search with Large Language Models"
+      ],
+      "only_in_title_only": [
+        "READ: A Retrieval-Alignment Diffusion Framework for Structure-based Drug Design",
+        "ResLit: A Large-Scale Automated Literature Mining Database for Antimicrobial Resistance",
+        "3D printing and deep learning enable holistic and dynamic analyses of tens of thousands of parasites infecting hundreds of genotypes"
+      ]
+    },
+    {
+      "id": "cs-01",
+      "text": "large language model code generation",
+      "overlap_at_k": 0.1,
+      "top1_same": false,
+      "only_in_auto": [
+        "CangjieBench: Benchmarking LLMs on a Low-Resource General-Purpose Programming Language",
+        "Unified Multi-Dimensional Benchmark for Complex Graph Reasoning in Large Language Models",
+        "The Fools are Certain; the Wise are Doubtful: Exploring LLM Confidence in Code Completion"
+      ],
+      "only_in_title_only": [
+        "RepBench: Compiling Benchmarks into Capability Representations for Large Language Models",
+        "The \"Knowledge-Behavior Gap\" in Cultural Taboo Safety of Large Language Models",
+        "Stable Miscalibration in Large Language Models: A Practical View of High-Confidence Errors"
+      ]
+    },
+    {
+      "id": "cs-02",
+      "text": "retrieval augmented generation",
+      "overlap_at_k": 0.3,
+      "top1_same": true,
+      "only_in_auto": [
+        "PROVE: Training-Free Prompt Recovery using Verifiable Evidence",
+        "MBA: Multimodal Benchmark and Agents for Real-World Business Ideation",
+        "How Significant Are the Real Performance Gains? An Unbiased Evaluation Framework for GraphRAG"
+      ],
+      "only_in_title_only": [
+        "iARCS: Iterative Agentic RL for Controllable 3D Scene Generation",
+        "Semantic Steering for Controllable Generation: Tuning-Free Concept Erasure in Multimodal Diffusion Transformers",
+        "SPARED: Reasoning-Based AI-Generated Image Detection via Adversarially Edited Data"
+      ]
+    },
+    {
+      "id": "cs-03",
+      "text": "reinforcement learning robotics",
+      "overlap_at_k": 0.6,
+      "top1_same": true,
+      "only_in_auto": [
+        "Trajectory First: A Curriculum for Discovering Diverse Policies",
+        "Temporal GRPO: Beyond Trajectory-Level Credit in Vision-Language-Action Reinforcement Learning",
+        "hint$^2$: Hierarchical World Models for Inference-Time Temporal Logic Guidance"
+      ],
+      "only_in_title_only": [
+        "Critic-Free Pretraining for Efficient Online Reinforcement Learning Fine-Tuning",
+        "JailWAM: Jailbreaking World Action Models in Robot Control",
+        "Towards Socially Compliant Navigation in Deep Reinforcement Learning via Proxemics-Based Reward Modeling"
+      ]
+    },
+    {
+      "id": "cs-04",
+      "text": "efficient transformer inference",
+      "overlap_at_k": 0.1,
+      "top1_same": true,
+      "only_in_auto": [
+        "Reduced Matrix Multiplication: Input-Adaptive Matrix-Product Reduction for LLM Inference",
+        "Your Probabilistic JEPA Is Secretly a Hidden Markov Model: A State-Space Interpretation of Joint-Embedding Predictive Learning",
+        "SPADE: Speculative Decoding for Precise and Low Cost Distributed Edge Cloud Inference"
+      ],
+      "only_in_title_only": [
+        "Joint Optimization of Memory and Computing Frequency for Energy-Efficient DNN Inference",
+        "Functional Adjoint Sampler: Scalable Sampling on Infinite Dimensional Spaces",
+        "Unlearning at Scale: State-Exact Trace-Preserving Deletion in Billion-Parameter Language Models"
+      ]
+    },
+    {
+      "id": "cs-05",
+      "text": "graph neural networks",
+      "overlap_at_k": 0.4,
+      "top1_same": true,
+      "only_in_auto": [
+        "Exploring Oversmoothing with Householder Matrices",
+        "FUSE: Fast Semi-Supervised Node Embedding Learning via Structural and Label-Aware Optimization",
+        "Novel Knowledge-Guided Generative Methods for Synthetic Transcriptomic Data"
+      ],
+      "only_in_title_only": [
+        "A Biologically Informed Heterogeneous Graph Neural Network for Multi-Task Prediction of ncRNA-Metastasis-Cancer Interactions",
+        "High-dimensional networks and mean squared error for possibly misspecified models",
+        "Grid-Preserving Knowledge Distillation: Transferring Convolutional Inductive Bias to Vision Transformers under Data Scarcity"
+      ]
+    },
+    {
+      "id": "cs-06",
+      "text": "AI safety evaluation",
+      "overlap_at_k": 0.5,
+      "top1_same": false,
+      "only_in_auto": [
+        "Doctorina MedBench: A Dialogue-Based Benchmark and Evaluation Framework for Agent-Based Medical AI",
+        "Research-Oriented Human-Centric Evaluation for Foundation Models",
+        "Engineering Reliable Coding Agents: Evaluating and Operating the System Around the Model"
+      ],
+      "only_in_title_only": [
+        "Credible, Not Always Correct: How Reddit Users Verify AI-Generated Legal Advice",
+        "Can AI Agents Simulate A/B Test Outcomes? A Validation Framework for Agentic Experimentation",
+        "Language-Specific Gaps in AI Safety Training Datasets"
+      ]
+    }
+  ],
+  "summary": {
+    "mean_overlap_at_k": 0.4167,
+    "min_overlap_at_k": 0.1,
+    "queries_with_same_top1": 7,
+    "queries": 12
+  },
+  "caveat": "Measures how much the ranking moves, not which ranking is better. No relevance judgments were used."
+}

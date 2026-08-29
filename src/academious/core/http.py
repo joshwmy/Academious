@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import random
 import time
+from collections.abc import Callable
 from typing import Any
 
 import httpx
@@ -47,7 +48,7 @@ class SourceHttpClient:
         settings: Settings | None = None,
         client: httpx.Client | None = None,
         bucket: TokenBucket | None = None,
-        sleep=time.sleep,
+        sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         self.source = source
         self._settings = settings or get_settings()

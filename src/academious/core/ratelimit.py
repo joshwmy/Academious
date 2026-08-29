@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 
 # Tolerance for float accumulation in the token count, and a floor on sleeps so
@@ -38,7 +39,13 @@ class RateLimit:
 class TokenBucket:
     """Blocking token bucket. `acquire()` returns only when a token is available."""
 
-    def __init__(self, limit: RateLimit, *, sleep=time.sleep, monotonic=time.monotonic) -> None:
+    def __init__(
+        self,
+        limit: RateLimit,
+        *,
+        sleep: Callable[[float], None] = time.sleep,
+        monotonic: Callable[[], float] = time.monotonic,
+    ) -> None:
         self._limit = limit
         self._capacity = float(max(limit.burst, 1))
         self._tokens = self._capacity

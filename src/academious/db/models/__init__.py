@@ -1,6 +1,7 @@
 """All ORM models. Importing this module registers every table on Base.metadata."""
 
 from academious.db.base import Base
+from academious.db.models.embedding import EMBEDDING_DIM, PaperEmbedding
 from academious.db.models.ops import (
     IngestionRun,
     Job,
@@ -27,6 +28,7 @@ from academious.db.models.support import (
 )
 
 __all__ = [
+    "EMBEDDING_DIM",
     "Base",
     "FullTextStatus",
     "HostType",
@@ -36,6 +38,7 @@ __all__ = [
     "OaLocation",
     "OaVersion",
     "Paper",
+    "PaperEmbedding",
     "PaperIdentifier",
     "PaperMerge",
     "PaperRelation",

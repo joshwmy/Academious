@@ -1,0 +1,146 @@
+{
+  "generated_at": "2026-08-28T22:13:14.453698+00:00",
+  "machine": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 140 Stepping 2, GenuineIntel",
+    "physical_cores": 4,
+    "logical_cores": 8,
+    "ram_total_gb": 7.65,
+    "ram_available_gb": 0.88,
+    "python": "3.13.7"
+  },
+  "corpus": {
+    "papers_in_database": 2455,
+    "papers_with_abstract": 2455,
+    "abstract_coverage": 1.0,
+    "sampled": 150,
+    "sampled_title_only": 0,
+    "mean_characters": 1468.7
+  },
+  "model": {
+    "model_id": "allenai/specter2_base+proximity",
+    "base": "allenai/specter2_base",
+    "document_adapter": "allenai/specter2 (proximity)",
+    "query_adapter": "allenai/specter2_adhoc_query",
+    "dimension": 768,
+    "max_sequence_length": 512,
+    "separator": "[SEP]",
+    "licence": "Apache-2.0",
+    "weights_on_disk_mb": 846.5,
+    "load_seconds": 15.3,
+    "rss_after_load_mb": 356.4,
+    "token_length_median": 276,
+    "token_length_p95": 409,
+    "truncated_fraction": 0.0067
+  },
+  "throughput": [
+    {
+      "batch_size": 8,
+      "papers": 150,
+      "seconds": 115.9,
+      "papers_per_second": 1.29,
+      "cpu_seconds": 376.58,
+      "cpu_utilisation_cores": 3.25,
+      "peak_rss_mb": 682.5,
+      "truncated": 1
+    },
+    {
+      "batch_size": 16,
+      "papers": 150,
+      "seconds": 140.4,
+      "papers_per_second": 1.07,
+      "cpu_seconds": 417.52,
+      "cpu_utilisation_cores": 2.97,
+      "peak_rss_mb": 859.6,
+      "truncated": 1
+    },
+    {
+      "batch_size": 32,
+      "papers": 150,
+      "seconds": 156.01,
+      "papers_per_second": 0.96,
+      "cpu_seconds": 424.02,
+      "cpu_utilisation_cores": 2.72,
+      "peak_rss_mb": 1211.6,
+      "truncated": 1
+    }
+  ],
+  "storage": {
+    "write_papers_per_second": 1.22,
+    "vectors": 2320,
+    "paper_embedding_total_bytes": 5152768,
+    "bytes_per_vector_including_overhead": 2221.0,
+    "halfvec_payload_bytes": 1536,
+    "float32_payload_bytes_for_comparison": 3072,
+    "paper_table_total_bytes": 28049408,
+    "search_tsv_index_bytes": 6488064,
+    "projected_mb_per_10k_vectors": 21.2,
+    "projected_gb_per_100k_vectors": 0.207
+  },
+  "latency": {
+    "queries_per_pass": 12,
+    "lexical": {
+      "median_ms": 149.94,
+      "p95_ms": 1671.47,
+      "min_ms": 131.65,
+      "max_ms": 1671.47,
+      "samples": 5,
+      "median_ms_per_query": 12.49
+    },
+    "semantic_exact": {
+      "median_ms": 743.0,
+      "p95_ms": 770.69,
+      "min_ms": 707.53,
+      "max_ms": 770.69,
+      "samples": 5,
+      "median_ms_per_query": 61.92
+    },
+    "hybrid": {
+      "median_ms": 1044.71,
+      "p95_ms": 1366.74,
+      "min_ms": 952.41,
+      "max_ms": 1366.74,
+      "samples": 5,
+      "median_ms_per_query": 87.06
+    }
+  },
+  "halfvec_fidelity": {
+    "k": 10,
+    "sample_papers": 200,
+    "queries": 12,
+    "max_component_error_vs_stored": 3.052e-05,
+    "mean_topk_overlap": 0.9917,
+    "min_topk_overlap": 0.9,
+    "top1_agreement": 1.0,
+    "note": "Vectors are L2-normalised before storage, so every component lies in [-1, 1] where float16 carries about three decimal digits."
+  },
+  "ann": {
+    "k": 10,
+    "build_seconds": 1.48,
+    "index_bytes": 4759552,
+    "definition": "CREATE INDEX ix_paper_embedding_hnsw ON public.paper_embedding USING hnsw (embedding halfvec_cosine_ops) WITH (m='16', ef_construction='64')",
+    "latency": {
+      "median_ms": 818.32,
+      "p95_ms": 903.43,
+      "min_ms": 737.83,
+      "max_ms": 903.43,
+      "samples": 5
+    },
+    "median_ms_per_query": 68.19,
+    "recall_at_k_vs_exact": 1.0
+  },
+  "projections": {
+    "basis": "ESTIMATE - measured papers/sec applied to an assumed daily volume",
+    "assumed_daily_new_papers": 5000,
+    "best_measured_papers_per_second": 1.29,
+    "best_batch_size": 8,
+    "daily_delta_minutes": 64.6,
+    "backfill_months": 6,
+    "backfill_papers": 900000,
+    "backfill_hours_this_machine": 193.8,
+    "backfill_storage_gb": 1.86,
+    "annual_new_papers": 1825000,
+    "annual_storage_growth_gb": 3.77
+  },
+  "notes": []
+}

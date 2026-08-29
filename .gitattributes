@@ -1,0 +1,6 @@
+# The checkout is edited on Windows but the images and CI run on Linux. Pinning
+# LF in the working tree keeps a tool that rewrites a file whole - a formatter, a
+# patch script - from turning it into a whole-file diff.
+* text=auto eol=lf
+*.png binary
+*.pdf binary

@@ -18,7 +18,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import and_, func, or_, select, tuple_
+from sqlalchemy import Select, and_, func, or_, select, tuple_
 from sqlalchemy.orm import Session
 
 from academious.core.clock import utcnow
@@ -82,7 +82,9 @@ def find_by_identifiers(session: Session, candidate: PaperCandidate) -> list[Pap
     return list(papers.values())
 
 
-def _fuzzy_query(title_norm: str, surname_value: str | None, year: int | None, block: float):
+def _fuzzy_query(
+    title_norm: str, surname_value: str | None, year: int | None, block: float
+) -> Select[tuple[Paper]]:
     """Trigram-blocked candidate query.
 
     Built with expressions rather than raw SQL because the trigram operator is a

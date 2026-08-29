@@ -18,9 +18,18 @@ proposed; the reasoning is in `phase-0-report.md` section 11.1 and ADR 0003.
 | `ingestion_run` | One row per source per run. The ingestion metrics store. |
 | `source_cursor` | Where each source got to, so the next run is incremental. |
 | `job` | `SKIP LOCKED` work queue. |
+| `paper_embedding` | One vector per `(paper, model_key)`. `halfvec(768)`. See [embeddings.md](embeddings.md). |
+
+`paper` additionally carries `search_tsv`, a stored generated `tsvector` over
+title (weight A), keywords and topic labels (B) and abstract (C). It is
+generated rather than trigger-maintained so it cannot drift from its row.
 
 Absent by design: `Recommendation`, `Author`, `PaperAuthor`, `ResearchField`,
 `PaperField`, `Source`, `PaperSource`, `PaperVersion`, `CitationRelationship`.
+
+Still absent after Phase 2: any per-user table. An embedding does not depend
+on who is asking, so it is stored once globally; personalisation changes
+*which* vectors a user is compared against, not how many copies exist.
 
 ## Authors are denormalised
 
@@ -143,3 +152,8 @@ resolve to `retracted`.
 | `pk_paper_identifier` (`id_type`, `value`) | The exact-match dedup path |
 | `uq_source_record_source_id` | Idempotency: one stored record per source id |
 | `ix_job_claim` (`status`, `priority`, `run_after`) | `SKIP LOCKED` claim query |
+| `ix_paper_search_tsv` (GIN) | Lexical retrieval; without it every query is a sequential scan |
+| `ix_paper_embedding_model_paper` (`model_key`, `paper_id`) | The anti-join that finds papers still needing an embedding |
+
+There is deliberately **no ANN index** on `paper_embedding.embedding`. See
+[ADR 0007](adr/0007-halfvec-and-exact-search-first.md).

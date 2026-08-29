@@ -16,8 +16,11 @@ src/academious/
   ingest/      harvest orchestration, deduplication, merge precedence, OA,
                relations, retractions
   jobs/        PostgreSQL work queue
+  embeddings/  SPECTER2 backends, input construction, vector persistence, jobs
+  retrieval/   lexical, semantic and hybrid search; filters
+  eval/        benchmark queries, relevance judgments, IR metrics, harness
   workers/     scheduled entry points (CLI)
-  api/         FastAPI app (Phase 1: health and metrics only)
+  api/         FastAPI app (Phase 2: health and metrics only)
 ```
 
 Files stay small - roughly 200-400 lines, 800 as a hard ceiling. A connector that
