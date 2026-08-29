@@ -230,6 +230,20 @@ and exposes the split on `/metrics/embeddings` precisely so this stays visible.
 The comparison deliberately stops short of saying which ranking is better. That
 requires judgments.
 
+### Hybrid fusion may not earn its place
+
+The first 75 judgments show semantic retrieval ahead of lexical on every metric
+— and **hybrid behind both on MRR**, across every fusion variant tested (RRF at
+k=10/20/60, normalised weighted, and semantic upweighting). The cause is
+identified: RRF rewards consensus over conviction, so two mid-table placements
+outrank one first place, and on `bio-01` that demoted a relevant rank-1 result
+in favour of a marginal paper.
+
+Nothing was retuned in response. Two queries is not a basis for choosing a
+fusion constant, and doing so would be fitting noise. But the default method is
+now an open question rather than an assumption, and the remaining judgments
+should be aimed at settling it.
+
 ### Batch size does not monotonically help
 
 Batch 32 was slower than batch 8 in both runs, at 1.2 GB peak RSS on a machine
@@ -291,11 +305,12 @@ with real SPECTER2 inference. All 33 checks pass.
 
 ## 8. Limitations, stated plainly
 
-* **No relevance judgments exist yet, so no quality metrics are reported.** The
-  harness runs, pools candidates and produces the file to judge. It reports
-  rankings and explicitly *no* P@k, MRR or NDCG, because computing them from
-  unjudged data would mean scoring the system against its own output. This is
-  the single biggest open item, and it needs human time rather than more code.
+* **Only 75 of 382 pooled papers are judged, covering 2 of 12 queries.** First
+  results are in [evaluation.md](evaluation.md#8-first-measured-results):
+  semantic beats lexical on every metric (NDCG@10 0.494 vs 0.344), and hybrid is
+  worse than either at MRR. Two queries is directional evidence, not a verdict,
+  and both are biomedical. Finishing the pool is the single biggest open item
+  and it needs human time rather than more code.
 * **Twelve queries is a small benchmark.** Once judged, differences of a few
   points will be noise.
 * **One judge is one opinion.** No inter-annotator agreement is measured.

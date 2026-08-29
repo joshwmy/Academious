@@ -218,6 +218,61 @@ judged.
 
 ---
 
+## 8. First measured results
+
+**75 judgments, covering 2 of 12 queries** (`bio-01` 43/44, `bio-02` 32/37).
+Both are biomedical; no CS query is judged yet. Everything below rests on two
+queries and is directional, not conclusive.
+
+| method | P@5 | P@10 | R@10 | MRR | NDCG@10 |
+|---|---|---|---|---|---|
+| lexical | 0.400 | 0.500 | 0.251 | 0.667 | 0.344 |
+| **semantic** | **0.600** | **0.650** | **0.322** | **0.750** | **0.494** |
+| hybrid | 0.400 | 0.550 | 0.281 | 0.417 | 0.448 |
+
+Two things stand out.
+
+**Semantic beats lexical on every metric.** That is the first evidence that
+SPECTER2 earns its CPU cost rather than merely returning plausible-looking
+papers. It is two queries, so it is evidence, not proof.
+
+**Hybrid is worse than either component at MRR, and the mechanism is
+understood.** On `bio-01` both lexical and semantic placed a relevant paper at
+rank 1 (MRR 1.0 each); fusion demoted them and led with a *marginal* paper,
+taking P@5 from 0.80 to 0.20.
+
+This is reciprocal rank fusion rewarding **consensus over conviction**. At
+`k = 60`, rank 1 in one method contributes `1/61 = 0.0164`, while rank 4 in
+*both* contributes `2/64 = 0.0313` — so two mediocre placements outrank one
+perfect one. That is RRF working as designed, and the design is a poor fit when
+one method is decisively right and the other has not heard of the paper.
+
+A sensitivity sweep confirms the effect is not a `k` artefact:
+
+| variant | P@5 | P@10 | MRR | NDCG@10 |
+|---|---|---|---|---|
+| lexical only | 0.400 | 0.500 | 0.667 | 0.344 |
+| semantic only | 0.600 | 0.650 | **0.750** | 0.494 |
+| RRF k=10 | 0.600 | 0.650 | 0.417 | 0.468 |
+| RRF k=20 | 0.700 | 0.600 | 0.417 | 0.471 |
+| RRF k=60 (default) | 0.400 | 0.550 | 0.417 | 0.448 |
+| normalised weighted | 0.700 | 0.500 | 0.417 | 0.389 |
+| RRF k=60, semantic x2 | 0.600 | 0.600 | 0.500 | 0.498 |
+| RRF k=60, semantic x3 | 0.700 | 0.650 | 0.500 | 0.491 |
+
+Every fusion variant lands at MRR <= 0.50 against semantic-only 0.750, and the
+best hybrid NDCG (0.498) only ties semantic (0.494).
+
+**Nothing has been retuned on the basis of this.** Choosing `k` or a weighting
+to maximise a score over two queries is fitting noise, and the sweep is recorded
+as a diagnostic precisely so that temptation is visible rather than acted on.
+What it does justify is a question for the remaining judgments: *does fusion
+earn its place at all, or is semantic-alone the right default?* `cs-02` and
+`cs-05` are the queries most likely to answer it, because they are where lexical
+should be strongest.
+
+---
+
 ## 8. What this cannot tell you
 
 Stated plainly, because a benchmark that overstates its reach is worse than none:
