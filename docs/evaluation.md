@@ -168,6 +168,28 @@ With no judgments the report ends by saying so and pointing at the pool file.
 With judgments it ends with a per-method table, `queries_scored` making clear how
 much of the set the numbers rest on.
 
+It then prints judgment coverage for each scored query and audits the top 10 —
+the depth the headline metrics use — for papers that were never labelled:
+
+```
+Judgment coverage of the scored queries (top 10 audited)
+  query       judged  pooled   unjudged in top ranks
+  --------------------------------------------------
+  bio-01          43      44   hybrid=0  lexical=0  semantic=0
+  cs-02           25      29   hybrid=3  lexical=3  semantic=3  <-- INCOMPLETE
+
+WARNING: cs-02 carry unjudged papers inside the ranks the metrics score.
+```
+
+This matters because an unjudged id scores zero, which is the correct
+conservative assumption but is indistinguishable, in the metric alone, from a
+paper a human looked at and rejected. A query whose best hits are merely
+unlabelled reports a confidently wrong number, and it does not distribute that
+error evenly between methods — the method that ranked the unlabelled papers
+highest is punished hardest. The harness does not refuse to score such a query,
+because a partly judged query is still informative; it refuses to let it be read
+without the caveat.
+
 ---
 
 ## 7. Ablations the harness is built to answer
@@ -218,38 +240,114 @@ judged.
 
 ---
 
-## 8. First measured results
+## 8. Measured results
 
-**75 judgments, covering 2 of 12 queries** (`bio-01` 43/44, `bio-02` 32/37).
-Both are biomedical; no CS query is judged yet. Everything below rests on two
-queries and is directional, not conclusive.
+**128 judgments, covering 4 of 12 queries.** Two biomedical (`bio-01` 43/44,
+`bio-02` 32/37) and two computing (`cs-02` 25/29, `cs-05` 28/28). The computing
+pair was chosen deliberately as a control: both are queries where lexical search
+should do well, so they are the strongest available test of the semantic result.
+
+### Judgment coverage comes first
+
+| query | judged / pooled | relevant (grade >= 2) | unjudged in the top 10 |
+|---|---|---|---|
+| `bio-01` | 43 / 44 | 24 | none |
+| `bio-02` | 32 / 37 | 17 | lexical 1 |
+| `cs-02` | 25 / 29 | 8 | **3 in every method** |
+| `cs-05` | 28 / 28 | 5 | none |
+
+The harness now prints this table and warns when a scored query has unjudged
+papers inside the ranks the metrics score, because such a query reports a number
+that is confidently wrong. `cs-02` is the case in point: its four unlabelled
+pooled papers are `HC-RAG`, `RAGSieve`, `IterCOMP` and `HybridRAG-BN`, and they
+sit at lexical ranks 1, 2 and 6. Scored as they stand, they count as *not
+relevant*, and lexical records P@10 = 0.000 on the one query in the set that was
+designed for it to win.
+
+The sensitivity of `cs-02` to those four rows is total:
+
+| assumed grade for the 4 unjudged | lexical MRR | semantic MRR | hybrid MRR |
+|---|---|---|---|
+| 0 (what is reported today) | 0.083 | 0.333 | 0.100 |
+| 2 or 3 | **1.000** | **1.000** | **1.000** |
+
+`cs-02` is therefore **not a usable measurement yet**, and no conclusion below
+rests on it.
+
+### Aggregate, all four judged queries
+
+Reported for completeness; `cs-02` drags every method down and lexical hardest.
 
 | method | P@5 | P@10 | R@10 | MRR | NDCG@10 |
 |---|---|---|---|---|---|
-| lexical | 0.400 | 0.500 | 0.251 | 0.667 | 0.344 |
-| **semantic** | **0.600** | **0.650** | **0.322** | **0.750** | **0.494** |
-| hybrid | 0.400 | 0.550 | 0.281 | 0.417 | 0.448 |
+| lexical | 0.350 | 0.325 | 0.276 | 0.604 | 0.365 |
+| **semantic** | **0.450** | **0.425** | **0.342** | **0.708** | **0.422** |
+| hybrid | 0.300 | 0.375 | 0.322 | 0.483 | 0.407 |
 
-Two things stand out.
+### Aggregate over the three queries whose top ranks are judged
 
-**Semantic beats lexical on every metric.** That is the first evidence that
-SPECTER2 earns its CPU cost rather than merely returning plausible-looking
-papers. It is two queries, so it is evidence, not proof.
+| method | P@5 | P@10 | R@10 | MRR | NDCG@10 |
+|---|---|---|---|---|---|
+| lexical | 0.467 | 0.433 | 0.367 | 0.778 | 0.480 |
+| **semantic** | **0.533** | **0.533** | **0.415** | **0.833** | **0.525** |
+| hybrid | 0.400 | 0.467 | 0.387 | 0.611 | 0.512 |
 
-**Hybrid is worse than either component at MRR, and the mechanism is
-understood.** On `bio-01` both lexical and semantic placed a relevant paper at
-rank 1 (MRR 1.0 each); fusion demoted them and led with a *marginal* paper,
-taking P@5 from 0.80 to 0.20.
+Per query, with the winner by NDCG@10 in bold:
 
-This is reciprocal rank fusion rewarding **consensus over conviction**. At
-`k = 60`, rank 1 in one method contributes `1/61 = 0.0164`, while rank 4 in
-*both* contributes `2/64 = 0.0313` — so two mediocre placements outrank one
-perfect one. That is RRF working as designed, and the design is a poor fit when
-one method is decisively right and the other has not heard of the paper.
+| query | lexical | semantic | hybrid |
+|---|---|---|---|
+| `bio-01` | 0.327 | **0.531** | 0.399 |
+| `bio-02` | 0.360 | 0.457 | **0.496** |
+| `cs-05` | **0.754** | 0.587 | 0.642 |
+| `cs-02` (invalid) | 0.019 | 0.115 | 0.090 |
 
-A sensitivity sweep confirms the effect is not a `k` artefact:
+Three things stand out.
 
-| variant | P@5 | P@10 | MRR | NDCG@10 |
+**Semantic still leads on aggregate, but the win is domain-shaped.** Semantic
+takes every aggregate metric, as it did over two queries. It does not win every
+query: on `cs-05` (*graph neural networks*, an exact architecture name) lexical
+wins decisively, NDCG@10 0.754 against 0.587, which is exactly what that query
+was put in the set to test. The claim the evidence supports is *semantic wins
+where the query and the literature use different words*; the claim it does not
+support is *semantic wins everywhere*.
+
+**Both methods find the same first paper more often than the aggregate
+suggests.** Rank of the first relevant hit: `bio-01` lexical 1 / semantic 1,
+`bio-02` 3 / 2, `cs-05` 1 / 1. Semantic's MRR advantage over these three queries
+comes from `bio-02` alone. The margin between them is thinner than the two-query
+result implied.
+
+**Hybrid is still the weakest at MRR and the mechanism is unchanged.** It never
+wins MRR on any query and loses it outright on `bio-01` (0.500 against 1.000 for
+both components). It does win one query on NDCG@10 (`bio-02`, 0.496), which is
+the one query where the components agree most.
+
+### Why fusion behaves this way
+
+The components barely overlap, and RRF rewards consensus over conviction:
+
+| query | overlap of the two top-20s | hybrid vs best component (NDCG@10) |
+|---|---|---|
+| `bio-01` | 2 of 20 | 0.399 vs 0.531 |
+| `bio-02` | 5 of 20 | **0.496** vs 0.457 |
+| `cs-05` | 7 of 20 | 0.642 vs 0.754 |
+
+`bio-01` shows the failure directly. Hybrid's rank 1 is a *marginal* paper that
+lexical ranked 16th and semantic 3rd: `1/76 + 1/63 = 0.0290`. Semantic's own
+rank-1 paper, which lexical never returned, scores `1/61 = 0.0164` and loses.
+Two mediocre placements outrank one confident one. Meanwhile the genuinely good
+papers fusion *does* surface arrive late — `MatchMiner-AI` (grade 3) at rank 6
+from lexical 79 / semantic 5, `OTRec` (grade 3) at rank 7 from lexical 97 /
+semantic 4 — so fusion is recovering them from deep in the semantic pool only to
+place them behind a consensus pick.
+
+Where the components agree, fusion helps: on `bio-02` (5 of 20 overlap) hybrid
+beats both. Where they disagree, it averages a right answer with a wrong one.
+
+The two-query fusion sweep recorded below is retained as a diagnostic. It was
+run over `bio-01` and `bio-02` only and has **not** been re-run or re-fitted:
+
+| variant (2 queries: bio-01, bio-02) | P@5 | P@10 | MRR | NDCG@10 |
 |---|---|---|---|---|
 | lexical only | 0.400 | 0.500 | 0.667 | 0.344 |
 | semantic only | 0.600 | 0.650 | **0.750** | 0.494 |
@@ -260,20 +358,16 @@ A sensitivity sweep confirms the effect is not a `k` artefact:
 | RRF k=60, semantic x2 | 0.600 | 0.600 | 0.500 | 0.498 |
 | RRF k=60, semantic x3 | 0.700 | 0.650 | 0.500 | 0.491 |
 
-Every fusion variant lands at MRR <= 0.50 against semantic-only 0.750, and the
-best hybrid NDCG (0.498) only ties semantic (0.494).
-
-**Nothing has been retuned on the basis of this.** Choosing `k` or a weighting
-to maximise a score over two queries is fitting noise, and the sweep is recorded
-as a diagnostic precisely so that temptation is visible rather than acted on.
-What it does justify is a question for the remaining judgments: *does fusion
-earn its place at all, or is semantic-alone the right default?* `cs-02` and
-`cs-05` are the queries most likely to answer it, because they are where lexical
-should be strongest.
+**Nothing has been retuned on the basis of any of this.** No default was
+changed, no `k` was moved, no weight was introduced. Four queries — one of them
+not yet valid — is a set to measure against, not to fit to. The open question is
+unchanged and now sharper: *does fusion earn its place at all?* The queries that
+will answer it are the ones designed to be hard for lexical search, because that
+is where fusion either rescues a weak component or is dragged down by it.
 
 ---
 
-## 8. What this cannot tell you
+## 9. What this cannot tell you
 
 Stated plainly, because a benchmark that overstates its reach is worse than none:
 

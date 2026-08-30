@@ -11,7 +11,10 @@ htmlcov/
 dist/
 build/
 *.egg-info/
-data/
+# Note: this must exclude the directory *contents*, not the directory itself.
+# Git will not re-include a file whose parent directory is excluded, so a bare
+# `data/` would silently defeat the negations below.
+data/*
 # Relevance judgments are an input to the project, not an artefact of a run:
 # they cost human time to produce and every reported metric depends on them.
 !data/eval/

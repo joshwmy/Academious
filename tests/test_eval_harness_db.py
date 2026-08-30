@@ -7,6 +7,8 @@ score derived from treating whatever was retrieved as relevant.
 
 from __future__ import annotations
 
+import uuid
+
 import pytest
 
 from academious.embeddings import service as embedding_service
@@ -140,3 +142,55 @@ def test_rankings_are_shown_even_without_judgments(session, service):
     assert "lexical" in rendered
     assert "semantic" in rendered
     assert "hybrid" in rendered
+
+
+def test_a_partially_judged_query_is_flagged_when_unjudged_papers_sit_in_scored_ranks(
+    session, service
+):
+    """Metrics over a half-judged query are not trustworthy and must say so.
+
+    Every unjudged id in a ranking scores zero. That is the right conservative
+    assumption, but it means a query whose best hits are simply unlabelled
+    reports a confidently wrong number - and the reader cannot tell it apart
+    from a genuinely bad ranking unless the report says which ranks were dark.
+    """
+    report, pool = harness.evaluate(session, service, queries=QUERIES, depth=5)
+
+    run = next(run for run in report.runs if run.query.id == "t-01")
+    top_lexical = run.results["lexical"].paper_ids()[0]
+    for entry in pool:
+        if entry.query_id == "t-01" and uuid.UUID(entry.paper_id) != top_lexical:
+            judgments_module.stamp(entry, 0, "test")
+
+    scored, _ = harness.evaluate(
+        session, service, existing_judgments=pool, queries=QUERIES, depth=5
+    )
+
+    assert scored.scored_query_ids == ["t-01"]
+    coverage = {entry.query_id: entry for entry in scored.query_coverage}
+    assert set(coverage) == {"t-01"}, "coverage is reported for scored queries only"
+
+    t01 = coverage["t-01"]
+    assert t01.pooled > t01.judged
+    assert t01.unjudged_in_scored_ranks["lexical"] >= 1
+    assert t01.is_contaminated
+
+    rendered = harness.render(scored)
+    assert "unjudged" in rendered.lower()
+    assert "t-01" in rendered
+
+
+def test_a_fully_judged_query_is_not_flagged(session, service):
+    report, pool = harness.evaluate(session, service, queries=QUERIES, depth=5)
+    for entry in pool:
+        if entry.query_id == "t-01":
+            judgments_module.stamp(entry, 2 if "cancer" in entry.title.lower() else 0, "test")
+
+    scored, _ = harness.evaluate(
+        session, service, existing_judgments=pool, queries=QUERIES, depth=5
+    )
+
+    t01 = next(entry for entry in scored.query_coverage if entry.query_id == "t-01")
+    assert t01.judged == t01.pooled
+    assert not t01.is_contaminated
+    assert sum(t01.unjudged_in_scored_ranks.values()) == 0

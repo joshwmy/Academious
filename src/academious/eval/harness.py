@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import time
 import uuid
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
@@ -30,6 +31,11 @@ from academious.retrieval.types import RetrievalResult
 
 DEFAULT_DEPTH = 20
 
+#: The cut-off the headline metrics are reported at. Judgment coverage is
+#: audited over exactly these ranks, because that is where an unjudged paper
+#: silently becomes a zero.
+SCORED_DEPTH = 10
+
 
 @dataclass(slots=True)
 class QueryRun:
@@ -38,6 +44,31 @@ class QueryRun:
 
     def ranked_ids(self, method: str) -> list[uuid.UUID]:
         return self.results[method].paper_ids()
+
+
+@dataclass(slots=True)
+class QueryCoverage:
+    """How much of one scored query's pool was actually judged.
+
+    An unjudged id in a ranking scores zero, which is the correct conservative
+    assumption for a pooled evaluation but is indistinguishable, in the metric
+    alone, from a paper a human looked at and rejected. A query whose top ranks
+    are unlabelled therefore reports a number that is confidently wrong. This
+    records where the dark ranks are so the report can say so out loud.
+    """
+
+    query_id: str
+    judged: int
+    pooled: int
+    #: Unjudged papers inside the top `SCORED_DEPTH` of each method's ranking.
+    unjudged_in_scored_ranks: dict[str, int] = field(default_factory=dict)
+
+    @property
+    def is_contaminated(self) -> bool:
+        return any(count > 0 for count in self.unjudged_in_scored_ranks.values())
+
+    def as_dict(self) -> dict[str, Any]:
+        return asdict(self) | {"is_contaminated": self.is_contaminated}
 
 
 @dataclass(slots=True)
@@ -63,11 +94,17 @@ class EvaluationReport:
     judged: int = 0
     pooled: int = 0
     scored_query_ids: list[str] = field(default_factory=list)
+    query_coverage: list[QueryCoverage] = field(default_factory=list)
     elapsed_s: float = 0.0
 
     @property
     def has_metrics(self) -> bool:
         return bool(self.scores)
+
+    @property
+    def contaminated_query_ids(self) -> list[str]:
+        """Scored queries whose metrics rest on partly unlabelled rankings."""
+        return [entry.query_id for entry in self.query_coverage if entry.is_contaminated]
 
 
 def run_queries(
@@ -162,6 +199,46 @@ def score(
     return scores, [run.query.id for run in scorable]
 
 
+def coverage_by_query(
+    runs: list[QueryRun],
+    pool: list[judgments_module.Judgment],
+    scored_ids: Sequence[str],
+    *,
+    depth: int = SCORED_DEPTH,
+) -> list[QueryCoverage]:
+    """Audit judgment coverage for each scored query, at the depth metrics use."""
+    pooled_counts: dict[str, int] = {}
+    judged_counts: dict[str, int] = {}
+    for judgment in pool:
+        pooled_counts[judgment.query_id] = pooled_counts.get(judgment.query_id, 0) + 1
+        judged_counts[judgment.query_id] = judged_counts.get(judgment.query_id, 0) + int(
+            judgment.is_judged
+        )
+
+    graded = judgments_module.grade_map(pool)
+    runs_by_id = {run.query.id: run for run in runs}
+
+    entries: list[QueryCoverage] = []
+    for query_id in scored_ids:
+        run = runs_by_id.get(query_id)
+        if run is None:
+            continue
+        grades = graded.get(query_id, {})
+        unjudged = {
+            method: sum(1 for paper_id in result.paper_ids()[:depth] if paper_id not in grades)
+            for method, result in run.results.items()
+        }
+        entries.append(
+            QueryCoverage(
+                query_id=query_id,
+                judged=judged_counts.get(query_id, 0),
+                pooled=pooled_counts.get(query_id, 0),
+                unjudged_in_scored_ranks=unjudged,
+            )
+        )
+    return entries
+
+
 def evaluate(
     session: Session,
     service: RetrievalService,
@@ -180,6 +257,7 @@ def evaluate(
     grades = judgments_module.grade_map(pool)
     scores, scored_ids = score(runs, grades)
     judged, total = judgments_module.coverage(pool)
+    per_query = coverage_by_query(runs, pool, scored_ids)
 
     report = EvaluationReport(
         depth=depth,
@@ -188,6 +266,7 @@ def evaluate(
         judged=judged,
         pooled=total,
         scored_query_ids=scored_ids,
+        query_coverage=per_query,
         elapsed_s=time.perf_counter() - started,
     )
     return report, pool
@@ -235,5 +314,38 @@ def render(report: EvaluationReport, *, show_hits: int = 5) -> str:
                 f"{row.recall_at_10:6.3f} {row.mrr:6.3f} {row.ndcg_at_10:8.3f} "
                 f"{row.mean_latency_ms:8.1f}"
             )
+        lines.extend(_coverage_lines(report))
     lines.append("=" * 78)
     return "\n".join(lines)
+
+
+def _coverage_lines(report: EvaluationReport) -> list[str]:
+    """Per-query judgment coverage, and a warning naming the queries it invalidates."""
+    if not report.query_coverage:
+        return []
+
+    lines = ["", f"Judgment coverage of the scored queries (top {SCORED_DEPTH} audited)"]
+    header = "  {:10} {:>7} {:>7}   {}".format("query", "judged", "pooled", "unjudged in top ranks")
+    lines.append(header)
+    lines.append("  " + "-" * (len(header) - 2))
+    for entry in report.query_coverage:
+        detail = "  ".join(
+            f"{method}={count}" for method, count in sorted(entry.unjudged_in_scored_ranks.items())
+        )
+        flag = "  <-- INCOMPLETE" if entry.is_contaminated else ""
+        lines.append(f"  {entry.query_id:10} {entry.judged:7} {entry.pooled:7}   {detail}{flag}")
+
+    contaminated = report.contaminated_query_ids
+    if contaminated:
+        lines.append("")
+        lines.append(
+            f"WARNING: {', '.join(contaminated)} carry unjudged papers inside the ranks the "
+            "metrics score."
+        )
+        lines.append(
+            "Every unjudged id counts as not relevant, so those queries understate every "
+            "method - and unequally, because the unjudged papers are not spread evenly "
+            "across the rankings. Finish judging them before drawing a conclusion from "
+            "the table above."
+        )
+    return lines
