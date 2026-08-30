@@ -20,3 +20,12 @@ data/*
 !data/eval/
 !data/eval/**
 *.log
+
+# --- Frontend ---------------------------------------------------------------
+node_modules/
+web/dist/
+web/coverage/
+# Vite reads .env.local for development. Everything VITE_* is public, but the
+# file is still local configuration rather than repository content.
+.env.local
+*.local

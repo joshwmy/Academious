@@ -1,0 +1,119 @@
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.skeleton-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.skeleton-line {
+  height: 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-inset);
+}
+
+.skeleton-line--title {
+  height: 1.15rem;
+  width: 70%;
+}
+
+.skeleton-line--authors {
+  width: 45%;
+}
+
+.skeleton-line--short {
+  width: 30%;
+}
+
+/* A single slow pulse, and none at all for reduced-motion users (tokens.css). */
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton-line {
+    animation: skeleton-pulse 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.state-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-6);
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.state-panel--error {
+  border-color: var(--danger-border);
+  background: var(--danger-surface);
+}
+
+.state-panel__title {
+  font-size: var(--text-lg);
+}
+
+.state-panel__body {
+  color: var(--text-secondary);
+  max-width: 46ch;
+}
+
+.state-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-1);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-4);
+  background: var(--accent);
+  color: #fff;
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.button:hover {
+  background: var(--accent-hover);
+  color: #fff;
+}
+
+.button--quiet {
+  background: transparent;
+  color: var(--accent);
+  border-color: var(--border-strong);
+}
+
+.button--quiet:hover {
+  background: var(--surface-subtle);
+  color: var(--accent-hover);
+}
+
+.button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

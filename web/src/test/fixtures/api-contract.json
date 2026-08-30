@@ -1,0 +1,353 @@
+{
+  "papers": {
+    "page": {
+      "limit": 3,
+      "offset": 0,
+      "total": 2455,
+      "returned": 3,
+      "has_more": true
+    },
+    "results": [
+      {
+        "id": "fcee4fd5-4659-4dd4-be4f-23701595cb26",
+        "title": "Selection bias in microbial mutation accumulation studies and the impact of colony growth",
+        "abstract_preview": "In microbial mutation-accumulation (MA) studies, it is widely thought that natural selection is silenced by repeated single-cell bottlenecks. In support of this claim, 40 published tests for selection bias failed to detect a deficit of non-synonymous relative to synonymous mutations in wild-type microbes. Here we show\u2026",
+        "authors": [
+          {
+            "name": "Grosse-Sommer, J. M.",
+            "position": 0,
+            "orcid": null,
+            "affiliations": []
+          },
+          {
+            "name": "Hadfield, J. D.",
+            "position": 1,
+            "orcid": null,
+            "affiliations": []
+          }
+        ],
+        "published_date": "2026-08-22",
+        "published_year": 2026,
+        "venue": "bioRxiv",
+        "doi": "10.64898/2026.05.28.725302",
+        "is_preprint": true,
+        "is_peer_reviewed": false,
+        "open_access_status": "green",
+        "retraction_status": "none",
+        "topics": [
+          {
+            "id": "genetics",
+            "label": "genetics",
+            "scheme": "biorxiv"
+          }
+        ],
+        "citation_count": null
+      },
+      {
+        "id": "e7b1b838-b6ac-4b0d-a151-c8cd854c35d7",
+        "title": "Detecting and typing Chlamydia trachomatis strains in metagenomes using the MetaChlam pipeline",
+        "abstract_preview": "The Gram negative bacteria Chlamydia trachomatis (Ct), an obligate intracellular human pathogen, is a predominant cause of sexually transmitted infections and ocular trachoma globally, exerting a significant impact on public health. Ct \"strains\" (major lineages within the species) are known to have different tissue tro\u2026",
+        "authors": [
+          {
+            "name": "Sharma, P.",
+            "position": 0,
+            "orcid": null,
+            "affiliations": []
+          },
+          {
+            "name": "Dean, D.",
+            "position": 1,
+            "orcid": null,
+            "affiliations": []
+          },
+          {
+            "name": "Read, T. D.",
+            "position": 2,
+            "orcid": null,
+            "affiliations": []
+          }
+        ],
+        "published_date": "2026-08-22",
+        "published_year": 2026,
+        "venue": "bioRxiv",
+        "doi": "10.64898/2026.08.18.745514",
+        "is_preprint": true,
+        "is_peer_reviewed": false,
+        "open_access_status": "green",
+        "retraction_status": "none",
+        "topics": [
+          {
+            "id": "bioinformatics",
+            "label": "bioinformatics",
+            "scheme": "biorxiv"
+          }
+        ],
+        "citation_count": null
+      },
+      {
+        "id": "b8de55eb-0c64-450c-a074-478c13d60ba0",
+        "title": "Nationwide multi-omics profiling of Japanese jack mackerel reveals geographic gut microbiome structuring despite host panmixia",
+        "abstract_preview": "Host genetic markers often fail to resolve regional origins in highly connected or panmictic marine species. The Japanese jack mackerel, Trachurus japonicus, is a commercially important fishery species around Japan that shows little or no detectable population structure. Here, we used nationwide multi-omics profiling t\u2026",
+        "authors": [
+          {
+            "name": "Yoshida, M.-a.",
+            "position": 0,
+            "orcid": null,
+            "affiliations": []
+          },
+          {
+            "name": "Tsunoda, K.",
+            "position": 1,
+            "orcid": null,
+            "affiliations": []
+          },
+          {
+            "name": "Kasane, H.",
+            "position": 2,
+            "orcid": null,
+            "affiliations": []
+          },
+          {
+            "name": "Kishimoto, A.",
+            "position": 3,
+            "orcid": null,
+            "affiliations": []
+          },
+          {
+            "name": "Mori, S.",
+            "position": 4,
+            "orcid": null,
+            "affiliations": []
+          },
+          {
+            "name": "Komiya, K.",
+            "position": 5,
+            "orcid": null,
+            "affiliations": []
+          },
+          {
+            "name": "Hamada, M.",
+            "position": 6,
+            "orcid": null,
+            "affiliations": []
+          },
+          {
+            "name": "Sekiguchi, T.",
+            "position": 7,
+            "orcid": null,
+            "affiliations": []
+          },
+          {
+            "name": "Goto, Y.",
+            "position": 8,
+            "orcid": null,
+            "affiliations": []
+          },
+          {
+            "name": "Ishikawa, N.",
+            "position": 9,
+            "orcid": null,
+            "affiliations": []
+          },
+          {
+            "name": "Suyama, Y.",
+            "position": 10,
+            "orcid": null,
+            "affiliations": []
+          },
+          {
+            "name": "Setiamarga, D. H. E.",
+            "position": 11,
+            "orcid": null,
+            "affiliations": []
+          }
+        ],
+        "published_date": "2026-08-22",
+        "published_year": 2026,
+        "venue": "bioRxiv",
+        "doi": "10.64898/2026.08.20.745924",
+        "is_preprint": true,
+        "is_peer_reviewed": false,
+        "open_access_status": "green",
+        "retraction_status": "none",
+        "topics": [
+          {
+            "id": "microbiology",
+            "label": "microbiology",
+            "scheme": "biorxiv"
+          }
+        ],
+        "citation_count": null
+      }
+    ]
+  },
+  "detail": {
+    "id": "fcee4fd5-4659-4dd4-be4f-23701595cb26",
+    "title": "Selection bias in microbial mutation accumulation studies and the impact of colony growth",
+    "abstract_preview": "In microbial mutation-accumulation (MA) studies, it is widely thought that natural selection is silenced by repeated single-cell bottlenecks. In support of this claim, 40 published tests for selection bias failed to detect a deficit of non-synonymous relative to synonymous mutations in wild-type microbes. Here we show\u2026",
+    "authors": [
+      {
+        "name": "Grosse-Sommer, J. M.",
+        "position": 0,
+        "orcid": null,
+        "affiliations": []
+      },
+      {
+        "name": "Hadfield, J. D.",
+        "position": 1,
+        "orcid": null,
+        "affiliations": []
+      }
+    ],
+    "published_date": "2026-08-22",
+    "published_year": 2026,
+    "venue": "bioRxiv",
+    "doi": "10.64898/2026.05.28.725302",
+    "is_preprint": true,
+    "is_peer_reviewed": false,
+    "open_access_status": "green",
+    "retraction_status": "none",
+    "topics": [
+      {
+        "id": "genetics",
+        "label": "genetics",
+        "scheme": "biorxiv"
+      }
+    ],
+    "citation_count": null,
+    "abstract": "In microbial mutation-accumulation (MA) studies, it is widely thought that natural selection is silenced by repeated single-cell bottlenecks. In support of this claim, 40 published tests for selection bias failed to detect a deficit of non-synonymous relative to synonymous mutations in wild-type microbes. Here we show that this most likely reflects selective reporting and lack of power. Our meta-analysis of 10,856 mutations from wild-type microbial MA reveals a clear signal of selection: non-synonymous mutations are observed 7.7% less often than synonymous mutations. However, our inference of the bias is hampered by a widespread failure to consider the mutation spectrum. To overcome this, we provide a multinomial-logit model that jointly estimates the mutation spectrum and selection. By applying this to a 194-line Escherichia coli MA experiment and five previous E. coli datasets (869 mutations) we reveal a deficit of non-synonymous mutations, although the reduction is not significant. While approaches do exist for correcting for selection bias, all currently assume that microbial MA lines are grown in well-mixed liquid culture rather than as surface colonies where competition is spatially structured. Although existing theory suggests selection bias should be stronger under colony growth, using agent-based simulations we show that this actually depends on the scale over which neighbouring cells compete and how unevenly they divide: it can be weaker, equivalent to, or stronger than in homogeneous growth. While our preliminary assessment is that it is considerably stronger, quantitative predictions will require the empirical details of colony growth to be better resolved.",
+    "language": "en",
+    "work_type": "preprint",
+    "identifiers": {
+      "doi": "10.64898/2026.05.28.725302"
+    },
+    "open_access": {
+      "status": "green",
+      "is_open": true,
+      "url": "https://www.biorxiv.org/content/10.64898/2026.05.28.725302v3",
+      "pdf_url": "https://www.biorxiv.org/content/10.64898/2026.05.28.725302v3.full.pdf",
+      "licence": "cc-by-nc"
+    },
+    "retraction_notice_url": null
+  },
+  "search": {
+    "query": "graph neural networks",
+    "count": 3,
+    "limit": 3,
+    "results": [
+      {
+        "rank": 1,
+        "paper": {
+          "id": "314966c9-46b9-4a0b-90d2-20ac46a98d57",
+          "title": "Neural Message Passing on Structural Interaction Graphs for Fully-Inductive Graph Neural Networks",
+          "abstract_preview": "A central obstacle in building graph foundation models is the input heterogeneity in terms of feature space dimensionality, semantics, and structure. Such heterogeneity limits the capability of graph neural networks to generalize to new graphs with unseen feature spaces. We address the transferability challenge with SI\u2026",
+          "authors": [
+            {
+              "name": "Omer Yom-Tov",
+              "position": 0,
+              "orcid": null,
+              "affiliations": []
+            },
+            {
+              "name": "Avigdor Gal",
+              "position": 1,
+              "orcid": null,
+              "affiliations": []
+            }
+          ],
+          "published_date": "2026-08-13",
+          "published_year": 2026,
+          "venue": "arXiv",
+          "doi": null,
+          "is_preprint": true,
+          "is_peer_reviewed": false,
+          "open_access_status": "green",
+          "retraction_status": "none",
+          "topics": [
+            {
+              "id": "cs.LG",
+              "label": "cs.LG",
+              "scheme": "arxiv"
+            }
+          ],
+          "citation_count": null
+        }
+      },
+      {
+        "rank": 2,
+        "paper": {
+          "id": "48813cfa-e92c-46cb-9e4a-f38031c47d07",
+          "title": "Exploring Oversmoothing with Householder Matrices",
+          "abstract_preview": "Deep graph neural networks(GNNs) suffer from oversmoothing- a progressive collapse of node representation towards a low information subspace as network depth increases because the normalized graph propagation operator is repeatedly applied directly to the hidden representations. In this work we study Householder Graph\u2026",
+          "authors": [
+            {
+              "name": "Bhaskar Karol",
+              "position": 0,
+              "orcid": null,
+              "affiliations": []
+            }
+          ],
+          "published_date": "2026-08-12",
+          "published_year": 2026,
+          "venue": "arXiv",
+          "doi": null,
+          "is_preprint": true,
+          "is_peer_reviewed": false,
+          "open_access_status": "green",
+          "retraction_status": "none",
+          "topics": [
+            {
+              "id": "cs.LG",
+              "label": "cs.LG",
+              "scheme": "arxiv"
+            }
+          ],
+          "citation_count": null
+        }
+      },
+      {
+        "rank": 3,
+        "paper": {
+          "id": "4070aa93-bf35-48c1-975c-752c255aeb6d",
+          "title": "Difference-of-Convex Regularization for Graph Learning by Differentiable Programming",
+          "abstract_preview": "Laplacian-regularized minimization is fundamental in signal processing and machine learning, but is limited by the dense and ill-conditioned nature of the graph Laplacian pseudoinverse. While the Laplacian itself is sparse, its pseudoinverse is dense and often ill-conditioned, rendering direct computation impractical a\u2026",
+          "authors": [
+            {
+              "name": "Liping Tao",
+              "position": 0,
+              "orcid": null,
+              "affiliations": []
+            },
+            {
+              "name": "Chee Wei Tan",
+              "position": 1,
+              "orcid": null,
+              "affiliations": []
+            }
+          ],
+          "published_date": "2026-08-13",
+          "published_year": 2026,
+          "venue": "arXiv",
+          "doi": null,
+          "is_preprint": true,
+          "is_peer_reviewed": false,
+          "open_access_status": "green",
+          "retraction_status": "none",
+          "topics": [
+            {
+              "id": "math.OC",
+              "label": "math.OC",
+              "scheme": "arxiv"
+            },
+            {
+              "id": "cs.LG",
+              "label": "cs.LG",
+              "scheme": "arxiv"
+            }
+          ],
+          "citation_count": null
+        }
+      }
+    ]
+  }
+}

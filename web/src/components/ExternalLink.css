@@ -1,0 +1,11 @@
+.external-link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  overflow-wrap: anywhere;
+}
+
+.external-link__icon {
+  font-size: 0.85em;
+  opacity: 0.7;
+}

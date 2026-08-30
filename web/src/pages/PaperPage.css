@@ -1,0 +1,156 @@
+.paper-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: var(--content-width-narrow);
+}
+
+.paper-detail--loading {
+  gap: var(--space-3);
+}
+
+.paper-detail__back {
+  font-size: var(--text-sm);
+}
+
+.paper-detail__back a {
+  text-decoration: none;
+}
+
+.paper-detail__back a:hover {
+  text-decoration: underline;
+}
+
+.paper-detail__header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.paper-detail__title {
+  font-size: var(--text-2xl);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.015em;
+}
+
+.paper-detail__authors {
+  color: var(--text-secondary);
+  line-height: var(--leading-snug);
+}
+
+.paper-detail__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.paper-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.paper-detail__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: var(--border-width) solid var(--border);
+}
+
+.paper-detail__section-title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.paper-detail__abstract {
+  font-size: var(--text-md);
+  line-height: var(--leading-relaxed);
+  color: var(--text);
+  /* Abstracts read as prose, so they get a measure rather than the full width. */
+  max-width: 68ch;
+  white-space: pre-wrap;
+}
+
+.paper-detail__topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.detail-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.detail-grid__row {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  gap: var(--space-3);
+  align-items: baseline;
+}
+
+.detail-grid dt {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.detail-grid dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Integrity notices. The danger variant is the loudest surface in the product,
+   deliberately: a withdrawn paper must not read like ordinary metadata. */
+.integrity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border-left: 4px solid;
+}
+
+.integrity--danger {
+  background: var(--danger-surface);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.integrity--warning {
+  background: var(--warning-surface);
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+.integrity__label {
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: var(--text-xs);
+}
+
+.integrity__description {
+  color: var(--text);
+  max-width: 60ch;
+}
+
+@media (max-width: 40rem) {
+  .paper-detail__title {
+    font-size: var(--text-xl);
+  }
+
+  .detail-grid__row {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+  }
+}

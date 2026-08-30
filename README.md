@@ -6,11 +6,26 @@ The product answers two questions, in order: *what new research came out that I
 would probably care about?* and then *help me understand it.* Discovery is the
 product; AI explanation is an enhancement on top of it.
 
-**Status: Phase 2 (embedding and retrieval foundation).** There is still no
-user interface, no personalisation and no LLM anywhere in the codebase. Phase 1
-built the literature-data foundation; Phase 2 built the layer that makes it
-searchable — SPECTER2 embeddings in pgvector, semantic, lexical and hybrid
-retrieval, and a reproducible way to measure whether any of it is any good.
+**Status: Phase 2, public web.** The retrieval foundation passed its quality
+gate, the public read API is live, and there is now a browsable interface. There
+is still no personalisation and no LLM anywhere in the codebase.
+
+Phase 1 built the literature-data foundation. Phase 2 built the layer that makes
+it searchable — SPECTER2 embeddings in pgvector, semantic, lexical and hybrid
+retrieval, and a reproducible way to measure whether any of it is any good —
+then put a public API and a React frontend on top of it.
+
+```bash
+# API
+uvicorn academious.api.main:app --port 8000        # docs at /docs
+
+# Frontend
+cd web && npm install && npm run dev               # http://localhost:5173
+```
+
+See [docs/api.md](docs/api.md) for the HTTP contract,
+[docs/frontend.md](docs/frontend.md) for the web application, and
+[docs/security.md](docs/security.md) for the threat model.
 
 ---
 

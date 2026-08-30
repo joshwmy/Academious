@@ -1,0 +1,155 @@
+/*
+ * Design tokens.
+ *
+ * Every value a component might otherwise hard-code lives here, so a later
+ * visual pass can restyle the product by editing this file rather than by
+ * hunting one-off pixel values through page components. Components reference
+ * tokens; they do not invent scales.
+ *
+ * The palette is deliberately restrained. This is a research-discovery tool:
+ * legibility of long titles, author lists and abstracts matters far more than
+ * decoration, and a page of academic metadata reads badly under high chroma.
+ */
+
+:root {
+  /* --- Typography ------------------------------------------------------ */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+    sans-serif;
+  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+
+  --leading-tight: 1.25;
+  --leading-snug: 1.4;
+  --leading-normal: 1.6;
+  /* Abstracts are long-form prose and get a looser measure. */
+  --leading-relaxed: 1.7;
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  /* --- Spacing: a 4px scale ------------------------------------------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  /* --- Radii and borders ----------------------------------------------- */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+  --border-width: 1px;
+
+  /* --- Colour ----------------------------------------------------------
+   * Neutrals carry the interface; one accent carries interaction. Contrast
+   * ratios against --surface are kept at or above WCAG AA for body text.
+   */
+  --canvas: #f7f7f6;
+  --surface: #ffffff;
+  --surface-subtle: #f2f2f0;
+  --surface-inset: #ebebe8;
+
+  --border: #dcdcd7;
+  --border-strong: #c3c3bc;
+
+  --text: #1a1a19;
+  --text-secondary: #55554f;
+  --text-muted: #6e6e67;
+
+  --accent: #1f5f8b;
+  --accent-hover: #17475f;
+  --accent-soft: #e8f0f6;
+
+  --focus-ring: #1f5f8b;
+
+  /* Status. Retraction is the one place this product raises its voice: a
+   * withdrawn paper must not read as ordinary metadata. */
+  --danger: #8c2f22;
+  --danger-surface: #fbecea;
+  --danger-border: #e3b7b0;
+  --warning: #7a5314;
+  --warning-surface: #fbf3e2;
+  --warning-border: #e6d3ab;
+  --success: #1f5f3f;
+  --success-surface: #e8f2ec;
+  --success-border: #b7d5c4;
+
+  /* --- Elevation -------------------------------------------------------- */
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 6%);
+  --shadow-md: 0 2px 8px rgb(0 0 0 / 8%);
+
+  /* --- Layout ----------------------------------------------------------- */
+  --content-width: 56rem;
+  --content-width-narrow: 44rem;
+  --header-height: 3.5rem;
+
+  /* --- Motion ----------------------------------------------------------- */
+  --transition-fast: 100ms ease;
+  --transition-base: 160ms ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #17181a;
+    --surface: #1e2023;
+    --surface-subtle: #24262a;
+    --surface-inset: #2b2e33;
+
+    --border: #34373d;
+    --border-strong: #464a52;
+
+    --text: #eceded;
+    --text-secondary: #b6b9bd;
+    --text-muted: #91959b;
+
+    --accent: #7fb4d8;
+    --accent-hover: #a3ccea;
+    --accent-soft: #1d2a34;
+
+    --focus-ring: #7fb4d8;
+
+    --danger: #f0a79b;
+    --danger-surface: #341f1c;
+    --danger-border: #5c332c;
+    --warning: #e5c489;
+    --warning-surface: #302819;
+    --warning-border: #4d4028;
+    --success: #9ed3b5;
+    --success-surface: #1b2a22;
+    --success-border: #2e4738;
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+    --shadow-md: 0 2px 8px rgb(0 0 0 / 45%);
+  }
+}
+
+/* Users who ask for less motion get none. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0ms;
+    --transition-base: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

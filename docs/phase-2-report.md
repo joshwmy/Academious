@@ -419,11 +419,39 @@ benchmark were whatever upstream `main` held that day), and query normalisation
 deleted control characters instead of replacing them, welding neighbouring words
 together. Both are covered by tests.
 
+#### Milestone: public frontend — **complete**
+
+React + TypeScript + Vite in `web/`, consuming the public API and nothing else.
+Three routes — the feed, `/search?q=`, and `/papers/:id` — with the query, the
+page offset and the paper all carried in the URL, so every view is linkable and
+the back button works without state-restoration logic. Contract and rationale in
+[frontend.md](frontend.md).
+
+Two properties were designed against the backend rather than around it. Search
+is submit-driven, never keystroke-driven, because search-as-you-type would spend
+a client's entire 20-per-minute budget on prefixes nobody wanted results for;
+and nothing retries a 429 or a 503 automatically, because retrying backpressure
+is how a protective control becomes a retry storm. Both are asserted by test.
+
+Result ordering is the backend's, unchanged — a test drives the whole journey
+against responses captured from the running API and asserts the rendered order
+matches the ranking exactly. No retrieval parameter is reachable from the
+client; there is no method, model or fusion control to expose.
+
+Three defects were found and fixed while building it, each by a test written
+first: a pagination button whose accessible name computed as "Previouspage",
+`role="alert"` on an element whose implicit role forbids it, and query
+normalisation that deleted control characters instead of replacing them — which
+welded neighbouring words together and searched "graphnetworks".
+
+**No backend change was needed.** The API contract as shipped was sufficient for
+the whole interface.
+
 #### Remaining in this phase
 
-The React/TS/Vite frontend, feed by field (which needs an OpenAlex-style
-taxonomy the corpus does not yet carry), paper detail pages, responsive layout,
-and the PubMed / Europe PMC / Unpaywall connectors. **The frontend has not been
-started**, and the phase is not complete.
+Feed-by-field (which needs an OpenAlex-style taxonomy the corpus does not yet
+carry), a filter UI over the filters the API already supports, prerendering for
+SEO, and the PubMed / Europe PMC / Unpaywall connectors. The phase is not
+complete.
 
 ---
