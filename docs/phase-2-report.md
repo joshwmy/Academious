@@ -230,25 +230,35 @@ and exposes the split on `/metrics/embeddings` precisely so this stays visible.
 The comparison deliberately stops short of saying which ranking is better. That
 requires judgments.
 
-### Hybrid fusion may not earn its place
+### Hybrid fusion: worse at first place, better at coverage
 
-128 judgments over four queries show semantic retrieval ahead of lexical on
-every aggregate metric — and **hybrid behind both on MRR**, across every fusion
-variant tested (RRF at k=10/20/60, normalised weighted, and semantic
-upweighting). The cause is identified: RRF rewards consensus over conviction, so
-two mid-table placements outrank one first place, and on `bio-01` that demoted a
-relevant rank-1 result in favour of a marginal paper.
+208 judgments over six queries — three biomedical, three computing, all judged
+deeply enough that no unjudged paper sits in any method's top 10 — show semantic
+retrieval ahead of lexical on aggregate P@5, MRR and NDCG@10. **Hybrid is still
+behind both components on MRR** (0.639 against lexical 0.667 and semantic
+0.806) and wins MRR on no individual query.
 
-Adding the two computing control queries sharpened rather than reversed this.
-Hybrid still wins MRR on no query. It does win `bio-02` on NDCG@10, and that is
-the query where the two components' top-20s overlap most (5 of 20 against 2 of
-20 on `bio-01`) — consistent with fusion helping when the components agree and
-averaging a right answer with a wrong one when they do not.
+But the four-query verdict that fusion does not earn its place is **not**
+supported at six. Hybrid wins NDCG@10 on 3 of 6 queries, has the best aggregate
+recall@10 (0.382) and ties semantic on P@10. On `cs-06` — the query written to
+be hardest for lexical search — the two components' top-20s overlap on 2 papers
+and are finding *different* relevant literature; fusion collects both and
+reaches P@10 0.600 against semantic's 0.300. That contradicts the earlier
+reading that fusion needs consensus to help.
 
-Nothing was retuned in response. Four queries is not a basis for choosing a
-fusion constant, and doing so would be fitting noise. But the default method is
-now an open question rather than an assumption, and the remaining judgments
-should be aimed at settling it.
+Both RRF mechanisms appear in every query: it recovers relevant papers one
+component buried, and it demotes papers the other component alone got right.
+Six queries do not identify which dominates — hybrid wins at top-20 overlaps of
+12, 5 and 2, and loses at 7, 2 and 1.
+
+The lead is also domain-shaped. Semantic beats lexical by 0.230 NDCG@10 across
+the biomedical queries; across the computing queries all three methods sit
+within 0.043 and lexical has the best MRR.
+
+Nothing was retuned in response. Six queries is not a basis for choosing a
+fusion constant or a default method, and doing so would be fitting noise. The
+default method remains an open question, and the remaining six queries should be
+aimed at settling it.
 
 ### Batch size does not monotonically help
 
@@ -311,15 +321,13 @@ with real SPECTER2 inference. All 33 checks pass.
 
 ## 8. Limitations, stated plainly
 
-* **Only 128 of 382 pooled papers are judged, covering 4 of 12 queries**, and
-  one of those four is not yet usable. Results are in
-  [evaluation.md](evaluation.md#8-measured-results): over the three queries whose
-  top ranks are fully judged, semantic beats lexical on every aggregate metric
-  (NDCG@10 0.525 vs 0.480) but loses `cs-05` outright, and hybrid wins MRR on no
-  query. `cs-02` has four unlabelled papers sitting in every method's top ranks
-  and its metrics swing from MRR 0.083 to 1.000 depending on how they are graded,
-  so it is excluded from every conclusion. Finishing the pool is the single
-  biggest open item and it needs human time rather than more code.
+* **Only 208 of 382 pooled papers are judged, covering 6 of 12 queries.**
+  Results are in [evaluation.md](evaluation.md#8-measured-results). All six are
+  fully judged at scoring depth, so the numbers are honest, but they are six
+  queries and one judge. Semantic leads aggregate P@5, MRR and NDCG@10; hybrid
+  leads recall and wins 3 of 6 queries on NDCG@10; lexical wins `cs-05` and has
+  the best MRR across the computing half. Finishing the pool is still the
+  single biggest open item and it needs human time rather than more code.
 * **Twelve queries is a small benchmark.** Once judged, differences of a few
   points will be noise.
 * **One judge is one opinion.** No inter-annotator agreement is measured.

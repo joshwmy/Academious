@@ -242,128 +242,138 @@ judged.
 
 ## 8. Measured results
 
-**128 judgments, covering 4 of 12 queries.** Two biomedical (`bio-01` 43/44,
-`bio-02` 32/37) and two computing (`cs-02` 25/29, `cs-05` 28/28). The computing
-pair was chosen deliberately as a control: both are queries where lexical search
-should do well, so they are the strongest available test of the semantic result.
+**208 judgments, covering 6 of 12 queries**, three per domain. Every one of the
+six is judged deeply enough to score: the coverage audit reports **zero**
+unjudged papers inside any method's top 10, so the harness aggregate and the
+"clean" aggregate are the same number.
 
-### Judgment coverage comes first
+| query | judged / pooled | g0 | g1 | g2 | g3 | relevant (>= 2) | unjudged in any top 10 |
+|---|---|---|---|---|---|---|---|
+| `bio-01` | 43 / 44 | 13 | 6 | 11 | 13 | 24 | none |
+| `bio-02` | 37 / 37 | 11 | 9 | 7 | 10 | 17 | none |
+| `bio-05` | 43 / 43 | 26 | 10 | 5 | 2 | 7 | none |
+| `cs-02` | 29 / 29 | 15 | 4 | 9 | 1 | 10 | none |
+| `cs-05` | 28 / 28 | 19 | 4 | 3 | 2 | 5 | none |
+| `cs-06` | 28 / 28 | 11 | 5 | 5 | 7 | 12 | none |
 
-| query | judged / pooled | relevant (grade >= 2) | unjudged in the top 10 |
-|---|---|---|---|
-| `bio-01` | 43 / 44 | 24 | none |
-| `bio-02` | 32 / 37 | 17 | lexical 1 |
-| `cs-02` | 25 / 29 | 8 | **3 in every method** |
-| `cs-05` | 28 / 28 | 5 | none |
+`bio-01`'s single unjudged pooled paper sits outside every top 10 and cannot
+move a metric reported here.
 
-The harness now prints this table and warns when a scored query has unjudged
-papers inside the ranks the metrics score, because such a query reports a number
-that is confidently wrong. `cs-02` is the case in point: its four unlabelled
-pooled papers are `HC-RAG`, `RAGSieve`, `IterCOMP` and `HybridRAG-BN`, and they
-sit at lexical ranks 1, 2 and 6. Scored as they stand, they count as *not
-relevant*, and lexical records P@10 = 0.000 on the one query in the set that was
-designed for it to win.
-
-The sensitivity of `cs-02` to those four rows is total:
-
-| assumed grade for the 4 unjudged | lexical MRR | semantic MRR | hybrid MRR |
-|---|---|---|---|
-| 0 (what is reported today) | 0.083 | 0.333 | 0.100 |
-| 2 or 3 | **1.000** | **1.000** | **1.000** |
-
-`cs-02` is therefore **not a usable measurement yet**, and no conclusion below
-rests on it.
-
-### Aggregate, all four judged queries
-
-Reported for completeness; `cs-02` drags every method down and lexical hardest.
+### Aggregate over all six
 
 | method | P@5 | P@10 | R@10 | MRR | NDCG@10 |
 |---|---|---|---|---|---|
-| lexical | 0.350 | 0.325 | 0.276 | 0.604 | 0.365 |
-| **semantic** | **0.450** | **0.425** | **0.342** | **0.708** | **0.422** |
-| hybrid | 0.300 | 0.375 | 0.322 | 0.483 | 0.407 |
+| lexical | 0.300 | 0.333 | 0.304 | 0.667 | 0.366 |
+| **semantic** | **0.533** | **0.417** | 0.378 | **0.806** | **0.490** |
+| hybrid | 0.400 | **0.417** | **0.382** | 0.639 | 0.472 |
 
-### Aggregate over the three queries whose top ranks are judged
+Semantic takes P@5, MRR and NDCG@10. Hybrid takes recall and ties P@10. Lexical
+leads nothing on aggregate.
 
-| method | P@5 | P@10 | R@10 | MRR | NDCG@10 |
-|---|---|---|---|---|---|
-| lexical | 0.467 | 0.433 | 0.367 | 0.778 | 0.480 |
-| **semantic** | **0.533** | **0.533** | **0.415** | **0.833** | **0.525** |
-| hybrid | 0.400 | 0.467 | 0.387 | 0.611 | 0.512 |
+### Per query
 
-Per query, with the winner by NDCG@10 in bold:
+| query | lexical | semantic | hybrid | winner | first relevant (lex/sem/hyb) | top-20 overlap |
+|---|---|---|---|---|---|---|
+| `bio-01` | 0.327 | **0.531** | 0.399 | semantic | 1 / 1 / 2 | 2 |
+| `bio-02` | 0.370 | 0.457 | **0.496** | hybrid | 3 / 2 / 3 | 5 |
+| `bio-05` | 0.236 | **0.636** | 0.545 | semantic | 6 / 1 / 1 | 1 |
+| `cs-02` | 0.188 | 0.180 | **0.192** | hybrid (a tie in practice) | 1 / 3 / 2 | 12 |
+| `cs-05` | **0.754** | 0.587 | 0.642 | lexical | 1 / 1 / 1 | 7 |
+| `cs-06` | 0.320 | 0.549 | **0.557** | hybrid (narrowly) | 2 / 1 / 2 | 2 |
 
-| query | lexical | semantic | hybrid |
-|---|---|---|---|
-| `bio-01` | 0.327 | **0.531** | 0.399 |
-| `bio-02` | 0.360 | 0.457 | **0.496** |
-| `cs-05` | **0.754** | 0.587 | 0.642 |
-| `cs-02` (invalid) | 0.019 | 0.115 | 0.090 |
+NDCG@10 wins: semantic 2, hybrid 3, lexical 1.
 
-Three things stand out.
+### The lead is domain-shaped
 
-**Semantic still leads on aggregate, but the win is domain-shaped.** Semantic
-takes every aggregate metric, as it did over two queries. It does not win every
-query: on `cs-05` (*graph neural networks*, an exact architecture name) lexical
-wins decisively, NDCG@10 0.754 against 0.587, which is exactly what that query
-was put in the set to test. The claim the evidence supports is *semantic wins
-where the query and the literature use different words*; the claim it does not
-support is *semantic wins everywhere*.
+| | method | P@5 | P@10 | R@10 | MRR | NDCG@10 |
+|---|---|---|---|---|---|---|
+| biomedical | lexical | 0.267 | 0.400 | 0.263 | 0.500 | 0.311 |
+| (bio-01/02/05) | **semantic** | **0.600** | **0.567** | **0.405** | **0.833** | **0.541** |
+| | hybrid | 0.467 | 0.467 | 0.330 | 0.611 | 0.480 |
+| computing | lexical | 0.333 | 0.267 | 0.344 | **0.833** | 0.421 |
+| (cs-02/05/06) | semantic | **0.467** | 0.267 | 0.350 | 0.778 | 0.439 |
+| | **hybrid** | 0.333 | **0.367** | **0.433** | 0.667 | **0.464** |
 
-**Both methods find the same first paper more often than the aggregate
-suggests.** Rank of the first relevant hit: `bio-01` lexical 1 / semantic 1,
-`bio-02` 3 / 2, `cs-05` 1 / 1. Semantic's MRR advantage over these three queries
-comes from `bio-02` alone. The margin between them is thinner than the two-query
-result implied.
+Semantic's aggregate win is carried almost entirely by the biomedical half,
+where it leads lexical by 0.230 NDCG@10. Across the three computing queries the
+three methods sit within 0.043 of each other and lexical has the best MRR. Any
+statement of the form "semantic is better" has to be qualified by domain until
+the other six queries are judged.
 
-**Hybrid is still the weakest at MRR and the mechanism is unchanged.** It never
-wins MRR on any query and loses it outright on `bio-01` (0.500 against 1.000 for
-both components). It does win one query on NDCG@10 (`bio-02`, 0.496), which is
-the one query where the components agree most.
+### What `cs-02` says now that it is complete
 
-### Why fusion behaves this way
+The four papers that invalidated it are graded, and the result is not the one
+the titles suggested:
 
-The components barely overlap, and RRF rewards consensus over conviction:
-
-| query | overlap of the two top-20s | hybrid vs best component (NDCG@10) |
-|---|---|---|
-| `bio-01` | 2 of 20 | 0.399 vs 0.531 |
-| `bio-02` | 5 of 20 | **0.496** vs 0.457 |
-| `cs-05` | 7 of 20 | 0.642 vs 0.754 |
-
-`bio-01` shows the failure directly. Hybrid's rank 1 is a *marginal* paper that
-lexical ranked 16th and semantic 3rd: `1/76 + 1/63 = 0.0290`. Semantic's own
-rank-1 paper, which lexical never returned, scores `1/61 = 0.0164` and loses.
-Two mediocre placements outrank one confident one. Meanwhile the genuinely good
-papers fusion *does* surface arrive late — `MatchMiner-AI` (grade 3) at rank 6
-from lexical 79 / semantic 5, `OTRec` (grade 3) at rank 7 from lexical 97 /
-semantic 4 — so fusion is recovering them from deep in the semantic pool only to
-place them behind a consensus pick.
-
-Where the components agree, fusion helps: on `bio-02` (5 of 20 overlap) hybrid
-beats both. Where they disagree, it averages a right answer with a wrong one.
-
-The two-query fusion sweep recorded below is retained as a diagnostic. It was
-run over `bio-01` and `bio-02` only and has **not** been re-run or re-fitted:
-
-| variant (2 queries: bio-01, bio-02) | P@5 | P@10 | MRR | NDCG@10 |
+| paper | grade | lexical | semantic | hybrid |
 |---|---|---|---|---|
-| lexical only | 0.400 | 0.500 | 0.667 | 0.344 |
-| semantic only | 0.600 | 0.650 | **0.750** | 0.494 |
-| RRF k=10 | 0.600 | 0.650 | 0.417 | 0.468 |
-| RRF k=20 | 0.700 | 0.600 | 0.417 | 0.471 |
-| RRF k=60 (default) | 0.400 | 0.550 | 0.417 | 0.448 |
-| normalised weighted | 0.700 | 0.500 | 0.417 | 0.389 |
-| RRF k=60, semantic x2 | 0.600 | 0.600 | 0.500 | 0.498 |
-| RRF k=60, semantic x3 | 0.700 | 0.650 | 0.500 | 0.491 |
+| RAGSieve | **2** | 1 | 4 | 2 |
+| HybridRAG-BN | **2** | 17 | not in top 20 | 15 |
+| HC-RAG | **0** | 2 | 1 | 1 |
+| IterCOMP | **0** | 6 | 2 | 3 |
 
-**Nothing has been retuned on the basis of any of this.** No default was
-changed, no `k` was moved, no weight was introduced. Four queries — one of them
-not yet valid — is a set to measure against, not to fit to. The open question is
-unchanged and now sharper: *does fusion earn its place at all?* The queries that
-will answer it are the ones designed to be hard for lexical search, because that
-is where fusion either rescues a weak component or is dragged down by it.
+Both retrievers surfaced RAG-titled papers immediately; only lexical put a
+*relevant* one first. Semantic's top two are both graded 0 — `HC-RAG` is
+retrieval-augmented generation applied to financial filings and `IterCOMP` is
+prompt compression for multi-hop QA, so both match the phrase without being
+about the method. Lexical MRR is 1.000 against semantic's 0.333. All three
+methods score badly in absolute terms (NDCG@10 0.180-0.192 with 10 relevant
+papers in the pool), so `cs-02` separates the methods on MRR and on nothing else.
+
+### `cs-06` is where fusion looks best
+
+*AI safety evaluation*, the query written to be hardest for lexical search.
+Lexical returns only 10 papers in total, but 4 of those 10 are relevant.
+Semantic returns 20 with 3 relevant in its top 10, including its top two. The
+two lists overlap on 2 of 20 papers - they are finding **different** relevant
+literature - and fusion collects both: hybrid P@10 0.600 against semantic 0.300
+and lexical 0.400, R@10 0.500 against 0.250 and 0.333.
+
+This contradicts the overlap hypothesis recorded after four queries. Fusion did
+not need consensus here; it needed both components to be independently
+productive, and it lost nothing by their disagreeing.
+
+### `bio-05` is where semantic looks best
+
+*public health diabetes risk prediction*, three concepts that rarely co-occur in
+one title. Lexical's top five contains no relevant paper and includes
+*"Financial Dynamics and Interconnected Risk of Liquid Restaking"* - "risk" and
+"prediction" match everywhere and discriminate nothing. Semantic leads with
+*"From Prediction to Intervention: Personalized Meal-Level Glucose..."* (grade
+3). NDCG@10 0.636 against 0.236, the widest margin in the set, and the two
+top-20s overlap on a single paper.
+
+### Fusion: both mechanisms are present in the same runs
+
+RRF recovers relevant papers that one component buried:
+
+| query | paper | grade | lex | sem | hybrid |
+|---|---|---|---|---|---|
+| `cs-06` | AI Guardrail Survival under Single-Cycle Agentic Self-Summarization | 3 | 8 | 12 | **2** |
+| `bio-02` | Automating scientific annotations for open transcriptomic profiles | 3 | 18 | 6 | **5** |
+| `bio-01` | Recent Advances in Deep Learning-Based Drug-Target Binding Affinity | 3 | 96 | 21 | **10** |
+
+And RRF demotes a paper one component alone got right:
+
+| query | paper | grade | lex | sem | hybrid |
+|---|---|---|---|---|---|
+| `bio-01` | PINT: Pathway-pathway interactions | 2 | not retrieved | **1** | 14 |
+| `bio-05` | From Prediction to Intervention: Personalized Meal-Level Glucose | 3 | 41 | **1** | 5 |
+| `cs-06` | Rules or Character? Scaling Laws for AI Safety Design | 3 | not retrieved | **1** | 8 |
+
+Both effects appear in every query. Which one dominates decides whether hybrid
+wins, and six queries do not identify a rule that predicts it: hybrid wins at
+overlap 12 (`cs-02`), at 5 (`bio-02`) and at 2 (`cs-06`), and loses at 2
+(`bio-01`), 1 (`bio-05`) and 7 (`cs-05`). Overlap does not explain the outcome.
+
+What is consistent is the shape of the damage: **hybrid wins MRR on no query**,
+ties the best component on two, and its aggregate MRR (0.639) is below both
+lexical (0.667) and semantic (0.806). Fusion costs first-place accuracy and buys
+recall.
+
+**Nothing has been retuned on the basis of any of this.** No default, `k`,
+weight, fusion algorithm, model setting, query or grade was changed. Six queries
+is a set to measure against, not to fit to.
 
 ---
 

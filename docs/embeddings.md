@@ -341,3 +341,47 @@ When preprocessing or the model changes:
 4. Delete the old rows when nothing reads them.
 
 Read and write paths never mix keys, so steps 2 and 3 can be separated by days.
+
+---
+
+## 7. Known defect: a stale embedding can be stranded
+
+`_pending_select` decides which papers need work with
+`Paper.updated_at > PaperEmbedding.updated_at`. The two sides come from
+different clocks with different semantics:
+
+* `Paper.updated_at` is `func.now()` — the PostgreSQL clock, evaluated at
+  **transaction start** and constant for the whole transaction.
+* `PaperEmbedding.updated_at` is `utcnow()` — the application clock, evaluated
+  at **statement time**.
+
+So a paper edited inside a transaction that opened *before* the embed worker
+wrote that paper's vector is stamped with the earlier time even though it
+committed later, and the strict `>` never fires. Reproduced against a live
+database:
+
+```
+paper.abstract       : COMPLETELY DIFFERENT TEXT   (embedded from "original text")
+paper.updated_at     : 16:07:00.887612+00   <- transaction A start
+embedding.updated_at : 16:07:00.945231+00   <- written by the worker mid-flight
+queued for re-embedding? False
+```
+
+The vector is now permanently wrong for that paper: the row will not queue again
+until some *later* update bumps `updated_at` past the embedding's timestamp. The
+input-hash check never runs, because the prefilter is what decides whether it
+runs at all. Application/database clock skew widens the same window.
+
+This did not affect any published benchmark number — coverage under
+`specter2-proximity@v1` is 2455 / 2455 and every scored ranking was verified
+against the current corpus — but it is a real correctness hole in incremental
+re-embedding.
+
+**The fix is not a comparison operator.** Timestamps cannot express this
+correctly: the embed worker reads a snapshot and a concurrent writer can commit
+either side of it. The embedding row needs to record *which version of the paper
+it was built from* — store the `Paper.updated_at` observed at embed time in a
+`source_updated_at` column and queue on `Paper.updated_at IS DISTINCT FROM
+source_updated_at`. That is exact and clock-free, and it needs a migration plus
+a backfill, so it is recorded here rather than applied silently during
+benchmark evidence gathering.
