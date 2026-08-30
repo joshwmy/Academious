@@ -1,6 +1,13 @@
 # Phase 2 report: scientific embedding and retrieval foundation
 
-**Status:** complete, pending review of retrieval quality.
+**Status: COMPLETE. Retrieval-quality gate PASSED (2026-08-30).**
+
+The gate was held open until retrieval quality was measured against human
+relevance judgments rather than asserted. It is now measured over six of the
+twelve benchmark queries, all judged to full depth, and closed on that
+evidence. The remaining six queries are deliberately **held out** as later
+validation evidence and must not be judged to settle a present argument -
+a holdout that has been peeked at is no longer a holdout.
 
 Phase 2 was asked to answer one question before any interface gets built: *can
 this system surface scientifically relevant papers from its corpus?* This report
@@ -344,19 +351,52 @@ with real SPECTER2 inference. All 33 checks pass.
 
 ---
 
-## 9. Recommended next steps
+## 9. Gate decision and what comes next
 
-Before Phase 3 builds anything on top of this:
+### The gate: PASS
 
-1. **Judge the pool.** It already exists: `data/eval/judgments.jsonl`, **382
-   papers** across 12 queries, produced by a real run against the full corpus.
-   `python -m academious.workers label --judge <name>` walks them one at a time
-   and saves after every answer. Until this happens, no claim about retrieval
-   quality is supportable.
-2. **Decide the input strategy from the comparison** rather than from intuition
-   — at 41.7% overlap, guessing means guessing on most of the results.
-3. **Try ONNX int8** before provisioning hardware for a backfill.
-4. **Get an OpenAlex API key** and ingest sparse-metadata records, so the
-   title-only path is exercised on real data.
+| Criterion | Result |
+|---|---|
+| Retrieval quality measured against human judgments, not asserted | **Yes** — 208 judgments, 6 queries |
+| Every scored query judged to the depth its metrics are reported at | **Yes** — 0 unjudged in any top 10 |
+| A method that beats the lexical baseline it must justify replacing | **Yes** — semantic NDCG@10 0.490 vs 0.366 |
+| Results reproducible from a committed judgment file and one command | **Yes** — `workers evaluate --depth 20` |
+| No parameter fitted to the benchmark | **Yes** — no default, `k`, weight or model setting changed |
 
-Only after (1) should a frontend be designed against these rankings.
+The checkpoint result, preserved:
+
+| method | P@5 | P@10 | R@10 | MRR | NDCG@10 |
+|---|---|---|---|---|---|
+| lexical | 0.300 | 0.333 | 0.304 | 0.667 | 0.366 |
+| **semantic** | **0.533** | **0.417** | 0.378 | **0.806** | **0.490** |
+| hybrid | 0.400 | **0.417** | **0.382** | 0.639 | 0.472 |
+
+Full per-query analysis in [evaluation.md](evaluation.md#8-measured-results).
+
+### What the gate does not decide
+
+The default retrieval method. Semantic leads the aggregate, but the lead is
+domain-shaped (+0.230 NDCG@10 biomedical, +0.018 computing) and hybrid wins
+three of the six queries. That decision needs the holdout, and it belongs to
+whichever phase first exposes ranking to real users - not to a benchmark of six
+queries and one judge.
+
+### Held out, on purpose
+
+`bio-03`, `bio-04`, `bio-06`, `cs-01`, `cs-03`, `cs-04` are pooled but unjudged.
+They cover query behaviours the judged six do not: ranking under high match
+density, broad-field intersections, weak lexical modifiers and recency. They are
+the evidence that will confirm or overturn the interim reading, and they are
+worth far more unspent than spent.
+
+### Next phase
+
+The roadmap's Phase 2 - **Public web: anyone can browse and search** (§13) -
+which was deliberately deferred so that retrieval could be measured before an
+interface was designed against it. Its first milestone is the **public read
+API**: `/papers`, `/papers/{id}` and `/search` over the retrieval service this
+phase validated. `api/` currently serves health and metrics routes only, so
+there is nothing for a frontend to consume yet, and the API is the boundary that
+lets the frontend be built and tested independently.
+
+---

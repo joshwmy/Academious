@@ -20,7 +20,7 @@ from academious.embeddings import jobs as embed_jobs
 from academious.embeddings import service
 from academious.embeddings.hashing import HashingBackend
 from academious.embeddings.registry import HASHING_AUTO, EmbeddingProfile
-from academious.embeddings.text import InputMode, InputStrategy
+from academious.embeddings.text import InputMode, InputStrategy, build_embedding_input
 from academious.jobs import queue
 from tests.factories import make_paper
 
@@ -394,3 +394,162 @@ def test_embedding_metrics_report_queue_state(session):
 
     payload = _client().get("/metrics/embeddings").json()
     assert payload["jobs"].get("pending") == 1
+
+
+# ----------------------------------------------------------- source versioning
+
+
+def test_an_edit_committed_after_the_worker_wrote_its_vector_still_queues(engine):
+    """The stranded-stale-vector case, reproduced with real concurrent transactions.
+
+    A paper edit opens its transaction, changes the embedded text, and commits
+    *after* the embed worker has written a vector from the text as it was. The
+    edit's `updated_at` is the PostgreSQL clock at its transaction start, so it
+    is earlier than the worker's - and any staleness rule that compares the two
+    independently generated timestamps concludes, wrongly, that the vector is
+    current. The vector is then stranded: nothing will queue that paper again
+    until some unrelated later write happens to bump the row.
+    """
+    from sqlalchemy import text as sql_text
+    from sqlalchemy.orm import Session
+
+    from academious.db.models.paper import Paper
+
+    with Session(engine) as setup:
+        setup.execute(sql_text("TRUNCATE paper, paper_embedding RESTART IDENTITY CASCADE"))
+        paper = make_paper(setup, "Staleness regression", abstract=ABSTRACT)
+        setup.commit()
+        paper_id = paper.id
+
+    editor = Session(engine)
+    editor.execute(sql_text("SELECT 1"))  # the editing transaction begins here
+    editing = editor.get(Paper, paper_id)
+    editing.abstract = "A completely different abstract, embedding a different meaning."
+    editor.flush()
+
+    # The worker runs and commits while that edit is still uncommitted, so it
+    # embeds the text as it was and cannot know an edit is in flight.
+    with Session(engine) as worker:
+        service.embed_papers(worker, [paper_id], profile=PROFILE, backend=HashingBackend())
+        worker.commit()
+
+    editor.commit()
+    editor.close()
+
+    with Session(engine) as check:
+        pending = service.select_pending_paper_ids(check, PROFILE.key, limit=10)
+        assert paper_id in pending, (
+            "a paper whose embedded text changed must queue for re-embedding, "
+            "however the timestamps happen to be ordered"
+        )
+
+        # And the re-embed actually happens and lands the new text.
+        backend = CountingBackend()
+        stats = service.embed_papers(check, [paper_id], profile=PROFILE, backend=backend)
+        check.commit()
+        assert backend.documents_encoded == 1
+        assert stats.embedded == 1
+        assert service.select_pending_paper_ids(check, PROFILE.key, limit=10) == []
+
+
+def test_a_fresh_embedding_records_the_paper_version_it_was_built_from(session):
+    paper = make_paper(session, "Version recorded", abstract=ABSTRACT)
+    embed_all(session, HashingBackend())
+    session.commit()
+
+    row = session.get(PaperEmbedding, (paper.id, PROFILE.key))
+    session.refresh(paper)
+    assert row.source_updated_at == paper.updated_at
+    built = build_embedding_input(paper.title, paper.abstract, mode=PROFILE.input_mode)
+    assert row.input_text_hash == built.text_hash
+
+
+def test_dismissing_an_unchanged_paper_records_the_version_it_was_checked_against(session):
+    paper = make_paper(session, "Citation refresh", abstract=ABSTRACT)
+    embed_all(session, HashingBackend())
+    session.commit()
+
+    paper.citation_count = 42  # touches the row, not the embedded text
+    session.commit()
+    assert service.count_pending(session, PROFILE.key) == 1
+
+    backend = CountingBackend()
+    stats = service.embed_papers(session, [paper.id], profile=PROFILE, backend=backend)
+    session.commit()
+
+    assert backend.documents_encoded == 0
+    assert stats.skipped_unchanged == 1
+    session.refresh(paper)
+    row = session.get(PaperEmbedding, (paper.id, PROFILE.key))
+    assert row.source_updated_at == paper.updated_at
+    assert service.count_pending(session, PROFILE.key) == 0
+
+
+def test_a_legacy_row_without_a_recorded_version_is_re_checked_then_settles(session):
+    """Rows written before this column existed carry NULL and must be verified.
+
+    They queue once, fail no hash check (their text is unchanged), and are
+    dismissed without inference - which is exactly the intended backfill: no
+    model runs, and any vector the old timestamp rule had stranded is repaired.
+    """
+    paper = make_paper(session, "Legacy row", abstract=ABSTRACT)
+    embed_all(session, HashingBackend())
+    session.commit()
+
+    row = session.get(PaperEmbedding, (paper.id, PROFILE.key))
+    row.source_updated_at = None  # as the migration leaves pre-existing rows
+    session.commit()
+
+    assert service.count_pending(session, PROFILE.key) == 1
+
+    backend = CountingBackend()
+    stats = service.embed_papers(session, [paper.id], profile=PROFILE, backend=backend)
+    session.commit()
+
+    assert backend.documents_encoded == 0, "an unchanged legacy row must not re-run inference"
+    assert stats.skipped_unchanged == 1
+    assert service.count_pending(session, PROFILE.key) == 0
+
+
+def test_a_legacy_row_whose_text_has_since_changed_is_re_embedded(session):
+    paper = make_paper(session, "Legacy stale row", abstract=ABSTRACT)
+    embed_all(session, HashingBackend())
+    session.commit()
+
+    row = session.get(PaperEmbedding, (paper.id, PROFILE.key))
+    row.source_updated_at = None
+    row.input_text_hash = "0" * 64  # the vector was built from something else
+    session.commit()
+
+    backend = CountingBackend()
+    stats = service.embed_papers(session, [paper.id], profile=PROFILE, backend=backend)
+    session.commit()
+
+    assert backend.documents_encoded == 1
+    assert stats.embedded == 1
+    assert service.count_pending(session, PROFILE.key) == 0
+
+
+def test_source_versions_are_tracked_per_model_key(session):
+    paper = make_paper(session, "Two keys", abstract=ABSTRACT)
+    embed_all(session, HashingBackend())
+    embed_all(session, HashingBackend(), profile=TITLE_ONLY_PROFILE)
+    session.commit()
+
+    paper.abstract = "An entirely new abstract that changes the full-text input."
+    session.commit()
+
+    # The title-only profile does not read the abstract, so its text is unchanged.
+    assert service.count_pending(session, PROFILE.key) == 1
+    assert service.count_pending(session, TITLE_ONLY_PROFILE.key) == 1
+
+    full = CountingBackend()
+    service.embed_papers(session, [paper.id], profile=PROFILE, backend=full)
+    title_only = CountingBackend()
+    service.embed_papers(session, [paper.id], profile=TITLE_ONLY_PROFILE, backend=title_only)
+    session.commit()
+
+    assert full.documents_encoded == 1, "the full-text vector must be rebuilt"
+    assert title_only.documents_encoded == 0, "the title-only vector is still current"
+    assert service.count_pending(session, PROFILE.key) == 0
+    assert service.count_pending(session, TITLE_ONLY_PROFILE.key) == 0

@@ -116,6 +116,50 @@ def test_a_dedup_key_prevents_duplicate_pending_jobs(session):
     assert session.execute(select(func.count()).select_from(Job)).scalar_one() == 1
 
 
+def test_the_same_work_can_be_queued_again_once_the_previous_job_finished(session):
+    """A dedup key reserves work in flight, not for ever.
+
+    `enqueue` deliberately only suppresses a duplicate while the existing job is
+    pending or running - work that legitimately recurs (the same batch of papers
+    becoming stale again, a re-embed pass after a migration) must be queueable
+    once the previous attempt is done. The unique constraint on `dedup_key` did
+    not agree with that, so the permitted path raised IntegrityError instead of
+    queueing, and the worker died on it.
+    """
+    first = queue.enqueue(session, "harvest", dedup_key="harvest:openalex")
+    assert first is not None
+    session.flush()
+    queue.claim(session, limit=1)
+    queue.complete(session, first)
+    session.flush()
+    assert first.status == JobStatus.SUCCEEDED.value
+
+    second = queue.enqueue(session, "harvest", dedup_key="harvest:openalex")
+    session.flush()
+
+    assert second is not None, "finished work must be queueable again"
+    assert second.status == JobStatus.PENDING.value
+    assert session.execute(select(func.count()).select_from(Job)).scalar_one() == 1, (
+        "and it must not violate the unique constraint by inserting a second row"
+    )
+
+
+def test_work_that_exhausted_its_attempts_can_be_queued_again(session):
+    job = queue.enqueue(session, "harvest", dedup_key="harvest:arxiv", max_attempts=1)
+    session.flush()
+    queue.claim(session, limit=1)
+    queue.fail(session, job, "boom")
+    session.flush()
+    assert job.status == JobStatus.FAILED.value
+
+    again = queue.enqueue(session, "harvest", dedup_key="harvest:arxiv")
+    session.flush()
+    assert again is not None
+    assert again.status == JobStatus.PENDING.value
+    assert again.attempts == 0, "a re-queue is a fresh attempt, not a continuation"
+    assert again.last_error is None
+
+
 def test_a_failed_job_is_retried_with_backoff_then_gives_up(session):
     job = queue.enqueue(session, "harvest", max_attempts=2)
     session.flush()

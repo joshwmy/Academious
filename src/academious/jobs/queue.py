@@ -39,17 +39,39 @@ def enqueue(
     delay: timedelta | None = None,
     max_attempts: int = 5,
 ) -> Job | None:
-    """Add a job. With a dedup_key, an identical pending job is not duplicated."""
+    """Add a job. With a dedup_key, work already in flight is not duplicated.
+
+    A dedup key reserves work while it is pending or running; it does not retire
+    that work for ever. The same batch legitimately recurs - papers go stale
+    again, a migration re-checks the corpus - so once the previous attempt has
+    finished the key is reusable.
+
+    `dedup_key` is UNIQUE, so "reusable" has to mean reusing the row. Inserting a
+    second row with the same key raises IntegrityError, which is what this did
+    before: the status guard permitted the re-queue and the constraint then
+    killed the worker on it.
+    """
     now = utcnow()
     if dedup_key is not None:
-        existing = session.execute(
-            select(Job).where(Job.dedup_key == dedup_key)
-        ).scalars().first()
-        if existing is not None and existing.status in {
-            JobStatus.PENDING.value,
-            JobStatus.RUNNING.value,
-        }:
-            return None
+        existing = (
+            session.execute(select(Job).where(Job.dedup_key == dedup_key)).scalars().first()
+        )
+        if existing is not None:
+            if existing.status in {JobStatus.PENDING.value, JobStatus.RUNNING.value}:
+                return None
+            # Finished. Reset it to a fresh attempt rather than inserting a
+            # duplicate: a re-queue starts from zero attempts and no error, so
+            # backoff and give-up behaviour do not inherit the last run's state.
+            existing.payload = payload or {}
+            existing.priority = priority
+            existing.max_attempts = max_attempts
+            existing.status = JobStatus.PENDING.value
+            existing.attempts = 0
+            existing.locked_at = None
+            existing.last_error = None
+            existing.run_after = now + (delay or timedelta(0))
+            existing.updated_at = now
+            return existing
 
     job = Job(
         kind=kind,

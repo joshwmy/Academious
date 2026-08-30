@@ -79,13 +79,26 @@ class EmbeddingStats:
 
 
 def _pending_select(model_key: str) -> Select[tuple[uuid.UUID]]:
-    """Papers with no embedding for this key, or one older than the paper row.
+    """Papers with no embedding for this key, or one built from a different version.
 
-    The `updated_at` comparison is a cheap prefilter, not the decision: a paper
-    can be updated in ways that do not change its embedding text (a citation
-    count, an OA location). Those rows arrive here, fail the hash check, and are
-    dismissed without inference - but their embedding timestamp is bumped so
-    they do not queue again on the next pass.
+    The comparison is against `source_updated_at` - the paper version the worker
+    recorded when it built the vector - and not against the embedding row's own
+    `updated_at`. Those are two different clocks (PostgreSQL at transaction
+    start, the application at statement time) and ordering them proves nothing:
+    an edit that opens before the worker writes but commits after it carries the
+    earlier timestamp, so a `>` test concludes the vector is current and strands
+    it forever. Comparing the recorded version to the current one cannot be
+    fooled that way, because both sides are the same value read from the same
+    column.
+
+    This stays a prefilter, not the decision: a paper can be updated in ways that
+    do not change its embedding text (a citation count, an OA location). Those
+    rows arrive here, fail the hash check, and are dismissed without inference -
+    but their recorded version is advanced so they do not queue again.
+
+    `IS DISTINCT FROM` rather than `<>` so that a NULL `source_updated_at` - a
+    row written before that column existed - is treated as an unknown version
+    and re-checked once.
     """
     embedding = PaperEmbedding
     return (
@@ -94,7 +107,10 @@ def _pending_select(model_key: str) -> Select[tuple[uuid.UUID]]:
             embedding,
             (embedding.paper_id == Paper.id) & (embedding.model_key == model_key),
         )
-        .where((embedding.paper_id.is_(None)) | (Paper.updated_at > embedding.updated_at))
+        .where(
+            (embedding.paper_id.is_(None))
+            | (Paper.updated_at.is_distinct_from(embedding.source_updated_at))
+        )
         .order_by(Paper.created_at.desc(), Paper.id)
     )
 
@@ -184,8 +200,11 @@ def embed_papers(
             continue
         current = existing.get(paper.id)
         if current is not None and current.input_text_hash == built.text_hash:
-            # Nothing to recompute. Touch the row so the paper stops appearing in
-            # the pending set on every subsequent pass.
+            # Nothing to recompute. Record the version that was checked, so the
+            # paper stops appearing in the pending set on every subsequent pass.
+            # This is the only place a version is advanced without inference, and
+            # it is safe precisely because the hash proved the text identical.
+            current.source_updated_at = paper.updated_at
             current.updated_at = now
             stats.skipped_unchanged += 1
             continue
@@ -211,6 +230,7 @@ def embed_papers(
                 "truncated": batch.truncated[index],
                 "created_at": now,
                 "updated_at": now,
+                "source_updated_at": paper.updated_at,
             }
         )
         stats.embedded += 1
@@ -230,6 +250,7 @@ def embed_papers(
                 "token_count": statement.excluded.token_count,
                 "truncated": statement.excluded.truncated,
                 "updated_at": statement.excluded.updated_at,
+                "source_updated_at": statement.excluded.source_updated_at,
             },
         )
     )

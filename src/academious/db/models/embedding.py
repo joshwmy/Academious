@@ -55,6 +55,21 @@ class PaperEmbedding(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
+    #: The value of `paper.updated_at` on the row this vector was built from.
+    #:
+    #: This is the staleness decision, and it is a *copy* rather than a second
+    #: reading of a clock. Comparing two independently generated timestamps -
+    #: the paper's from PostgreSQL at transaction start, this table's from the
+    #: application at statement time - cannot express "is this vector built from
+    #: the current text", because a writer may commit either side of the
+    #: worker's snapshot. Copying the version the worker actually read makes the
+    #: comparison exact and clock-free.
+    #:
+    #: NULL means "written before this column existed, version unknown", which
+    #: compares as distinct from every paper version and so re-checks the row
+    #: once. See migration 0003.
+    source_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
     __table_args__ = (
         # Drives "which papers still need embedding under model_key X", which is
         # a LEFT JOIN anti-join from paper. The primary key is (paper_id,

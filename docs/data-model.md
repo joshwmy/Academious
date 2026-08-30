@@ -18,7 +18,7 @@ proposed; the reasoning is in `phase-0-report.md` section 11.1 and ADR 0003.
 | `ingestion_run` | One row per source per run. The ingestion metrics store. |
 | `source_cursor` | Where each source got to, so the next run is incremental. |
 | `job` | `SKIP LOCKED` work queue. |
-| `paper_embedding` | One vector per `(paper, model_key)`. `halfvec(768)`. See [embeddings.md](embeddings.md). |
+| `paper_embedding` | One vector per `(paper, model_key)`. `halfvec(768)`, plus `source_updated_at` — the paper version the vector was built from, which is what staleness is decided against. See [embeddings.md](embeddings.md). |
 
 `paper` additionally carries `search_tsv`, a stored generated `tsvector` over
 title (weight A), keywords and topic labels (B) and abstract (C). It is

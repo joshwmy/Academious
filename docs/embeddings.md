@@ -344,44 +344,85 @@ Read and write paths never mix keys, so steps 2 and 3 can be separated by days.
 
 ---
 
-## 7. Known defect: a stale embedding can be stranded
+## 7. Which papers need work: source versioning
 
-`_pending_select` decides which papers need work with
-`Paper.updated_at > PaperEmbedding.updated_at`. The two sides come from
-different clocks with different semantics:
+A paper needs re-embedding under a model key when the text that key was built
+from is no longer the text the paper has. `_pending_select` decides that by
+comparing the paper's current `updated_at` against `paper_embedding.
+source_updated_at` - **the value of `paper.updated_at` on the row the worker
+actually read when it built the vector**:
 
-* `Paper.updated_at` is `func.now()` — the PostgreSQL clock, evaluated at
-  **transaction start** and constant for the whole transaction.
-* `PaperEmbedding.updated_at` is `utcnow()` — the application clock, evaluated
-  at **statement time**.
+```sql
+paper_embedding.paper_id IS NULL
+OR paper.updated_at IS DISTINCT FROM paper_embedding.source_updated_at
+```
 
-So a paper edited inside a transaction that opened *before* the embed worker
-wrote that paper's vector is stamped with the earlier time even though it
-committed later, and the strict `>` never fires. Reproduced against a live
-database:
+This replaces a comparison of the two tables' own `updated_at` columns, which
+was wrong and shipped through Phase 2. Those timestamps come from different
+clocks with different semantics - `paper.updated_at` is PostgreSQL `now()`,
+evaluated at **transaction start**; the embedding's was the application clock at
+**statement time** - so ordering them proves nothing about which text a vector
+was built from. An edit that opened before the worker wrote its vector but
+committed after it carried the *earlier* timestamp, the strict `>` never fired,
+and the obsolete vector was stranded until some unrelated later write happened
+to bump the paper row. Reproduced against a live database:
 
 ```
 paper.abstract       : COMPLETELY DIFFERENT TEXT   (embedded from "original text")
-paper.updated_at     : 16:07:00.887612+00   <- transaction A start
+paper.updated_at     : 16:07:00.887612+00   <- editing transaction start
 embedding.updated_at : 16:07:00.945231+00   <- written by the worker mid-flight
 queued for re-embedding? False
 ```
 
-The vector is now permanently wrong for that paper: the row will not queue again
-until some *later* update bumps `updated_at` past the embedding's timestamp. The
-input-hash check never runs, because the prefilter is what decides whether it
-runs at all. Application/database clock skew widens the same window.
+Copying the version the worker read cannot be fooled that way: both sides of the
+comparison are the same value from the same column, so commit ordering and
+clock skew between the application and database hosts are both irrelevant. If
+the edit commits before the worker's snapshot the worker records the new
+version; if it commits after, the worker records the old one and the paper
+queues again. There is no interleaving that loses the update.
 
-This did not affect any published benchmark number — coverage under
-`specter2-proximity@v1` is 2455 / 2455 and every scored ranking was verified
-against the current corpus — but it is a real correctness hole in incremental
-re-embedding.
+The comparison stays a **prefilter, not the decision**. A paper can be updated
+in ways that do not touch its embedding text - a citation count, an OA location.
+Those rows arrive at the worker, fail the `input_text_hash` check, and are
+dismissed without model inference; their `source_updated_at` is advanced so they
+do not queue again. That is the only path that advances a version without
+running the model, and it is safe precisely because the hash proved the text
+identical.
 
-**The fix is not a comparison operator.** Timestamps cannot express this
-correctly: the embed worker reads a snapshot and a concurrent writer can commit
-either side of it. The embedding row needs to record *which version of the paper
-it was built from* — store the `Paper.updated_at` observed at embed time in a
-`source_updated_at` column and queue on `Paper.updated_at IS DISTINCT FROM
-source_updated_at`. That is exact and clock-free, and it needs a migration plus
-a backfill, so it is recorded here rather than applied silently during
-benchmark evidence gathering.
+`IS DISTINCT FROM` rather than `<>` so that a NULL `source_updated_at` - a row
+written before migration `0003` added the column - reads as "version unknown"
+and is re-checked once.
+
+### Backfill
+
+Migration `0003` leaves existing rows NULL rather than stamping them with
+`paper.updated_at`. Stamping would assert that every stored vector matches its
+paper's current text, which is exactly the assumption the defect made unsafe.
+NULL re-checks each row on the next embedding pass, where the hash decides:
+unchanged papers are dismissed without inference and stamped, and any vector the
+old rule had stranded is rebuilt. The backfill is self-healing and costs no
+inference for a corpus that is genuinely current.
+
+Measured on the Phase 2 corpus, 2,455 papers under two live profiles:
+
+```
+$ python -m academious.workers embed --profile specter2-proximity@v1
+real 0m10.8s      2455 rows re-checked, 0 encoded, 0 pending afterwards
+$ python -m academious.workers embed --profile specter2-title-only@v1
+                  2455 rows re-checked, 0 encoded, 0 pending afterwards
+```
+
+Zero hash mismatches, which confirms the defect stranded nothing in this corpus
+and that no benchmark number depended on it.
+
+Running that backfill also surfaced a second defect, in the job queue rather
+than in embedding: re-deriving the same batches produces the same `dedup_key`s
+as the previous run, and `enqueue` inserted a duplicate row for a job that had
+already succeeded, violating the UNIQUE constraint and killing the worker. See
+[ADR 0002](adr/0002-postgres-job-queue.md#amendment-phase-2-closeout-what-a-dedup-key-reserves).
+
+One caveat: `specter2-benchmark@v1` (2,320 rows from an input-strategy ablation)
+is no longer a registered profile, so no worker can settle its rows and they
+keep a NULL version indefinitely. Harmless - nothing reads that key - but it is
+why a stale-vector count grouped by `model_key` will show it as unversioned
+until the ablation rows are dropped.
