@@ -393,10 +393,37 @@ worth far more unspent than spent.
 
 The roadmap's Phase 2 - **Public web: anyone can browse and search** (§13) -
 which was deliberately deferred so that retrieval could be measured before an
-interface was designed against it. Its first milestone is the **public read
-API**: `/papers`, `/papers/{id}` and `/search` over the retrieval service this
-phase validated. `api/` currently serves health and metrics routes only, so
-there is nothing for a frontend to consume yet, and the API is the boundary that
-lets the frontend be built and tested independently.
+interface was designed against it.
+
+#### Milestone: public read API - **complete**
+
+`GET /papers`, `GET /papers/{id}` and `GET /search`, over the retrieval service
+this phase validated. Contract in [api.md](api.md); security posture, threat
+model and deployment requirements in [security.md](security.md).
+
+The API is a projection of retrieval, not a second ranker: a regression test
+asserts that the ids it returns are exactly the ids the retrieval service
+returned, in the same order, so the six-query benchmark remains evidence about
+this endpoint. Re-running the benchmark after the milestone reproduces the
+frozen checkpoint to three decimal places on every metric.
+
+The search method is server configuration (`ACADEMIOUS_RETRIEVAL_DEFAULT_METHOD`,
+default `semantic`) rather than a query parameter. That is an implementation
+default backed by the aggregate, not a resolution of the open question: semantic
+wins two of the six judged queries, hybrid three, lexical one. The held-out
+queries are what should settle it.
+
+Two defects were found and fixed while building it: model revisions were
+unpinned (`from_pretrained` without `revision`, so the weights behind a measured
+benchmark were whatever upstream `main` held that day), and query normalisation
+deleted control characters instead of replacing them, welding neighbouring words
+together. Both are covered by tests.
+
+#### Remaining in this phase
+
+The React/TS/Vite frontend, feed by field (which needs an OpenAlex-style
+taxonomy the corpus does not yet carry), paper detail pages, responsive layout,
+and the PubMed / Europe PMC / Unpaywall connectors. **The frontend has not been
+started**, and the phase is not complete.
 
 ---

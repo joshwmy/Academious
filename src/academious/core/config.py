@@ -59,6 +59,58 @@ class Settings(BaseSettings):
     job_stale_after_minutes: int = 30
 
     retrieval_default_limit: int = 20
+    # Which method the public API searches with. The Phase 2 benchmark makes
+    # semantic the strongest single-method aggregate (NDCG@10 0.490 against
+    # lexical 0.366 and hybrid 0.472), but it wins 2 of 6 queries, not all of
+    # them - so this is an implementation default that env can move, not a
+    # settled architectural claim. It is deliberately not a query parameter:
+    # see docs/security.md on not exposing retrieval internals.
+    retrieval_default_method: Literal["lexical", "semantic", "hybrid"] = "semantic"
+
+    # --- Public API surface (Phase 2 public read API) ---------------------
+    # Page sizes are rejected above the maximum rather than clamped: a clamped
+    # page silently returns something other than what was asked for, and a
+    # client cannot tell that from a short last page.
+    api_max_page_size: int = 100
+    api_default_page_size: int = 20
+    api_max_offset: int = 10_000
+    api_max_search_results: int = 50
+    # Longest accepted `q`. A research-interest description is a phrase or a
+    # sentence; SPECTER2 truncates at 512 *tokens* regardless. Rejecting beyond
+    # this keeps oversized input away from the tokeniser entirely.
+    api_max_query_length: int = 512
+
+    # Rate limiting. Process-local: correct for the single-container deployment
+    # in docs/deployment.md, and documented as such in docs/security.md.
+    rate_limit_enabled: bool = True
+    rate_limit_read_requests: int = 120
+    rate_limit_read_window_seconds: int = 60
+    # Search costs ~160 ms of CPU against ~5 ms for a read, so it gets its own,
+    # far stricter budget.
+    rate_limit_search_requests: int = 20
+    rate_limit_search_window_seconds: int = 60
+
+    # How many searches may be inside the retrieval/model path at once. The
+    # deployment target is 4 vCPU and one query encode is ~160 ms of largely
+    # CPU-bound work, so 2 leaves room for request handling and database reads.
+    search_max_concurrency: int = 2
+    # How long a request will wait for one of those slots before giving up with
+    # 503. Bounds the queue: beyond roughly this many seconds of backlog the
+    # honest answer is "busy", not a request that will time out anyway.
+    search_queue_timeout_seconds: float = 2.0
+
+    # Trust `X-Forwarded-For` only when the app really is behind this many
+    # trusted proxies. 0 means the socket peer is the client, which is the safe
+    # default: a spoofed header must never be able to reset a rate limit.
+    trusted_proxy_count: int = 0
+    # Comma-separated. Empty means "no browser origin is allowed", which is the
+    # correct default for an API with no frontend deployed yet.
+    cors_allowed_origins: str = ""
+    # Comma-separated Host values. Empty disables host checking (development).
+    allowed_hosts: str = ""
+    # HSTS belongs at the TLS terminator. Enable here only if FastAPI is itself
+    # the edge, which the approved topology says it is not.
+    security_hsts_enabled: bool = False
 
     http_timeout_seconds: float = 30.0
     http_max_attempts: int = 5
@@ -77,6 +129,14 @@ class Settings(BaseSettings):
     @property
     def biorxiv_server_list(self) -> list[str]:
         return [s.strip() for s in self.biorxiv_servers.split(",") if s.strip()]
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [o.strip() for o in self.cors_allowed_origins.split(",") if o.strip()]
+
+    @property
+    def allowed_host_list(self) -> list[str]:
+        return [h.strip() for h in self.allowed_hosts.split(",") if h.strip()]
 
     @property
     def user_agent(self) -> str:

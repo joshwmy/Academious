@@ -34,6 +34,15 @@ BASE_MODEL = "allenai/specter2_base"
 PROXIMITY_ADAPTER = "allenai/specter2"
 QUERY_ADAPTER = "allenai/specter2_adhoc_query"
 
+#: Exact commits, not `main`. An unpinned `from_pretrained` fetches whatever the
+#: repository head is on the day it runs, which makes the weights behind a
+#: measured benchmark unreproducible and makes a compromised or simply updated
+#: upstream repository a silent change to this system's behaviour. These are the
+#: revisions the Phase 2 benchmark was measured against.
+BASE_MODEL_REVISION = "3447645e1def9117997203454fa4495937bfbd83"
+PROXIMITY_ADAPTER_REVISION = "2081559630a80fc5851d8f798a05ba81e9468089"
+QUERY_ADAPTER_REVISION = "3f4448817028388648a74349ece07af4518ec5bd"
+
 DOCUMENT_ADAPTER_NAME = "proximity"
 QUERY_ADAPTER_NAME = "adhoc_query"
 
@@ -84,7 +93,9 @@ class Specter2Backend:
             torch.set_num_threads(self._num_threads)
 
         log.info("embeddings.loading", model=BASE_MODEL)
-        tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, cache_dir=self._cache_dir)
+        tokenizer = AutoTokenizer.from_pretrained(
+            BASE_MODEL, revision=BASE_MODEL_REVISION, cache_dir=self._cache_dir
+        )
         if tokenizer.sep_token != SEP_TOKEN:
             raise RuntimeError(
                 f"tokenizer separator is {tokenizer.sep_token!r}, but the embedding text "
@@ -92,12 +103,26 @@ class Specter2Backend:
                 "tokenise as intended"
             )
 
-        model = AutoAdapterModel.from_pretrained(BASE_MODEL, cache_dir=self._cache_dir)
-        model.load_adapter(
-            PROXIMITY_ADAPTER, source="hf", load_as=DOCUMENT_ADAPTER_NAME, set_active=True
+        # `trust_remote_code` is left at its default of False throughout. These
+        # repositories ship weights and a config, not code, and a model that
+        # needed to execute its author's Python to load would be a different
+        # trust decision than the one this project has made.
+        model = AutoAdapterModel.from_pretrained(
+            BASE_MODEL, revision=BASE_MODEL_REVISION, cache_dir=self._cache_dir
         )
         model.load_adapter(
-            QUERY_ADAPTER, source="hf", load_as=QUERY_ADAPTER_NAME, set_active=False
+            PROXIMITY_ADAPTER,
+            source="hf",
+            revision=PROXIMITY_ADAPTER_REVISION,
+            load_as=DOCUMENT_ADAPTER_NAME,
+            set_active=True,
+        )
+        model.load_adapter(
+            QUERY_ADAPTER,
+            source="hf",
+            revision=QUERY_ADAPTER_REVISION,
+            load_as=QUERY_ADAPTER_NAME,
+            set_active=False,
         )
         model.eval()
 

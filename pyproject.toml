@@ -18,6 +18,9 @@ dependencies = [
     "python-dateutil>=2.9",
     "pgvector>=0.4",
     "numpy>=2.0",
+    # Inbound rate limiting for the public API. Process-local storage by
+    # default; see docs/security.md on what that does and does not bound.
+    "slowapi>=0.1.10",
 ]
 
 [project.optional-dependencies]
@@ -35,6 +38,9 @@ dev = [
     "respx>=0.22",
     "ruff>=0.8",
     "mypy>=1.13",
+    # Security gates. Both are CI-friendly and neither pulls in a service.
+    "pip-audit>=2.10",
+    "bandit>=1.8",
 ]
 
 [build-system]
