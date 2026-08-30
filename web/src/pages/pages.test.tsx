@@ -7,7 +7,7 @@
  * that would only repeat the mistake.
  */
 
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
@@ -144,6 +144,153 @@ describe("feed", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/could not reach academious/i);
     await user.click(screen.getByRole("button", { name: /try again/i }));
     expect(await screen.findByRole("link", { name: "Recovered" })).toBeInTheDocument();
+  });
+});
+
+// ----------------------------------------------------------- feed filters
+
+describe("feed filters", () => {
+  /** The filter parameters of the most recent /papers request. */
+  function lastFilterParams(mock: ReturnType<typeof stubApi>) {
+    const url = new URL(mock.mock.calls.at(-1)![0] as string, "http://api.test");
+    return {
+      source: url.searchParams.getAll("source"),
+      preprints: url.searchParams.get("preprints"),
+      peer_reviewed: url.searchParams.get("peer_reviewed"),
+      open_access: url.searchParams.get("open_access"),
+      offset: url.searchParams.get("offset"),
+    };
+  }
+
+  const onePage = () => jsonOk(makePage([makeSummary({ id: "x", title: "A paper" })], { total: 100 }));
+
+  it("sends no filter parameters when the URL carries none", async () => {
+    const mock = stubApi({ "/papers": onePage });
+    renderApp();
+
+    await screen.findByRole("link", { name: "A paper" });
+    expect(lastFilterParams(mock)).toMatchObject({
+      source: [],
+      preprints: null,
+      peer_reviewed: null,
+      open_access: null,
+    });
+  });
+
+  it("applies the filters the URL carries, so a filtered feed is linkable", async () => {
+    const mock = stubApi({ "/papers": onePage });
+    renderApp("/?source=arxiv&preprints=only_preprints&open_access=true");
+
+    await screen.findByRole("link", { name: "A paper" });
+    expect(lastFilterParams(mock)).toMatchObject({
+      source: ["arxiv"],
+      preprints: "only_preprints",
+      open_access: "true",
+    });
+    expect(screen.getByRole("checkbox", { name: /arxiv/i })).toBeChecked();
+  });
+
+  it("drops a source the backend does not know rather than sending a 422", async () => {
+    const mock = stubApi({ "/papers": onePage });
+    renderApp("/?source=arxiv&source=nonsense");
+
+    await screen.findByRole("link", { name: "A paper" });
+    expect(lastFilterParams(mock).source).toEqual(["arxiv"]);
+  });
+
+  it("requests again with the new filter when one is toggled", async () => {
+    const user = userEvent.setup();
+    const mock = stubApi({ "/papers": onePage });
+    renderApp();
+
+    await screen.findByRole("link", { name: "A paper" });
+    await user.click(screen.getByRole("checkbox", { name: /open access only/i }));
+
+    await waitFor(() => expect(lastFilterParams(mock).open_access).toBe("true"));
+  });
+
+  it("returns to the first page when a filter changes", async () => {
+    // Page 3 of an unfiltered feed is not page 3 of a filtered one, and there
+    // may be no page 3 at all: staying put shows an empty page for results
+    // that exist.
+    const user = userEvent.setup();
+    const mock = stubApi({ "/papers": onePage });
+    renderApp("/?offset=40");
+
+    await screen.findByRole("link", { name: "A paper" });
+    expect(lastFilterParams(mock).offset).toBe("40");
+
+    await user.click(screen.getByRole("checkbox", { name: /peer-reviewed only/i }));
+
+    await waitFor(() => expect(lastFilterParams(mock).peer_reviewed).toBe("true"));
+    expect(lastFilterParams(mock).offset).toBe("0");
+  });
+
+  it("keeps the filters while paging", async () => {
+    const user = userEvent.setup();
+    const mock = stubApi({ "/papers": onePage });
+    renderApp("/?source=biorxiv");
+
+    await screen.findByRole("link", { name: "A paper" });
+    await user.click(screen.getByRole("button", { name: /next page/i }));
+
+    await waitFor(() => expect(lastFilterParams(mock).offset).toBe("20"));
+    expect(lastFilterParams(mock).source).toEqual(["biorxiv"]);
+  });
+
+  it("clears every filter at once, and the URL with them", async () => {
+    const user = userEvent.setup();
+    const mock = stubApi({ "/papers": onePage });
+    renderApp("/?source=arxiv&peer_reviewed=true");
+
+    await screen.findByRole("link", { name: "A paper" });
+    await user.click(screen.getByRole("button", { name: /clear filters/i }));
+
+    await waitFor(() =>
+      expect(lastFilterParams(mock)).toMatchObject({ source: [], peer_reviewed: null }),
+    );
+  });
+
+  it("issues one request per filter change, not one per render", async () => {
+    // The filters are derived from the URL on every render, so an unmemoised
+    // object would give `useRequest` a new request identity each time and
+    // refetch forever - spending the reader's rate-limit budget on nothing.
+    const user = userEvent.setup();
+    const mock = stubApi({ "/papers": onePage });
+    renderApp();
+
+    await screen.findByRole("link", { name: "A paper" });
+    const before = mock.mock.calls.length;
+
+    await user.click(screen.getByRole("checkbox", { name: /open access only/i }));
+    await waitFor(() => expect(lastFilterParams(mock).open_access).toBe("true"));
+
+    expect(mock.mock.calls.length).toBe(before + 1);
+  });
+
+  it("distinguishes an empty corpus from a filter that matched nothing", async () => {
+    stubApi({ "/papers": () => jsonOk(makePage([])) });
+    renderApp("/?open_access=true");
+
+    expect(await screen.findByText(/no papers match/i)).toBeInTheDocument();
+    expect(screen.queryByText(/no papers yet/i)).not.toBeInTheDocument();
+  });
+
+  it("offers a way out of a filter that matched nothing", async () => {
+    const user = userEvent.setup();
+    const mock = stubApi({
+      "/papers": (url) =>
+        url.searchParams.get("open_access") === "true"
+          ? jsonOk(makePage([]))
+          : jsonOk(makePage([makeSummary({ title: "Everything" })])),
+    });
+    renderApp("/?open_access=true");
+
+    await screen.findByText(/no papers match/i);
+    await user.click(screen.getAllByRole("button", { name: /clear filters/i })[0]!);
+
+    expect(await screen.findByRole("link", { name: "Everything" })).toBeInTheDocument();
+    expect(lastFilterParams(mock).open_access).toBeNull();
   });
 });
 

@@ -151,7 +151,77 @@ frontend is built not to spend it accidentally:
 
 ---
 
-## 6. Design system
+## 6. Filtering the feed
+
+`GET /papers` has accepted source, preprint, peer-review and open-access filters
+since the API shipped, applied in SQL before pagination so that `total` counts
+what matched. The feed now surfaces them.
+
+| Control | Query parameter | Values |
+|---|---|---|
+| Source | `source`, repeatable | `arxiv`, `biorxiv` (which covers medRxiv), `openalex` |
+| Type | `preprints` | `any`, `only_preprints`, `exclude_preprints` |
+| Peer-reviewed only | `peer_reviewed` | `true` |
+| Open access only | `open_access` | `true` |
+
+### The URL is the state
+
+Filters live in the query string exactly as the offset and the search query do.
+`FilterPanel` is fully controlled and holds nothing; `FeedPage` reads the
+filters out of the URL, sends them to the API, and writes every change back.
+There is therefore one place a filter can be described from, and a filtered feed
+is a page you can link to, bookmark and reach again with the back button.
+
+Only values that differ from the backend's own defaults are written, so an
+unfiltered feed has a clean URL and an unfiltered request is byte-identical to
+the one the feed made before filters existed.
+
+### A hand-edited URL must not become an error page
+
+Everything in the query string is untrusted input. The backend validates its
+enums strictly, so `?source=nonsense` would be a 422 - a broken page for what is
+really a typo. `parseFilters` drops what it does not recognise instead of
+forwarding it: unknown source keys, unknown preprint policies, and any value
+other than `true` for the two booleans. Sources are also de-duplicated and
+ordered canonically, so two URLs that mean the same thing produce the same
+request.
+
+### Changing a filter returns to the first page
+
+Page three of an unfiltered feed is not page three of a filtered one, and there
+may be no page three at all. Keeping the offset across a filter change shows an
+empty page for results that do exist, so the offset resets to zero. Paging, by
+contrast, keeps the filters.
+
+### Applied immediately, unlike search
+
+There is no *Apply* button. The read budget is 120 requests a minute against
+roughly 12 ms of database work, so a request per toggle is affordable. Search is
+the opposite case - each search costs about 160 ms of SPECTER2 inference against
+a 20-per-minute budget - which is why it stays submit-driven. The two controls
+behave differently because the work behind them differs by more than an order of
+magnitude.
+
+### Filters do not reach search
+
+`GET /search` accepts `q` and `limit` and no filter parameters at all, so a
+filter set on the feed does not carry into search results. The panel says so
+while any filter is active rather than letting a reader assume otherwise.
+Extending filtering to search is a backend and retrieval change - filters apply
+before ranking, so a filtered search is a different retrieval run whose
+interaction with the measured ranking would need re-verifying against the
+benchmark - and is tracked as [WEB-010](backlog.md#web-010).
+
+### Empty is two different situations
+
+No results with no filters set means the corpus has not been populated. No
+results with filters set means the filters excluded everything. These read
+identically if you only count rows, so they are separate states and the second
+one offers a way out.
+
+---
+
+## 7. Design system
 
 Tokens live in `src/styles/tokens.css` and cover typography, a 4px spacing
 scale, radii, borders, surfaces, text hierarchy, status colours, content widths
@@ -168,7 +238,7 @@ transitions and the skeleton pulse.
 
 ---
 
-## 7. Security assumptions
+## 8. Security assumptions
 
 The frontend does not weaken any backend control, and it is not a security
 boundary itself. Every bound it applies is also enforced server-side.
@@ -200,7 +270,7 @@ sent to any third party. The backend logs query *length*, not query text.
 
 ---
 
-## 8. Deployment
+## 9. Deployment
 
 The build is static: `npm run build` produces `web/dist`.
 
@@ -217,7 +287,7 @@ changed by this milestone.
 
 ---
 
-## 9. Known limitations
+## 10. Known limitations
 
 Each is tracked in [backlog.md](backlog.md), which carries the current status,
 the reason it is deferred and what would trigger picking it up.
@@ -226,10 +296,9 @@ the reason it is deferred and what would trigger picking it up.
   The Phase 0 decision (section 11.7, option a) was to prerender later; the API
   already returns everything a full page render needs -
   [WEB-004](backlog.md#web-004).
-* **No filter UI.** `/papers` supports source, preprint, peer-review and
-  open-access filters; nothing surfaces them yet - [WEB-002](backlog.md#web-002).
-  `/search` accepts no filter parameters at all, so filtering will stop at the
-  feed even once it exists - [WEB-010](backlog.md#web-010).
+* **Filters stop at the feed.** `/search` accepts no filter parameters, so a
+  filter set on the feed does not carry into search results (§6) -
+  [WEB-010](backlog.md#web-010).
 * **No "feed by field".** The corpus carries no normalised subject taxonomy, so
   there is nothing to filter by - see [api.md](api.md),
   [WEB-003](backlog.md#web-003).

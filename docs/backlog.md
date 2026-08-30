@@ -100,7 +100,7 @@ it could be started but deliberately is not.
 | [SRC-003](#src-003) | Unpaywall fallback | DEFERRED | Phase 2 remainder |
 | [SRC-004](#src-004) | OpenAlex harvesting into the live corpus | READY | Phase 2 remainder |
 | [WEB-001](#web-001) | Visual design is a baseline, not a finished appearance | DEFERRED | Dedicated design pass |
-| [WEB-002](#web-002) | Filter UI over the filters `/papers` supports | READY | Phase 2 remainder |
+| [WEB-002](#web-002) | Filter UI over the filters `/papers` supports | DONE | — |
 | [WEB-003](#web-003) | Feed by field | BLOCKED | With DATA-002 |
 | [WEB-004](#web-004) | SEO and prerendering | DEFERRED | Phase 6 |
 | [WEB-005](#web-005) | Offset pagination only | DEFERRED | When deep offsets hurt |
@@ -679,16 +679,17 @@ rather than hunting pixel values through pages.
 
 ### WEB-002
 
-**Filter UI over the filters `/papers` supports.** — `READY`
+**Filter UI over the filters `/papers` supports.** — `DONE` (2026-08-31)
 
 `GET /papers` accepts `source`, `preprints`, `peer_reviewed` and `open_access`,
-applied in SQL before pagination. Nothing surfaces them.
+applied in SQL before pagination. The feed now surfaces all four, carried in the
+query string so a filtered feed is linkable.
 
-* **Why deferred** — the frontend milestone was scoped to proving the three
-  routes against the real contract first.
-* **Risk/impact** — a backend capability that is built, tested and invisible.
-* **Depends on** — nothing. Frontend-only.
-* **Source** — [frontend.md §9](frontend.md#9-known-limitations),
+* **Closed by** — `feat: filter the feed by source, type and availability`.
+  Frontend only; no backend file changed.
+* **What it did not cover** — search, which accepts no filter parameters. That
+  asymmetry is stated in the interface and tracked as WEB-010.
+* **Source** — [frontend.md §6](frontend.md#6-filtering-the-feed),
   [api.md §2](api.md#filtering).
 
 ### WEB-003
@@ -778,11 +779,13 @@ feed and not to search results.
   measured ranking would have to be re-verified against the benchmark. That does
   not belong inside a frontend milestone.
 * **Risk/impact** — a visible asymmetry: a reader who filters the feed and then
-  searches loses the filter. The interface should state this rather than hide it.
+  searches loses the filter. The filter panel states this while any filter is
+  active rather than hiding it (WEB-002, shipped 2026-08-31).
 * **Trigger to revisit** — when search filtering becomes a stated product
   requirement, most likely with the Phase 3 personalised feed, which needs
   filtered ranking anyway.
-* **Source** — `src/academious/api/routers/search.py`, read 2026-08-31.
+* **Source** — `src/academious/api/routers/search.py`; confirmed while
+  implementing WEB-002, 2026-08-31.
 
 ---
 

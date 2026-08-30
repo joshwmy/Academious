@@ -1,17 +1,28 @@
 /**
  * The feed: recent papers, newest first, exactly as `GET /papers` orders them.
  *
- * `offset` lives in the URL rather than in component state so that a page of
- * results is a place you can link to and return to with the back button.
+ * The offset and the filters both live in the URL rather than in component
+ * state, so a page of results - filtered or not - is a place you can link to and
+ * return to with the back button. See `lib/filters.ts` for why the query string
+ * is the only place either is held.
  */
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { listPapers } from "../api/client";
+import { FilterPanel } from "../components/FilterPanel";
 import { PaperCard } from "../components/PaperCard";
 import { Pagination } from "../components/Pagination";
 import { EmptyState, ErrorState, LoadingRegion, PaperListSkeleton } from "../components/States";
 import { useRequest } from "../hooks/useRequest";
+import {
+  NO_FILTERS,
+  filtersToParams,
+  filtersToSearchParams,
+  hasActiveFilters,
+  parseFilters,
+  type FeedFilters,
+} from "../lib/filters";
 import "./Page.css";
 
 /** Comfortably above the fold on a laptop, well within the backend's max of 100. */
@@ -24,20 +35,43 @@ function parseOffset(raw: string | null): number {
   return Math.floor(value / PAGE_SIZE) * PAGE_SIZE;
 }
 
+function toQuery(filters: FeedFilters, offset: number): URLSearchParams {
+  const params = filtersToSearchParams(filters);
+  if (offset > 0) params.set("offset", String(offset));
+  return params;
+}
+
 export function FeedPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const offset = parseOffset(searchParams.get("offset"));
 
+  // Memoised on the query *string*, not on the params object: `useRequest`
+  // treats the identity of `run` as the identity of the request, so a filter
+  // object rebuilt on every render would refetch on every render.
+  const query = searchParams.toString();
+  const filters = useMemo(() => parseFilters(new URLSearchParams(query)), [query]);
+
   const run = useCallback(
-    (signal: AbortSignal) => listPapers({ limit: PAGE_SIZE, offset }, signal),
-    [offset],
+    (signal: AbortSignal) =>
+      listPapers({ limit: PAGE_SIZE, offset, ...filtersToParams(filters) }, signal),
+    [offset, filters],
   );
   const { state, retry } = useRequest(run);
 
   const navigate = (nextOffset: number) => {
-    setSearchParams(nextOffset === 0 ? {} : { offset: String(nextOffset) });
+    setSearchParams(toQuery(filters, nextOffset));
     window.scrollTo({ top: 0 });
   };
+
+  const changeFilters = (next: FeedFilters) => {
+    // Back to the first page. Page three of an unfiltered feed is not page
+    // three of a filtered one, and there may be no page three at all - keeping
+    // the offset would show an empty page for results that do exist.
+    setSearchParams(toQuery(next, 0));
+    window.scrollTo({ top: 0 });
+  };
+
+  const filtered = hasActiveFilters(filters);
 
   return (
     <div className="page">
@@ -47,6 +81,8 @@ export function FeedPage() {
           The most recently published work in the Academious corpus.
         </p>
       </header>
+
+      <FilterPanel filters={filters} onChange={changeFilters} />
 
       {state.status === "loading" ? (
         <LoadingRegion label="Loading recent papers">
@@ -60,12 +96,32 @@ export function FeedPage() {
 
       {state.status === "success" ? (
         state.data.results.length === 0 ? (
-          <EmptyState title="No papers yet">
-            <p>
-              The corpus has not been populated. Once ingestion has run, recent papers appear
-              here.
-            </p>
-          </EmptyState>
+          // Two different situations that look identical if you only count
+          // rows: nothing has been ingested, or the filters excluded it all.
+          filtered ? (
+            <EmptyState title="No papers match these filters">
+              <p>
+                Nothing in the corpus satisfies every filter you have set. Try removing one, or
+                clear them all and start again.
+              </p>
+              <p>
+                <button
+                  type="button"
+                  className="button"
+                  onClick={() => changeFilters(NO_FILTERS)}
+                >
+                  Clear filters
+                </button>
+              </p>
+            </EmptyState>
+          ) : (
+            <EmptyState title="No papers yet">
+              <p>
+                The corpus has not been populated. Once ingestion has run, recent papers appear
+                here.
+              </p>
+            </EmptyState>
+          )
         ) : (
           <>
             <ul className="paper-list" aria-label="Recent papers">
