@@ -3,6 +3,13 @@
 Approved target: a single Hetzner VPS running Docker Compose. No Redis, no
 Celery, no Kubernetes, no standalone vector database.
 
+> **This target is not what is running today.** Production testing currently
+> goes Vercel -> Cloudflare quick tunnel -> a development PC -> Caddy -> the
+> application, which means the backend is available only while that machine is,
+> and the tunnel hostname is ephemeral. Everything below describes the intended
+> deployment. The gap, and everything blocked behind it, is
+> [DEPLOY-001](backlog.md#deploy-001).
+
 ## Topology
 
 ```

@@ -249,7 +249,13 @@ successor when it stops being.
 
 ## 8. Known limitations
 
-* No `field` filter until an OpenAlex-style taxonomy is ingested (§2).
+Tracked in [backlog.md](backlog.md); the IDs below are where the current status
+of each lives.
+
+* No `field` filter until an OpenAlex-style taxonomy is ingested (§2) -
+  [DATA-002](backlog.md#data-002).
+* No filter parameters on `/search`; filtering is a `/papers` capability only -
+  [WEB-010](backlog.md#web-010).
 * No cursor pagination; offset only, capped.
 * No sorting parameter. The feed order is fixed, which removes a class of
   injection surface and a class of pathological query.

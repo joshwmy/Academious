@@ -219,16 +219,26 @@ changed by this milestone.
 
 ## 9. Known limitations
 
+Each is tracked in [backlog.md](backlog.md), which carries the current status,
+the reason it is deferred and what would trigger picking it up.
+
 * **No SEO.** This is a client-rendered SPA, so paper pages are not indexable.
   The Phase 0 decision (section 11.7, option a) was to prerender later; the API
-  already returns everything a full page render needs.
+  already returns everything a full page render needs -
+  [WEB-004](backlog.md#web-004).
 * **No filter UI.** `/papers` supports source, preprint, peer-review and
-  open-access filters; nothing surfaces them yet.
+  open-access filters; nothing surfaces them yet - [WEB-002](backlog.md#web-002).
+  `/search` accepts no filter parameters at all, so filtering will stop at the
+  feed even once it exists - [WEB-010](backlog.md#web-010).
 * **No "feed by field".** The corpus carries no normalised subject taxonomy, so
-  there is nothing to filter by - see [api.md](api.md).
-* **Offset pagination only**, capped by the backend at 10,000.
-* **No result-count control.** Search returns 20; the backend permits up to 50.
+  there is nothing to filter by - see [api.md](api.md),
+  [WEB-003](backlog.md#web-003).
+* **Offset pagination only**, capped by the backend at 10,000 -
+  [WEB-005](backlog.md#web-005).
+* **No result-count control.** Search returns 20; the backend permits up to 50 -
+  [WEB-006](backlog.md#web-006).
 * **`axe` colour-contrast checks are unreliable under jsdom**, which has no
   canvas. Contrast was set from the tokens by hand and should be re-verified in
-  a browser during the design pass.
-* **Visual design is a deliberate baseline**, not a finished appearance.
+  a browser during the design pass - [WEB-007](backlog.md#web-007).
+* **Visual design is a deliberate baseline**, not a finished appearance -
+  [WEB-001](backlog.md#web-001).

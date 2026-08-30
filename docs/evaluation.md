@@ -379,6 +379,10 @@ is a set to measure against, not to fit to.
 
 ## 9. What this cannot tell you
 
+The unspent holdout queries, and the rule that governs them, are recorded as
+[RETR-002](backlog.md#retr-002). Do not judge them to settle an argument.
+
+
 Stated plainly, because a benchmark that overstates its reach is worse than none:
 
 * **Twelve queries is small.** Differences of a few points are noise.

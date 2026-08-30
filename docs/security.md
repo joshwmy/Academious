@@ -467,16 +467,23 @@ internet-reachable.
 
 ### Deployment level
 
-These are **not** solved by this milestone and must be configured:
+These are **not** solved by this milestone and must be configured. Each is
+tracked in [backlog.md](backlog.md) so it survives past this document:
 
-1. Restrict `/metrics/*` and `/health/db` at the proxy.
+1. Restrict `/metrics/*` and `/health/db` at the proxy - [SEC-003](backlog.md#sec-003).
 2. Set `ACADEMIOUS_TRUSTED_PROXY_COUNT=1` behind Caddy, and run uvicorn with
-   `--proxy-headers --forwarded-allow-ips=<proxy>`.
-3. Set `ACADEMIOUS_ALLOWED_HOSTS` and `ACADEMIOUS_CORS_ALLOWED_ORIGINS`.
-4. Terminate TLS and enable HSTS at Caddy.
-5. Cap request and URL size, and set connection/read timeouts, at Caddy.
+   `--proxy-headers --forwarded-allow-ips=<proxy>` - [SEC-004](backlog.md#sec-004).
+3. Set `ACADEMIOUS_ALLOWED_HOSTS` and `ACADEMIOUS_CORS_ALLOWED_ORIGINS` -
+   [DEPLOY-004](backlog.md#deploy-004).
+4. Terminate TLS and enable HSTS at Caddy - [SEC-005](backlog.md#sec-005).
+5. Cap request and URL size, and set connection/read timeouts, at Caddy -
+   [SEC-005](backlog.md#sec-005).
 6. Keep PostgreSQL off the public internet.
-7. Run one API process, or move the limiter to shared storage first.
+7. Run one API process, or move the limiter to shared storage first -
+   [SEC-001](backlog.md#sec-001), [SEC-002](backlog.md#sec-002).
+
+The deployment these assume does not exist yet; see
+[DEPLOY-001](backlog.md#deploy-001) for what is running instead.
 
 ### Future-feature risks
 

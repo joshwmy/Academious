@@ -454,4 +454,16 @@ carry), a filter UI over the filters the API already supports, prerendering for
 SEO, and the PubMed / Europe PMC / Unpaywall connectors. The phase is not
 complete.
 
+**This report is a record of what Phase 2 measured, not a live task list.** From
+2026-08-31 the open work above, and everything else this report defers, is
+tracked in [backlog.md](backlog.md) - which is the canonical register and the
+place to look for current status. In particular: the holdout queries are
+[RETR-002](backlog.md#retr-002), the undecided default method is
+[RETR-001](backlog.md#retr-001), the frozen fusion investigation is
+[RETR-003](backlog.md#retr-003), the unimplemented ONNX int8 lever is
+[RETR-005](backlog.md#retr-005), the scale caveats are
+[RETR-004](backlog.md#retr-004) and [DATA-004](backlog.md#data-004), and the
+connectors are [SRC-001](backlog.md#src-001) to
+[SRC-004](backlog.md#src-004).
+
 ---

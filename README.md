@@ -164,6 +164,7 @@ Measurements are reproduced by:
 | [docs/phase-0-report.md](docs/phase-0-report.md) | API landscape, architecture, V1 scope, risks, disagreements |
 | [docs/phase-1-report.md](docs/phase-1-report.md) | What Phase 1 built, what it proved, what it found |
 | [docs/phase-2-report.md](docs/phase-2-report.md) | What Phase 2 built, measured, and what contradicted earlier assumptions |
+| [docs/backlog.md](docs/backlog.md) | **Deferred and open engineering work - the canonical register** |
 | [docs/embeddings.md](docs/embeddings.md) | SPECTER2, input construction, halfvec storage, embedding jobs |
 | [docs/retrieval.md](docs/retrieval.md) | Lexical, semantic and hybrid retrieval; filters and retraction policy |
 | [docs/evaluation.md](docs/evaluation.md) | Benchmark queries, pooling, judgments, metrics, limitations |

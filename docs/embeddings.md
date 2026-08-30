@@ -421,7 +421,8 @@ as the previous run, and `enqueue` inserted a duplicate row for a job that had
 already succeeded, violating the UNIQUE constraint and killing the worker. See
 [ADR 0002](adr/0002-postgres-job-queue.md#amendment-phase-2-closeout-what-a-dedup-key-reserves).
 
-One caveat: `specter2-benchmark@v1` (2,320 rows from an input-strategy ablation)
+One caveat, tracked as [DATA-001](backlog.md#data-001):
+`specter2-benchmark@v1` (2,320 rows from an input-strategy ablation)
 is no longer a registered profile, so no worker can settle its rows and they
 keep a NULL version indefinitely. Harmless - nothing reads that key - but it is
 why a stale-vector count grouped by `model_key` will show it as unversioned
