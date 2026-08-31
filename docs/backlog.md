@@ -511,18 +511,34 @@ Notes:
 
 ### RETR-005
 
-**ONNX int8 inference is unimplemented.** — `DEFERRED`
+**ONNX int8 inference.** — `DONE` (2026-09-01) — implemented, measured, **not adopted**
 
-The stack runs stock PyTorch fp32 and measured 1.29–1.41 papers/second against a
-Phase 0 estimate of 20–35 that assumed ONNX Runtime int8. Published int8 speedups
-run 2.7–3.4x and are the **largest known performance lever**.
+Implemented and measured rather than left as a published estimate. The answer is
+that it does not pay for itself: **1.64x, not the 2.7–3.4x the published figures
+promised, and it changes the top ten on every benchmark query.**
 
-* **Risk/impact** — a 6-month backfill is ~194 hours (8.1 days) at the measured
-  rate. The daily delta is ~60–65 minutes and interruptible, so daily operation
-  is fine and only backfill hurts.
-* **Trigger to revisit** — when a backfill is actually scheduled, or when daily
-  embedding stops fitting its off-peak window.
-* **Source** — [performance.md](performance.md), [cost-model.md](cost-model.md) §8a.
+* **Closed by** — `feat: ONNX Runtime embedding backend, measured against torch`.
+* **What was built** — `embeddings/onnx_specter2.py` (a second backend behind the
+  existing Protocol, no torch required at run time), `scripts/export_onnx.py`
+  (trace, fuse, quantise) and `scripts/benchmark_onnx.py` (throughput, fidelity
+  and retrieval agreement in one process).
+* **The measurement** — 3.45 papers/s against PyTorch's 2.11 on the same texts
+  in the same process; mean cosine 0.991 against the fp32 vectors; 0.875 top-10
+  overlap; **0 of 12 queries kept their ordering**. Full table in
+  [performance.md §9](performance.md#9-onnx-int8-measured-and-not-adopted).
+* **Why that settles it** — 1.64x takes the 6-month backfill from 8.1 days to
+  ~5. It still does not fit beside PostgreSQL on the box, so the temporary
+  high-CPU instance is still the answer, and that instance costs ~EUR 4.
+  Adopting int8 to save EUR 4 would mean re-embedding under a second `model_key`
+  and re-running the Phase 2 benchmark to learn whether NDCG@10 survived.
+* **What the exercise did establish** — the ONNX fp32 export reproduces PyTorch
+  exactly (cosine 1.0, identical top ten on all twelve queries), which is what
+  makes the int8 numbers attributable to quantisation alone; and int8 is
+  resident in 349 MB against torch's 907 MB, with no torch installed at all.
+* **Reopen if** — memory rather than time becomes the binding constraint on the
+  deployment box, or a re-measurement on real server hardware shows a materially
+  different ratio. The backend and both scripts remain in place for exactly that.
+* **Source** — [performance.md §9](performance.md), [cost-model.md](cost-model.md) §8a.
 
 ### RETR-006
 

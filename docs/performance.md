@@ -238,10 +238,10 @@ measurement **reinforces that shape and hardens the second half of it**:
 * **The backfill does not.** Eight days of continuous inference contending with
   PostgreSQL is not a background task; it is an outage risk. The temporary
   instance stops being a convenience and becomes the plan.
-* **ONNX int8 is the untested lever.** Published int8 speedups of 2.7-3.4x would
-  bring the backfill to 2-3 days and the daily delta under 25 minutes. Phase 2
-  did not implement it, so that is an estimate on top of an estimate — but it is
-  the first thing to try before renting hardware.
+* **ONNX int8 was the untested lever. It has now been tested, and it is not
+  enough.** The measured speedup is 1.64x, not the published 2.7-3.4x, and it
+  changes the ranking. Section 9 has the numbers. The temporary instance stays
+  the plan.
 
 The tooling supports this without further work: `--max-papers` bounds a run,
 runs are resumable and idempotent, and a second machine can be pointed at the
@@ -261,3 +261,86 @@ python scripts/benchmark_phase2.py --papers 150 --corpus 1200
 
 `--backend hashing` runs everything except the model sections with no torch
 installed, which is enough to reproduce the storage and latency numbers.
+
+
+---
+
+## 9. ONNX int8: measured, and not adopted
+
+Section 7 named ONNX int8 the largest untested lever and the first thing to try
+before renting hardware. It has been implemented
+(`embeddings/onnx_specter2.py`, `scripts/export_onnx.py`) and measured
+(`scripts/benchmark_onnx.py`). It does not pay for itself.
+
+**Setup.** 200 papers from the corpus, mean 1,460 characters, batch 16, one
+process, same machine and same texts for all three backends. Graphs traced at
+opset 17, fused with ONNX Runtime's bert transformer optimiser, then dynamically
+quantised with per-tensor int8 weights.
+
+| Backend | papers/s | vs torch | Resident | Graph on disk |
+|---|---|---|---|---|
+| PyTorch fp32 | 2.11 | 1.00x | 907 MB | — |
+| ONNX fp32 | 1.38 | 0.65x | 506 MB | 441 MB |
+| **ONNX int8** | **3.45** | **1.64x** | **349 MB** | 111 MB |
+
+**Fidelity**, against the PyTorch vectors, and **retrieval agreement**, over the
+twelve benchmark queries ranked against the same 200 papers:
+
+| Backend | Mean cosine | Min cosine | Top-10 overlap | Identical top 10 |
+|---|---|---|---|---|
+| ONNX fp32 | 1.000000 | 1.000000 | 1.000 | 12/12 |
+| ONNX int8 | 0.991132 | 0.988325 | 0.875 | **0/12** |
+
+### What the numbers say
+
+**The export is correct**, which is what makes the rest of the table
+trustworthy. ONNX fp32 reproduces PyTorch exactly - identical top ten on every
+query - so the int8 differences are quantisation and nothing else. A test
+asserts this (`tests/test_onnx_backend.py`), along with the two adapters
+remaining distinct graphs, which is the failure that would otherwise be
+invisible in every measurement here.
+
+**1.64x, not 2.7-3.4x.** Fusing the graph before quantising, which is what the
+published figures assume, moved it from 1.62x to 1.64x. The gap is not a missing
+optimisation; it is that the published numbers come from different hardware,
+sequence lengths and batch shapes than this workload has.
+
+**int8 changes the ranking, on every query.** Mean cosine of 0.991 sounds
+harmless and is not: 12.5% of the top ten changes, and not one query kept its
+ordering. Only the ordering is user-visible, which is why agreement is measured
+rather than inferred from cosine.
+
+**Against the decision it was meant to inform:** 1.64x takes the 6-month
+backfill from 8.1 days to about 5. It still does not fit beside PostgreSQL on
+the deployment box, so the temporary high-CPU instance is still the answer -
+and that instance costs about EUR 4. Adopting int8 to avoid EUR 4 would mean
+re-embedding the corpus under a second `model_key` and re-running the Phase 2
+benchmark to find out whether NDCG@10 survived. That is a poor trade.
+
+### What is worth keeping
+
+**Memory, unexpectedly.** int8 is resident in 349 MB against PyTorch's 907 MB,
+and needs no torch installed at all. On an 8 GB box shared with PostgreSQL that
+is a real saving, and it is the one number here that might change a decision -
+not for the backfill, but for daily embedding if memory pressure ever becomes
+the binding constraint rather than time.
+
+**ONNX fp32 is a slower way to get identical vectors.** 0.65x throughput for
+44% less memory. Not useful today; recorded so nobody re-derives it.
+
+The backend and both scripts stay. Re-measuring on the real deployment hardware
+is a one-line run, and section 0's standing rule - that these numbers describe a
+shared Windows laptop and not a dedicated vCPU - applies to this section more
+than any other, because a ratio between two engines is exactly the kind of thing
+that moves with the instruction set underneath it.
+
+### Reproducing
+
+```bash
+pip install -e ".[embed,embed-onnx,embed-onnx-export]"
+python scripts/export_onnx.py
+python scripts/benchmark_onnx.py --limit 200 --json data/onnx-benchmark.json
+```
+
+`--reuse-fp32` re-fuses and re-quantises without re-tracing, which is the loop
+worth having while trying quantisation settings.

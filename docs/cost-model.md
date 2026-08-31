@@ -273,9 +273,13 @@ in [performance.md](performance.md); the correction to this section is:
 
 Two things are being compared that are not the same thing, and both matter:
 
-* **ONNX int8 was assumed and has not been implemented.** Phase 2 runs stock
-  PyTorch fp32. The published 2.7-3.4x int8 speedup is still available and
-  untested; it is the single largest lever on these numbers.
+* **ONNX int8 was assumed and has now been measured.** Phase 2 ran stock PyTorch
+  fp32 and treated the published 2.7-3.4x int8 speedup as the largest available
+  lever. It was implemented in Phase 2.5 and delivers **1.64x**, while changing
+  the top ten on every benchmark query
+  ([performance.md §9](performance.md#9-onnx-int8-measured-and-not-adopted),
+  RETR-005). The lever is real but far smaller than assumed, and it is not
+  adopted. Treat this row as closed rather than pending.
 * **The measurement hardware is not the deployment target.** A shared 15 W laptop
   U-series chip is not a dedicated CX32 vCPU.
 
@@ -291,6 +295,8 @@ measurement reinforces rather than overturns:
 * Daily embedding still fits on the box — an hour of off-peak CPU, not minutes.
 * The backfill still does not, and the case for option (a) is now stronger: at
   7.4 days in place, a temporary high-CPU instance stops being a convenience.
+  int8 would bring that to roughly 5 days, which is not the difference between
+  renting the instance and not renting it.
 * Storage is unaffected and comes in cheaper than feared: **~2.0 GB** for a
   6-month backfill and **~4.1 GB/year** thereafter, measured at 2,223 bytes per
   vector including all row and index overhead (halfvec, see
