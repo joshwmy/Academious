@@ -23,6 +23,7 @@ from academious.api.dependencies import get_retrieval_service
 from academious.api.limits import limiter
 from academious.api.main import app
 from academious.core.config import get_settings
+from academious.retrieval.filters import PreprintPolicy, RetractionPolicy, SearchFilters
 from academious.retrieval.types import RetrievalHit, RetrievalResult, ScoreKind
 from tests.factories import make_paper
 
@@ -173,6 +174,70 @@ def test_the_method_is_server_configuration_not_a_query_parameter(client, stub):
     assert "model_key" not in stub.calls[0]
 
 
+# ------------------------------------------------------------------ filters
+
+
+def test_filters_reach_the_retrieval_service(client, stub):
+    """The router translates query parameters into SearchFilters and hands them on.
+
+    It does not filter anything itself. Filtering in the router would mean
+    filtering a page that ranking has already produced, which is the bug this
+    endpoint exists on the other side of.
+    """
+    client.get(
+        "/search",
+        params={
+            "q": "graph",
+            "source": ["arxiv", "biorxiv"],
+            "preprints": "only_preprints",
+            "peer_reviewed": "true",
+            "open_access": "true",
+        },
+    )
+
+    passed = stub.calls[0]["search_filters"]
+    assert passed.sources == ("arxiv", "biorxiv")
+    assert passed.preprints is PreprintPolicy.ONLY_PREPRINTS
+    assert passed.peer_reviewed_only is True
+    assert passed.open_access_only is True
+
+
+def test_an_unfiltered_search_is_identical_to_one_with_no_filter_support(client, stub):
+    """The Phase 2 benchmark measured an unfiltered search. It must still be that.
+
+    Adding parameters must not change what happens when nobody passes them, or
+    every number in performance.md silently stops describing this endpoint.
+    """
+    client.get("/search", params={"q": "graph"})
+
+    assert stub.calls[0]["search_filters"] == SearchFilters()
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"preprints": "whatever"},
+        {"peer_reviewed": "sometimes"},
+        {"open_access": "maybe"},
+    ],
+)
+def test_an_unsupported_filter_value_is_rejected(client, stub, params):
+    response = client.get("/search", params={"q": "graph", **params})
+    assert response.status_code == 422
+    assert stub.calls == [], "an invalid filter must not reach retrieval"
+
+
+def test_retraction_policy_is_not_a_query_parameter(client, stub):
+    """Retracted papers stay hidden. The default is a product decision, not a preference.
+
+    Exposing it would let a caller surface withdrawn claims through ordinary
+    discovery, which is exactly what filters.py declines to allow by default.
+    """
+    client.get("/search", params={"q": "graph", "retraction": "include_all"})
+
+    assert stub.calls[0]["search_filters"].retraction is RetractionPolicy.EXCLUDE_RETRACTED
+
+
 # -------------------------------------------------------------- integration
 
 
@@ -228,3 +293,61 @@ def test_the_api_returns_exactly_the_ranking_the_retrieval_service_produces(sess
     assert [hit["paper"]["id"] for hit in response.json()["results"]] == [
         str(paper_id) for paper_id in expected.paper_ids()
     ]
+
+
+@pytest.mark.model
+def test_a_filtered_search_fills_the_page_because_filtering_precedes_ranking(session):
+    """A filtered search returns a full page, not a ranked page with rows removed.
+
+    This is the whole point of applying filters in SQL. With three preprints and
+    three journal articles in the corpus, a three-result search for preprints
+    must return three preprints. Filtering the output of an unfiltered ranking
+    would return however many of the top three happened to be preprints - the
+    failure that makes filtered search feel broken.
+    """
+    from academious.db.session import session_scope
+    from academious.embeddings import service as embedding_service
+    from academious.embeddings.hashing import HashingBackend
+    from academious.embeddings.registry import HASHING_AUTO
+    from academious.retrieval.service import RetrievalService
+
+    for index in range(6):
+        make_paper(
+            session,
+            f"Graph neural networks for topic {index}",
+            abstract="Message passing over molecular graphs predicts chemical properties.",
+            published_date=date(2026, 1, index + 1),
+            # Alternating, so an unfiltered top three cannot be all preprints.
+            is_preprint=index % 2 == 0,
+        )
+    session.commit()
+    pending = embedding_service.select_pending_paper_ids(session, HASHING_AUTO.key, limit=100)
+    embedding_service.embed_papers(
+        session, pending, profile=HASHING_AUTO, backend=HashingBackend()
+    )
+    session.commit()
+
+    service = RetrievalService(backend=HashingBackend(), model_key=HASHING_AUTO.key)
+    limiter.reset()
+    limiter.enabled = False
+    app.dependency_overrides[get_retrieval_service] = lambda: service
+    try:
+        response = TestClient(app).get(
+            "/search",
+            params={"q": "graph neural networks", "limit": 3, "preprints": "only_preprints"},
+        )
+    finally:
+        app.dependency_overrides.clear()
+        limiter.enabled = True
+        limiter.reset()
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["count"] == 3, "the page is filled from the filtered corpus"
+    assert all(hit["paper"]["is_preprint"] for hit in payload["results"])
+
+    with session_scope() as direct:
+        unfiltered = service.search_by_interest(
+            direct, "graph neural networks", limit=3, method=get_settings().retrieval_default_method
+        )
+    assert len(unfiltered.hits) == 3

@@ -97,16 +97,26 @@ export type PreprintPolicy = "any" | "only_preprints" | "exclude_preprints";
  * undefined values when building the query string, so a caller may pass one
  * explicitly (`{ offset: maybeOffset }`) without special-casing it.
  */
-export interface PaperListParams {
-  limit?: number | undefined;
-  offset?: number | undefined;
+/**
+ * Metadata filters, in the backend's own spelling.
+ *
+ * `/papers` and `/search` accept the same four, and both apply them in SQL
+ * before paging or ranking. One interface rather than two copies, so the day a
+ * fifth filter arrives it cannot reach one endpoint and not the other.
+ */
+export interface PaperFilterParams {
   source?: string[] | undefined;
   preprints?: PreprintPolicy | undefined;
   peer_reviewed?: boolean | undefined;
   open_access?: boolean | undefined;
 }
 
-export interface SearchParams {
+export interface PaperListParams extends PaperFilterParams {
+  limit?: number | undefined;
+  offset?: number | undefined;
+}
+
+export interface SearchParams extends PaperFilterParams {
   q: string;
   limit?: number | undefined;
 }

@@ -4,9 +4,17 @@
  * Search lives in the shell so it is reachable from every route, and submitting
  * always navigates to `/search?q=…` - the URL is the query, which is what makes
  * a result page shareable, bookmarkable and correct under the back button.
+ *
+ * Whatever filters the current URL carries travel with the query. Both surfaces
+ * accept the same filters, so a reader who narrows the feed to arXiv preprints
+ * and then searches gets a search over arXiv preprints; dropping the filters at
+ * the moment of searching is the asymmetry WEB-010 was raised about. Nothing is
+ * hidden by this: the search page renders the same filter panel, showing
+ * exactly what is in force.
  */
 
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { filtersToSearchParams, parseFilters } from "../lib/filters";
 import { SearchBar } from "./SearchBar";
 import "./AppShell.css";
 
@@ -30,7 +38,14 @@ export function AppShell() {
           <div className="app-header__search">
             <SearchBar
               initialQuery={activeQuery}
-              onSubmit={(query) => navigate(`/search?q=${encodeURIComponent(query)}`)}
+              onSubmit={(query) => {
+                // Re-parsing rather than forwarding the raw query string drops
+                // the feed's offset and anything unrecognised, and leaves the
+                // filters canonically ordered.
+                const params = filtersToSearchParams(parseFilters(searchParams));
+                params.set("q", query);
+                navigate(`/search?${params.toString()}`);
+              }}
             />
           </div>
         </div>

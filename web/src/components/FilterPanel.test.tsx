@@ -1,10 +1,10 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { NO_FILTERS, type FeedFilters } from "../lib/filters";
+import { NO_FILTERS, type PaperFilters } from "../lib/filters";
 import { FilterPanel } from "./FilterPanel";
 
-function renderPanel(filters: FeedFilters = NO_FILTERS) {
+function renderPanel(filters: PaperFilters = NO_FILTERS) {
   const onChange = vi.fn();
   render(<FilterPanel filters={filters} onChange={onChange} />);
   return onChange;
@@ -94,15 +94,17 @@ describe("FilterPanel", () => {
     expect(screen.getByRole("status")).toHaveTextContent("2 filters");
   });
 
-  it("says that filters do not reach search, only while they are set", () => {
-    // The asymmetry is real - GET /search takes no filter parameters - so the
-    // interface states it rather than letting a reader assume it carries over.
+  it("reports the active count only while filters are set", () => {
+    // This summary used to carry a caveat - that search results were not
+    // filtered - because GET /search accepted no filter parameters. It does
+    // now (WEB-010), so the caveat is gone and the count is the whole message.
     const { unmount } = render(<FilterPanel filters={NO_FILTERS} onChange={vi.fn()} />);
-    expect(screen.queryByText(/search results are not filtered/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
     unmount();
 
     render(<FilterPanel filters={{ ...NO_FILTERS, openAccess: true }} onChange={vi.fn()} />);
-    expect(screen.getByText(/search results are not filtered/i)).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("1 filter active.");
+    expect(screen.queryByText(/not filtered/i)).not.toBeInTheDocument();
   });
 
   it("lists every source the backend knows about", () => {

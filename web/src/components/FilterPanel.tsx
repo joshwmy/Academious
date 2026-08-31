@@ -1,10 +1,12 @@
 /**
- * The feed's filter controls.
+ * The filter controls, shared by the feed and by search.
  *
  * Fully controlled: it holds no state of its own and reports every change to
  * the page, which writes the change into the URL. That is what keeps a filtered
  * feed linkable, and it means there is exactly one place a filter can be
- * described from - the query string - rather than two that can disagree.
+ * described from - the query string - rather than two that can disagree. The
+ * same component serves both surfaces: a reader who learns the controls once
+ * should not meet a second, differently-shaped set of them on search.
  *
  * Changes apply immediately rather than behind an "Apply" button. The read
  * budget is 120 requests a minute against roughly 12 ms of database work, so a
@@ -19,14 +21,14 @@ import {
   PREPRINT_POLICIES,
   SOURCES,
   countActiveFilters,
-  type FeedFilters,
+  type PaperFilters,
   type SourceKey,
 } from "../lib/filters";
 import "./FilterPanel.css";
 
 interface FilterPanelProps {
-  filters: FeedFilters;
-  onChange: (next: FeedFilters) => void;
+  filters: PaperFilters;
+  onChange: (next: PaperFilters) => void;
 }
 
 export function FilterPanel({ filters, onChange }: FilterPanelProps) {
@@ -112,7 +114,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
 
       {active > 0 ? (
         <p className="filters__summary" role="status">
-          {active} {active === 1 ? "filter" : "filters"} active. Search results are not filtered.
+          {active} {active === 1 ? "filter" : "filters"} active.
         </p>
       ) : null}
     </section>

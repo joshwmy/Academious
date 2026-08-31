@@ -21,7 +21,7 @@ import {
   filtersToSearchParams,
   hasActiveFilters,
   parseFilters,
-  type FeedFilters,
+  type PaperFilters,
 } from "../lib/filters";
 import "./Page.css";
 
@@ -35,7 +35,7 @@ function parseOffset(raw: string | null): number {
   return Math.floor(value / PAGE_SIZE) * PAGE_SIZE;
 }
 
-function toQuery(filters: FeedFilters, offset: number): URLSearchParams {
+function toQuery(filters: PaperFilters, offset: number): URLSearchParams {
   const params = filtersToSearchParams(filters);
   if (offset > 0) params.set("offset", String(offset));
   return params;
@@ -63,7 +63,7 @@ export function FeedPage() {
     window.scrollTo({ top: 0 });
   };
 
-  const changeFilters = (next: FeedFilters) => {
+  const changeFilters = (next: PaperFilters) => {
     // Back to the first page. Page three of an unfiltered feed is not page
     // three of a filtered one, and there may be no page three at all - keeping
     // the offset would show an empty page for results that do exist.

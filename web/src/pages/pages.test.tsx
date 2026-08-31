@@ -443,6 +443,103 @@ describe("search", () => {
 
 // ------------------------------------------------------------------ detail
 
+describe("search filters", () => {
+  /** The filter parameters of the most recent /search request. */
+  function lastSearchParams(mock: ReturnType<typeof stubApi>) {
+    const url = new URL(searchCalls(mock).at(-1)![0] as string, "http://api.test");
+    return {
+      q: url.searchParams.get("q"),
+      source: url.searchParams.getAll("source"),
+      preprints: url.searchParams.get("preprints"),
+      peer_reviewed: url.searchParams.get("peer_reviewed"),
+      open_access: url.searchParams.get("open_access"),
+    };
+  }
+
+  const oneHit = () =>
+    jsonOk({
+      query: "graph",
+      count: 1,
+      limit: 20,
+      results: [{ rank: 1, paper: makeSummary({ id: "x", title: "A paper" }) }],
+    });
+
+  it("sends no filter parameters when the URL carries none", async () => {
+    // The Phase 2 benchmark measured an unfiltered search. An unfiltered
+    // request must stay byte-identical to the one made before filters existed.
+    const mock = stubApi({ "/search": oneHit });
+    renderApp("/search?q=graph");
+
+    await screen.findByRole("link", { name: "A paper" });
+    expect(lastSearchParams(mock)).toMatchObject({
+      source: [],
+      preprints: null,
+      peer_reviewed: null,
+      open_access: null,
+    });
+  });
+
+  it("applies the filters the URL carries, so a filtered search is linkable", async () => {
+    const mock = stubApi({ "/search": oneHit });
+    renderApp("/search?q=graph&source=arxiv&preprints=only_preprints&open_access=true");
+
+    await screen.findByRole("link", { name: "A paper" });
+    expect(lastSearchParams(mock)).toMatchObject({
+      q: "graph",
+      source: ["arxiv"],
+      preprints: "only_preprints",
+      open_access: "true",
+    });
+    expect(screen.getByRole("checkbox", { name: /arxiv/i })).toBeChecked();
+  });
+
+  it("keeps the query when a filter is toggled", async () => {
+    // The failure this guards against loses the query and lands the reader on
+    // an empty search page, which reads as "your search broke".
+    const user = userEvent.setup();
+    const mock = stubApi({ "/search": oneHit });
+    renderApp("/search?q=graph");
+
+    await screen.findByRole("link", { name: "A paper" });
+    await user.click(screen.getByRole("checkbox", { name: /open access only/i }));
+
+    await waitFor(() => expect(lastSearchParams(mock).open_access).toBe("true"));
+    expect(lastSearchParams(mock).q).toBe("graph");
+  });
+
+  it("carries the filters into a new search from the search bar", async () => {
+    const user = userEvent.setup();
+    const mock = stubApi({ "/search": oneHit });
+    renderApp("/search?q=graph&peer_reviewed=true");
+
+    await screen.findByRole("link", { name: "A paper" });
+    await user.clear(screen.getByRole("searchbox"));
+    await user.type(screen.getByRole("searchbox"), "transformers");
+    await user.click(screen.getByRole("button", { name: "Search" }));
+
+    await waitFor(() => expect(lastSearchParams(mock).q).toBe("transformers"));
+    expect(lastSearchParams(mock).peer_reviewed).toBe("true");
+  });
+
+  it("distinguishes no matches from no matches under these filters", async () => {
+    const user = userEvent.setup();
+    stubApi({
+      "/search": () => jsonOk({ query: "graph", count: 0, limit: 20, results: [] }),
+    });
+    renderApp("/search?q=graph&peer_reviewed=true");
+
+    const panel = await screen.findByText(/no papers match these filters/i);
+
+    // Scoped to the empty state: the filter panel offers its own clear button,
+    // and this test is about the one the reader is looking at when they find
+    // nothing.
+    const emptyState = panel.closest(".state-panel") as HTMLElement;
+    await user.click(within(emptyState).getByRole("button", { name: /clear filters/i }));
+
+    expect(await screen.findByText(/no matching papers/i)).toBeInTheDocument();
+  });
+});
+
 describe("paper detail", () => {
   const PAPER_PATH = "/papers/11111111-1111-4111-8111-111111111111";
 

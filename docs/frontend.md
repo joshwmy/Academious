@@ -151,11 +151,13 @@ frontend is built not to spend it accidentally:
 
 ---
 
-## 6. Filtering the feed
+## 6. Filtering
 
-`GET /papers` has accepted source, preprint, peer-review and open-access filters
-since the API shipped, applied in SQL before pagination so that `total` counts
-what matched. The feed now surfaces them.
+`GET /papers` and `GET /search` accept the same four filters - source, preprint
+policy, peer-review and open-access - and both apply them in SQL, before paging
+and before ranking respectively. The feed and the search page therefore share
+one `FilterPanel` and one `lib/filters.ts`, so the two surfaces cannot drift
+into meaning different things by the same name.
 
 | Control | Query parameter | Values |
 |---|---|---|
@@ -167,10 +169,15 @@ what matched. The feed now surfaces them.
 ### The URL is the state
 
 Filters live in the query string exactly as the offset and the search query do.
-`FilterPanel` is fully controlled and holds nothing; `FeedPage` reads the
-filters out of the URL, sends them to the API, and writes every change back.
-There is therefore one place a filter can be described from, and a filtered feed
-is a page you can link to, bookmark and reach again with the back button.
+`FilterPanel` is fully controlled and holds nothing; the page reads the filters
+out of the URL, sends them to the API, and writes every change back. There is
+therefore one place a filter can be described from, and a filtered feed - or a
+filtered set of search results - is a page you can link to, bookmark and reach
+again with the back button.
+
+On the search page the query survives every filter change: `changeFilters`
+rewrites the query string and puts `q` back. Losing it would drop the reader on
+an empty search page, which reads as the search having broken.
 
 Only values that differ from the backend's own defaults are written, so an
 unfiltered feed has a clean URL and an unfiltered request is byte-identical to
@@ -202,22 +209,31 @@ a 20-per-minute budget - which is why it stays submit-driven. The two controls
 behave differently because the work behind them differs by more than an order of
 magnitude.
 
-### Filters do not reach search
+### Filters travel with the query
 
-`GET /search` accepts `q` and `limit` and no filter parameters at all, so a
-filter set on the feed does not carry into search results. The panel says so
-while any filter is active rather than letting a reader assume otherwise.
-Extending filtering to search is a backend and retrieval change - filters apply
-before ranking, so a filtered search is a different retrieval run whose
-interaction with the measured ranking would need re-verifying against the
-benchmark - and is tracked as [WEB-010](backlog.md#web-010).
+Submitting a search carries whatever filters the current URL holds. A reader who
+narrows the feed to arXiv preprints and then searches gets a search over arXiv
+preprints, rather than silently losing the narrowing at the moment they use it -
+the asymmetry [WEB-010](backlog.md#web-010) was raised about.
+
+Nothing is hidden by this. The search page renders the same panel, so the
+filters in force are on screen next to the results they produced. `AppShell`
+re-parses the query string rather than forwarding it, which drops the feed's
+offset and anything unrecognised.
+
+Filtering itself stays on the backend. `/search` applies the filters to the
+candidate set before ranking, so a filtered search fills its page; filtering the
+rendered results here would shrink a page of twenty to three and make recall
+depend on how aggressive the filter was.
 
 ### Empty is two different situations
 
-No results with no filters set means the corpus has not been populated. No
-results with filters set means the filters excluded everything. These read
-identically if you only count rows, so they are separate states and the second
-one offers a way out.
+On the feed: no results with no filters set means the corpus has not been
+populated; no results with filters set means the filters excluded everything. On
+search: no results with no filters means nothing in the corpus matched the
+query; with filters, papers may well match the query and fail the filters. These
+read identically if you only count rows, so each is a separate state and the
+filtered one offers a way out.
 
 ---
 
@@ -249,7 +265,7 @@ boundary itself. Every bound it applies is also enforced server-side.
 | Hostile URLs | Every external URL passes `safeExternalUrl`, which allows only `http:` and `https:`. `javascript:`, `data:`, `file:`, `blob:` and anything else render as text, not as links. Tested |
 | New tabs | External links carry `rel="noopener noreferrer"` |
 | Secrets | Nothing secret exists client-side. The built bundle is audited for connection strings, keys and internal identifiers |
-| Retrieval internals | The client sends only `q` and `limit` to `/search`. There is no method, model, profile or fusion parameter to send, and a test asserts the request carries nothing else |
+| Retrieval internals | The client sends `q`, `limit` and the four metadata filters to `/search`, and nothing else. There is no method, model, profile or fusion parameter to send: filters describe the papers a reader wants, retrieval configuration describes how the ranker works, and only the first is a product feature. Tests assert both the exact parameter set and the absence of each named internal |
 | Operational endpoints | `/health`, `/health/db` and `/metrics/*` are never called. The client has no code path that can reach them |
 | Third parties | No analytics, no trackers, no third-party scripts, no external fonts. Everything loads from this origin |
 | CSP | The API's `default-src 'none'` applies to API responses. The static frontend is served separately; a CSP for it belongs to whatever serves `dist/` |
@@ -296,9 +312,6 @@ the reason it is deferred and what would trigger picking it up.
   The Phase 0 decision (section 11.7, option a) was to prerender later; the API
   already returns everything a full page render needs -
   [WEB-004](backlog.md#web-004).
-* **Filters stop at the feed.** `/search` accepts no filter parameters, so a
-  filter set on the feed does not carry into search results (§6) -
-  [WEB-010](backlog.md#web-010).
 * **No "feed by field".** The corpus carries no normalised subject taxonomy, so
   there is nothing to filter by - see [api.md](api.md),
   [WEB-003](backlog.md#web-003).

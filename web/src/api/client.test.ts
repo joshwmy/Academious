@@ -109,6 +109,31 @@ describe("searchPapers", () => {
     }
   });
 
+  it("sends metadata filters but still no retrieval configuration", async () => {
+    // The two are different things that both arrive as query parameters:
+    // `preprints` describes the papers a reader wants, `method` describes how
+    // the ranker works. The first is a product feature; the second is not.
+    const mock = stubFetch(jsonResponse(emptyResults));
+    await searchPapers({
+      q: "graph",
+      limit: 10,
+      source: ["arxiv"],
+      preprints: "only_preprints",
+      peer_reviewed: true,
+      open_access: true,
+    });
+
+    const keys = [...requestedUrl(mock).searchParams.keys()];
+    expect(keys.sort()).toEqual([
+      "limit",
+      "open_access",
+      "peer_reviewed",
+      "preprints",
+      "q",
+      "source",
+    ]);
+  });
+
   it("preserves the backend result order exactly", async () => {
     stubFetch(
       jsonResponse({

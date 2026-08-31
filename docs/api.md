@@ -64,7 +64,7 @@ lets page two repeat rows from page one. The id breaks the tie deterministically
 
 Filters are applied in SQL before pagination, so `page.total` counts what
 matched rather than what was returned. They reuse `retrieval/filters.py`, which
-means a filter behaves identically on `/papers` and inside search.
+means a filter behaves identically here and on [`/search`](#4-get-search).
 
 Retracted papers are excluded by default at that layer. Corrected papers and
 those under an expression of concern are returned with `retraction_status` set,
@@ -137,13 +137,41 @@ carry one (a preprint and its published version are linked, not merged - ADR
 ## 4. `GET /search`
 
 ```http
-GET /search?q=graph+neural+networks&limit=20
+GET /search?q=graph+neural+networks&limit=20&preprints=exclude_preprints
 ```
 
 | Parameter | Type | Default | Bounds |
 |---|---|---|---|
 | `q` | string | required | 1-512 characters, must contain non-whitespace |
 | `limit` | int | 20 | 1-50 |
+| `source` | string, repeatable | none | source keys, e.g. `arxiv` |
+| `preprints` | enum | `any` | `any`, `only_preprints`, `exclude_preprints` |
+| `peer_reviewed` | bool | `false` | |
+| `open_access` | bool | `false` | |
+
+### Filtering
+
+The four filters are the same ones `/papers` accepts, spelled the same way, and
+they reach the same `retrieval/filters.py` conditions. A filter therefore means
+one thing across the API rather than two things that happen to share a name.
+
+**Filters apply before ranking, not to the ranking.** They become SQL conditions
+on the candidate set, so a filtered search for 20 results returns 20 matching
+papers if the corpus holds them. Filtering a ranked page afterwards would return
+however many of the top 20 happened to match - a page that shrinks the more you
+ask of it, and the reason date-filtered search feels broken on sites that do it.
+
+For hybrid retrieval the filters apply to each component's candidate pool before
+fusion, so fusion never sees a paper that the filters excluded.
+
+`retraction` is **not** a query parameter. Retracted papers stay out of ordinary
+discovery; that default is a product decision, not a preference. Corrected and
+concern-flagged papers are returned with `retraction_status` set, as on
+`/papers`.
+
+An unfiltered search sends no filter parameters and is byte-identical to the
+request made before filters existed, which is what keeps the Phase 2 benchmark
+numbers below a description of this endpoint.
 
 ### Retrieval method
 
@@ -252,10 +280,10 @@ successor when it stops being.
 Tracked in [backlog.md](backlog.md); the IDs below are where the current status
 of each lives.
 
-* No `field` filter until an OpenAlex-style taxonomy is ingested (§2) -
-  [DATA-002](backlog.md#data-002).
-* No filter parameters on `/search`; filtering is a `/papers` capability only -
-  [WEB-010](backlog.md#web-010).
+* No `field` filter on either endpoint until an OpenAlex-style taxonomy is
+  ingested (§2) - [DATA-002](backlog.md#data-002).
+* No date-range filter is exposed, though `SearchFilters` supports one. Nothing
+  in the interface needs it yet.
 * No cursor pagination; offset only, capped.
 * No sorting parameter. The feed order is fixed, which removes a class of
   injection surface and a class of pathological query.

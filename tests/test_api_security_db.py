@@ -29,6 +29,7 @@ from academious.api.dependencies import get_retrieval_service
 from academious.api.limits import UNKNOWN_CLIENT, client_identity, limiter
 from academious.api.main import app, create_app
 from academious.core.config import get_settings
+from academious.retrieval.filters import SearchFilters
 from tests.factories import make_paper
 from tests.test_api_search_db import StubRetrieval
 
@@ -414,6 +415,22 @@ def test_hostile_filter_values_cannot_reach_sql_as_syntax(client, session, hosti
     assert client.get("/papers").json()["page"]["total"] == 1, "corpus intact"
 
 
+@pytest.mark.parametrize("hostile", ["'; DROP TABLE paper; --", "1 OR 1=1", "../../etc/passwd"])
+def test_a_hostile_filter_value_reaches_search_as_data_not_syntax(client, stub, hostile):
+    """`/search` gained `source` in WEB-010, so the value now crosses this boundary too.
+
+    Retrieval is stubbed here, so this asserts what the boundary can actually
+    prove: the string arrives as an ordinary element of `sources`, unparsed and
+    unsplit, rather than as anything the router itself interpreted. What happens
+    to it in SQL is the same `retrieval/filters.py` code path `/papers` uses,
+    and the test above exercises that against a real database.
+    """
+    response = client.get("/search", params={"q": "graph", "source": hostile})
+
+    assert response.status_code == 200
+    assert stub.calls[-1]["search_filters"].sources == (hostile,)
+
+
 def test_internal_retrieval_parameters_are_not_accepted_from_the_query_string(client, stub):
     """Every knob that would change cost or meaning is server-side only."""
     smuggled = {
@@ -432,7 +449,17 @@ def test_internal_retrieval_parameters_are_not_accepted_from_the_query_string(cl
     assert response.status_code == 200
     call = stub.calls[-1]
     assert call["method"] == get_settings().retrieval_default_method
-    assert set(call) == {"query", "limit", "method"}, "no smuggled parameter reached retrieval"
+    assert set(call) == {
+        "query",
+        "limit",
+        "method",
+        "search_filters",
+    }, "no smuggled parameter reached retrieval"
+    # Metadata filters are accepted (WEB-010) and retrieval configuration is
+    # not, so the allowlist above grew by exactly one name. Asserting the
+    # filters are still the defaults proves nothing above leaked into them
+    # either - a smuggled `method` must not arrive dressed as a filter.
+    assert call["search_filters"] == SearchFilters()
 
 
 # ------------------------------------------------------------ read-only API

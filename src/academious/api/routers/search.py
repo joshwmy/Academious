@@ -12,6 +12,18 @@ the embedding profile, fusion constants and the candidate depth are all
 settings. A caller who could pass `method=` or `model_key=` could select an
 experimental profile, make the expensive method run on demand, or read internal
 implementation state out of the response - none of which are product features.
+
+Metadata filters are the opposite case and are accepted, in the same spelling
+`/papers` uses. The distinction is what the parameter describes: `source` and
+`preprints` describe the papers a reader wants, which is a product feature;
+`method` describes how the ranker works, which is not. Filters reach the
+retrieval service and are applied in SQL before ranking, so a filtered search
+returns a full page of matching papers rather than an unfiltered ranking with
+rows deleted from it.
+
+The retraction policy is deliberately not exposed. Its default hides retracted
+work from ordinary discovery, and that is a product decision rather than a
+preference to be overridden by a query string.
 """
 
 from __future__ import annotations
@@ -28,6 +40,7 @@ from academious.api.limits import limiter, search_limit
 from academious.api.routers.papers import _summary
 from academious.core.config import get_settings
 from academious.core.logging import get_logger
+from academious.retrieval.filters import PreprintPolicy, SearchFilters
 from academious.retrieval.service import RetrievalService
 
 router = APIRouter(tags=["search"])
@@ -70,7 +83,9 @@ def normalise_query(raw: str) -> str:
         "Ranked papers for a description of a research interest. Results are ordered by "
         "relevance; `rank` is the ordering and is the only relevance signal exposed, because "
         "the underlying methods score in incomparable units. The retrieval method is server "
-        "configuration and is deliberately not selectable per request."
+        "configuration and is deliberately not selectable per request. Filters accept the same "
+        "values as `/papers` and are applied before ranking, so a filtered search returns a "
+        "full page rather than a ranked page with rows removed."
     ),
 )
 @limiter.limit(search_limit)
@@ -90,6 +105,17 @@ def search(
     limit: Annotated[
         int, Query(ge=1, le=settings.api_max_search_results, description="Results to return")
     ] = settings.api_default_page_size,
+    source: Annotated[
+        list[str] | None,
+        Query(description="Restrict to papers seen in these sources, e.g. arxiv, biorxiv"),
+    ] = None,
+    preprints: Annotated[
+        PreprintPolicy, Query(description="Include, exclude or require preprints")
+    ] = PreprintPolicy.ANY,
+    peer_reviewed: Annotated[bool, Query(description="Only peer-reviewed papers")] = False,
+    open_access: Annotated[
+        bool, Query(description="Only papers with a known open-access copy")
+    ] = False,
 ) -> schemas.SearchResponse:
     query = normalise_query(q)
     if not query:
@@ -102,11 +128,25 @@ def search(
             detail="q: query must contain at least one non-whitespace character",
         )
 
+    # Every field not named here keeps its default, which is "no constraint" -
+    # except retraction, whose default hides retracted papers and is not
+    # overridable from the query string.
+    search_filters = SearchFilters(
+        sources=tuple(source or ()),
+        preprints=preprints,
+        peer_reviewed_only=peer_reviewed,
+        open_access_only=open_access,
+    )
+
     active = get_settings()
     # Raises CapacityExceededError -> 503 rather than queueing without bound.
     with search_gate.acquire():
         result = service.search_by_interest(
-            session, query, limit=limit, method=active.retrieval_default_method
+            session,
+            query,
+            limit=limit,
+            search_filters=search_filters,
+            method=active.retrieval_default_method,
         )
 
     ranked_ids = result.paper_ids()
@@ -121,7 +161,14 @@ def search(
             continue
         hits.append(schemas.SearchHit(rank=len(hits) + 1, paper=_summary(row)))
 
-    log.info("api.search", query_length=len(query), results=len(hits))
+    log.info(
+        "api.search",
+        query_length=len(query),
+        results=len(hits),
+        # The query text is never logged (SEC-009); the filters are not user
+        # prose and are what makes a slow search reproducible.
+        filters=search_filters.describe(),
+    )
     return schemas.SearchResponse(
         query=query, count=len(hits), limit=limit, results=hits
     )

@@ -687,8 +687,9 @@ query string so a filtered feed is linkable.
 
 * **Closed by** — `feat: filter the feed by source, type and availability`.
   Frontend only; no backend file changed.
-* **What it did not cover** — search, which accepts no filter parameters. That
-  asymmetry is stated in the interface and tracked as WEB-010.
+* **What it did not cover** — search, which accepted no filter parameters. That
+  asymmetry was closed by WEB-010 on 2026-09-01; the panel's caveat is gone
+  because there is no longer anything to caveat.
 * **Source** — [frontend.md §6](frontend.md#6-filtering-the-feed),
   [api.md §2](api.md#filtering).
 
@@ -767,25 +768,34 @@ authentication gates personalisation only.
 
 ### WEB-010
 
-**`/search` accepts no filters, so filtering stops at the feed.** — `DEFERRED`
+**`/search` accepts no filters, so filtering stops at the feed.** — `DONE` (2026-09-01)
 
-`GET /papers` takes `source`, `preprints`, `peer_reviewed` and `open_access`.
-`GET /search` takes `q` and `limit` only. Any filter UI therefore applies to the
-feed and not to search results.
+`GET /search` now takes `source`, `preprints`, `peer_reviewed` and `open_access`,
+in the same spelling and with the same semantics as `/papers`. The search page
+renders the same `FilterPanel`, and submitting a search carries whatever filters
+the URL already holds.
 
-* **Why deferred** — adding filter parameters to `/search` is a backend and
-  retrieval change, not a frontend one. Filters apply in SQL before ranking, so a
-  filtered search is a different retrieval run, and its interaction with the
-  measured ranking would have to be re-verified against the benchmark. That does
-  not belong inside a frontend milestone.
-* **Risk/impact** — a visible asymmetry: a reader who filters the feed and then
-  searches loses the filter. The filter panel states this while any filter is
-  active rather than hiding it (WEB-002, shipped 2026-08-31).
-* **Trigger to revisit** — when search filtering becomes a stated product
-  requirement, most likely with the Phase 3 personalised feed, which needs
-  filtered ranking anyway.
-* **Source** — `src/academious/api/routers/search.py`; confirmed while
-  implementing WEB-002, 2026-08-31.
+* **Closed by** — `feat: filter search results, not just the feed`.
+* **Smaller than estimated, and worth recording why.** The deferral assumed a
+  retrieval change. There was none: `RetrievalService.search_by_interest` already
+  accepted `search_filters` and threaded it through lexical, semantic and hybrid,
+  which had been true since Phase 2. Only the router declined to expose it. The
+  benchmark re-verification the entry called for reduced to one assertion — that
+  an unfiltered search still passes `SearchFilters()` — because a request with no
+  filter parameters is unchanged, so every Phase 2 number still describes this
+  endpoint.
+* **What proves filtering precedes ranking** — a model-marked test builds a
+  corpus of alternating preprints and journal articles and asks for three
+  preprints. Filtering after ranking would return however many of the top three
+  happened to be preprints; filtering before it returns three. That distinction
+  is the whole point of doing the work in SQL, so it is asserted rather than
+  assumed.
+* **Deliberately still not exposed** — `retraction`, whose default keeps
+  withdrawn work out of ordinary discovery and is a product decision rather than
+  a caller preference; and `published_from` / `published_to`, which
+  `SearchFilters` supports but no interface needs yet.
+* **Source** — `src/academious/api/routers/search.py`,
+  [api.md §4](api.md#4-get-search), [frontend.md §6](frontend.md#6-filtering).
 
 ---
 

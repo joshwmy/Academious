@@ -302,12 +302,27 @@ None of the following is accepted from the query string: `method`, `model_key`,
 `embedding_profile`, `adapter`, `rrf_k`, semantic or lexical weights, internal
 depth, database query mode, device, batch size. All are server configuration. A
 test sends every one of them and asserts the retrieval service is called with
-exactly `query`, `limit` and the configured method.
+exactly `query`, `limit`, the configured method, and the metadata filters.
 
 This is not merely tidiness. A caller who could set `method=hybrid` could force
 the most expensive path at will; one who could set `model_key` could select an
 experimental profile whose vectors were never validated, or probe which profiles
 exist.
+
+**Metadata filters are not retrieval internals** and `/search` accepts the four
+`/papers` accepts (WEB-010). The line is what the parameter describes: `source`
+and `preprints` describe the papers a reader wants; `method` describes how the
+ranker works. The same test asserts the filters arrive at their defaults when
+nobody set them, so a smuggled parameter cannot reach retrieval disguised as
+one. `retraction` stays server-side: its default keeps withdrawn work out of
+ordinary discovery, which is a product decision, not a caller preference.
+
+`source` is free text and reaches a `WHERE` clause as a bound parameter, on both
+endpoints. It is not validated against the connector registry - an unknown key
+matches nothing, which is the honest answer and avoids publishing the list of
+sources that exist. Neither endpoint caps how many `source` values one request
+may carry; the request-size limit at Caddy and the 20-per-minute search budget
+bound it instead.
 
 ---
 

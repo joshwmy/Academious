@@ -1,8 +1,9 @@
 /**
- * The feed's filter state, and the two translations it needs.
+ * Filter state for the feed and for search, and the two translations it needs.
  *
- * `GET /papers` has accepted source, preprint, peer-review and open-access
- * filters since the API shipped; this module is what lets a reader reach them.
+ * `GET /papers` and `GET /search` accept the same four filters and apply them
+ * the same way - in SQL, before paging or ranking. One module serves both, so
+ * the two surfaces cannot drift into meaning different things by the same name.
  * It exists as a separate unit because the interesting parts are not visual:
  *
  * **The URL is the state.** Filters live in the query string exactly as the
@@ -23,7 +24,7 @@
  * string.
  */
 
-import type { PaperListParams, PreprintPolicy } from "../api/types";
+import type { PaperFilterParams, PreprintPolicy } from "../api/types";
 
 /**
  * The sources the backend knows, in canonical order. Mirrors
@@ -49,7 +50,7 @@ export const PREPRINT_POLICIES = [
 
 const PREPRINT_VALUES: readonly PreprintPolicy[] = PREPRINT_POLICIES.map((policy) => policy.value);
 
-export interface FeedFilters {
+export interface PaperFilters {
   sources: SourceKey[];
   preprints: PreprintPolicy;
   peerReviewed: boolean;
@@ -57,7 +58,7 @@ export interface FeedFilters {
 }
 
 /** Every field at "no constraint", matching the backend's own defaults. */
-export const NO_FILTERS: FeedFilters = {
+export const NO_FILTERS: PaperFilters = {
   sources: [],
   preprints: "any",
   peerReviewed: false,
@@ -73,7 +74,7 @@ function isPreprintPolicy(value: string | null): value is PreprintPolicy {
 }
 
 /** Reads filters out of a query string, discarding anything unrecognised. */
-export function parseFilters(params: URLSearchParams): FeedFilters {
+export function parseFilters(params: URLSearchParams): PaperFilters {
   const requested = new Set(params.getAll("source").filter(isSourceKey));
   const preprints = params.get("preprints");
 
@@ -90,7 +91,7 @@ export function parseFilters(params: URLSearchParams): FeedFilters {
 }
 
 /** Writes filters into a query string, omitting every default. */
-export function filtersToSearchParams(filters: FeedFilters): URLSearchParams {
+export function filtersToSearchParams(filters: PaperFilters): URLSearchParams {
   const params = new URLSearchParams();
   for (const source of filters.sources) params.append("source", source);
   if (filters.preprints !== "any") params.set("preprints", filters.preprints);
@@ -104,9 +105,7 @@ export function filtersToSearchParams(filters: FeedFilters): URLSearchParams {
  * than sent explicitly: the client drops undefined values, so an unfiltered
  * request is byte-identical to the one the feed made before filters existed.
  */
-export function filtersToParams(
-  filters: FeedFilters,
-): Pick<PaperListParams, "source" | "preprints" | "peer_reviewed" | "open_access"> {
+export function filtersToParams(filters: PaperFilters): PaperFilterParams {
   return {
     ...(filters.sources.length > 0 ? { source: [...filters.sources] } : {}),
     ...(filters.preprints !== "any" ? { preprints: filters.preprints } : {}),
@@ -116,7 +115,7 @@ export function filtersToParams(
 }
 
 /** How many constraints are in force. Each selected source counts as one. */
-export function countActiveFilters(filters: FeedFilters): number {
+export function countActiveFilters(filters: PaperFilters): number {
   return (
     filters.sources.length +
     (filters.preprints === "any" ? 0 : 1) +
@@ -125,6 +124,6 @@ export function countActiveFilters(filters: FeedFilters): number {
   );
 }
 
-export function hasActiveFilters(filters: FeedFilters): boolean {
+export function hasActiveFilters(filters: PaperFilters): boolean {
   return countActiveFilters(filters) > 0;
 }
