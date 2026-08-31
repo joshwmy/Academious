@@ -1,0 +1,56 @@
+# Reverse proxy and TLS terminator for the public API.
+#
+# Caddy owns what the application cannot honestly own: it terminates TLS, so it
+# is the only party that knows TLS happened and therefore the only one that may
+# assert HSTS; and it drops oversized requests before the application parses
+# them. docs/security.md §6 and §9 assign these here by design.
+{
+	email {$ACME_EMAIL}
+
+	servers {
+		# Oversized headers are dropped at the edge, not parsed by the app.
+		max_header_size 16KB
+
+		timeouts {
+			read_body 10s
+			read_header 5s
+			write 30s
+			idle 120s
+		}
+	}
+}
+
+{$API_DOMAIN} {
+	encode zstd gzip
+
+	# SEC-003. The application has no authentication to enforce this with, so
+	# the proxy is the intended mechanism. /metrics/* names the active embedding
+	# profile, every model key that exists and queue depth; /health/db reveals
+	# corpus size. 404 rather than 403: a 403 confirms the route exists.
+	#
+	# Plain /health stays public - uptime checks need it and it reveals nothing.
+	# Read the restricted ones from the box itself: curl 127.0.0.1:8000/metrics/ingestion
+	@ops path /metrics /metrics/* /health/db
+	respond @ops 404
+
+	# The public surface is read-only and query strings are capped in the
+	# application at 512 characters. Nothing legitimate posts a body.
+	request_body {
+		max_size 64KB
+	}
+
+	header {
+		# SEC-005. Only Caddy can make this claim truthfully.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+
+	reverse_proxy api:8000
+
+	log {
+		output file /data/access.log {
+			roll_size 10MB
+			roll_keep 5
+		}
+	}
+}

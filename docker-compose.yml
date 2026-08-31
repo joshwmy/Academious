@@ -3,10 +3,16 @@ services:
     image: pgvector/pgvector:pg17
     environment:
       POSTGRES_USER: academious
-      POSTGRES_PASSWORD: academious
+      # No default on purpose. Compose fails with this message rather than
+      # starting a database whose password is in a committed file.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: academious
+    # Bound to loopback, never 0.0.0.0. A bare "5432:5432" on a public host
+    # publishes Postgres to the internet, and Docker writes its iptables rules
+    # ahead of ufw's chain, so a host firewall does not save you. Local psql
+    # and alembic still reach it here.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -19,10 +25,12 @@ services:
     build: .
     command: uvicorn academious.api.main:app --host 0.0.0.0 --port 8000
     environment:
-      ACADEMIOUS_DATABASE_URL: postgresql+psycopg://academious:academious@db:5432/academious
+      ACADEMIOUS_DATABASE_URL: postgresql+psycopg://academious:${POSTGRES_PASSWORD}@db:5432/academious
     env_file: [.env]
+    # Loopback for the same reason as db. In production Caddy reaches the API
+    # over the compose network, not through this mapping.
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -31,7 +39,7 @@ services:
     build: .
     command: python -m academious.workers harvest --source all
     environment:
-      ACADEMIOUS_DATABASE_URL: postgresql+psycopg://academious:academious@db:5432/academious
+      ACADEMIOUS_DATABASE_URL: postgresql+psycopg://academious:${POSTGRES_PASSWORD}@db:5432/academious
     env_file: [.env]
     depends_on:
       db:

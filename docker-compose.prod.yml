@@ -1,0 +1,62 @@
+# Production overlay. Adds Caddy in front of the API and pins the proxy address
+# the application is willing to trust.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# See docs/deployment.md. The controls here are the ones docs/security.md
+# assigns to the deployment layer rather than to the application: SEC-003
+# (operational endpoints), SEC-004 (proxy trust), SEC-005 (TLS and transport
+# limits).
+services:
+  db:
+    restart: unless-stopped
+
+  api:
+    # SEC-004. uvicorn believes X-Forwarded-For only from this exact address,
+    # which is Caddy's pinned IP on the edge network below. A range would let
+    # any container that lands in it mint its own client address and reset its
+    # own rate-limit bucket.
+    command: >
+      uvicorn academious.api.main:app
+      --host 0.0.0.0 --port 8000
+      --proxy-headers --forwarded-allow-ips=172.28.0.10
+    restart: unless-stopped
+    networks:
+      - default
+      - edge
+
+  worker:
+    # Cron invokes this with `run --rm`; it must not come back by itself.
+    restart: "no"
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Holds the Let's Encrypt account key and issued certificates. Losing
+      # this volume means re-issuing, and Let's Encrypt rate-limits that.
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      edge:
+        ipv4_address: 172.28.0.10
+
+networks:
+  edge:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+
+volumes:
+  caddy_data:
+  caddy_config:

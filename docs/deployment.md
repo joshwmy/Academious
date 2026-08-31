@@ -1,7 +1,13 @@
 # Deployment
 
-Approved target: a single Hetzner VPS running Docker Compose. No Redis, no
-Celery, no Kubernetes, no standalone vector database.
+Approved target: a single VPS running Docker Compose. No Redis, no Celery, no
+Kubernetes, no standalone vector database.
+
+The provider is **netcup**, not Hetzner as originally specified. Hetzner was the
+Phase 0 choice and remains a fine one; every 8 GB plan was simply out of stock
+across Falkenstein, Helsinki and Nuremberg, on both x86 and Arm, at the point of
+purchase. Nothing in the repository is provider-specific - the stack is Docker
+Compose on Ubuntu - so this is a purchasing fact, not an architectural one.
 
 > **This target is not what is running today.** Production testing currently
 > goes Vercel -> Cloudflare quick tunnel -> a development PC -> Caddy -> the
@@ -24,16 +30,28 @@ Celery, no Kubernetes, no standalone vector database.
                         worker (cron-driven)
 ```
 
-`docker-compose.yml` in the repository runs `db`, `api` and `worker`. The reverse
-proxy and frontend arrive in Phase 2, when there is a frontend to serve.
+`docker-compose.yml` runs `db`, `api` and `worker`, and is the file used for local
+development. `docker-compose.prod.yml` overlays it with Caddy and the production
+restart policies. The frontend is not served from this box: it is a static Vite
+build on Vercel, so Caddy fronts the API alone.
 
 ## Sizing
 
 | Stage | Machine | Notes |
 |---|---|---|
-| Phase 1-2 | Hetzner CX32 (4 vCPU / 8 GB / 80 GB) | ~EUR 8/month |
-| ~1,000 users | CPX41 | vertical, a few minutes of downtime |
-| ~10,000 users | dedicated AX41/AX52 (64 GB) for PostgreSQL, app nodes behind a load balancer | |
+| Phase 1-2 | netcup VPS 1000 G12 (4 vCore / 8 GB DDR5 ECC / 256 GB NVMe) | ~EUR 8/month, hourly billing, no minimum term |
+| ~1,000 users | next tariff up, or an equivalent 16 GB plan | vertical, a few minutes of downtime |
+| ~10,000 users | dedicated box (64 GB) for PostgreSQL, app nodes behind a load balancer | |
+
+8 GB is the floor, and it is set by the corpus rather than by traffic. Steady
+state is Postgres plus the API at roughly 2 GB; the nightly embed adds 1.0-1.5 GB
+of resident torch on top. A 4 GB machine survives that only with swap, and it
+leaves no page cache for a corpus that outgrows RAM within the first year.
+
+Disk is sized the same way and is the reason the smaller tariffs were rejected:
+14 GB/year of metadata, 4.1 GB/year of embeddings, indexes that often run
+50-100% of table size, plus ~4 GB for an image carrying torch - of which two
+copies exist during a deploy.
 
 Corpus growth is roughly 14 GB/year of metadata plus 2.7 GB/year of embeddings
 once Phase 3 lands. Managed free tiers (Neon 0.5 GB, Supabase 500 MB) are about
@@ -124,3 +142,62 @@ database password, the backup encryption public key, and the SMTP or Resend key.
 GitHub Actions builds the image and pushes to GHCR; deployment is
 `docker compose pull && docker compose up -d` over SSH. Migrations run as a
 separate step before the new image starts serving.
+
+## The production overlay
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+The overlay adds `caddy` and pins it to `172.28.0.10` on a dedicated `edge`
+network. That address is not decoration: `--forwarded-allow-ips` names one exact
+host, so "the proxy" cannot be satisfied by any other container that happens to
+come up on the same network (SEC-004).
+
+What the base file already does, and why:
+
+* **Both published ports bind `127.0.0.1`**, never `0.0.0.0`. This matters more
+  off Hetzner than on it. Hetzner's cloud firewall sits outside the machine and
+  would have caught a bare `5432:5432`; netcup has no such layer, and Docker
+  writes its iptables rules *ahead* of ufw's chain, so a host firewall does not
+  save you either. The bind is the control.
+* **`POSTGRES_PASSWORD` has no default.** Compose refuses to start without it
+  rather than falling back to a value committed to the repository.
+
+`Caddyfile` implements the three controls `security.md` assigns to the deployment
+layer: TLS and HSTS (SEC-005), transport and body size limits (SEC-005), and a
+404 on `/metrics/*` and `/health/db` (SEC-003). Plain `/health` stays public for
+uptime checks. Read the restricted endpoints from the box itself:
+
+```bash
+curl -s 127.0.0.1:8000/metrics/ingestion
+```
+
+### Host firewall
+
+There is no cloud firewall to fall back on. On the server:
+
+```bash
+ufw default deny incoming
+ufw allow 22/tcp
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw enable
+```
+
+### Production settings
+
+`.env` on the server differs from a development one in four values, listed in
+`.env.example`. `ACADEMIOUS_TRUSTED_PROXY_COUNT=1` is the one that is silently
+wrong at its default: at 0 every request appears to originate from Caddy, so all
+clients share a single rate-limit bucket.
+
+### First deploy
+
+1. DNS: `api.academious.org` A record at the VPS address. Caddy cannot issue a
+   certificate before this resolves.
+2. `.env` on the server, with a generated `POSTGRES_PASSWORD` and the production
+   values above.
+3. `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d`
+4. `docker compose run --rm api alembic upgrade head`
+5. `curl https://api.academious.org/health`
