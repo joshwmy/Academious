@@ -17,9 +17,10 @@ Compose on Debian 13 - so this is a purchasing fact, not an architectural one.
 > Two things are still true and worth stating plainly. **The frontend has not
 > been repointed**: the Vercel build still names the tunnel hostname, so the
 > deployed site calls a backend that no longer answers until
-> `VITE_API_BASE_URL` changes and it is rebuilt (DEPLOY-002). And **nothing is
-> scheduled** - no cron is installed, so the corpus is static rather than
-> growing. There are also no backups (DEPLOY-006), which mattered less when the
+> `VITE_API_BASE_URL` changes and it is rebuilt (DEPLOY-002). And **the schedule
+> is written but not installed**: [`deploy/crontab`](../deploy/crontab) exists,
+> `crontab -l` on the box does not yet list it, so the corpus grows only when a
+> harvest is run by hand. There are also no backups (DEPLOY-006), which mattered less when the
 > corpus was minutes of re-harvesting and matters more now that it is hours.
 
 ## Topology
@@ -235,23 +236,76 @@ startup, so the extension is created in the migration rather than assumed.
 
 ## Scheduling
 
-Cron on the host, or systemd timers. Off-peak windows matter: NCBI asks that
-large jobs run at weekends or 21:00-05:00 US Eastern, and enforces it with IP
-bans.
+The schedule lives in [`deploy/crontab`](../deploy/crontab) rather than in this
+document, so that what runs on the box is a file under version control instead
+of a snippet somebody pasted once.
 
-```cron
-# Harvest every source, hourly, at ten past
-10 * * * *  cd /srv/academious && docker compose run --rm worker \
-              python -m academious.workers harvest --source all
-
-# Preprint publication map, nightly
-30 2 * * *  cd /srv/academious && docker compose run --rm worker \
-              python -m academious.workers link-publications
-
-# Retraction Watch, nightly (66 MB download)
-45 3 * * *  cd /srv/academious && docker compose run --rm worker \
-              python -m academious.workers retractions
+```bash
+mkdir -p /var/log/academious
+crontab /srv/academious/deploy/crontab
+crontab -l
 ```
+
+| Entry | When (UTC) | Why then |
+|---|---|---|
+| `harvest --source all` | hourly, `:10` | Incremental and cursor-resumable; a missed run costs freshness, not data |
+| `embed` | every 30 min | Drains whatever the harvest added, ~1 paper/second |
+| `link-publications` | 02:30 | Off-peak; the preprint→published map |
+| `retractions` | 03:45 | Off-peak; ~66 MB download |
+
+Three properties of that file are load-bearing, and all three are easy to lose
+if the entries are retyped by hand.
+
+**`flock -n` on every entry.** It skips a run whose predecessor is still going
+rather than queuing it. The embed job routinely runs for hours against a
+30-minute schedule, so without the lock cron stacks containers until the box
+runs out of memory. Not a risk — a certainty, on the first large backlog.
+
+**An `embed` entry at all.** This is the one whose absence is invisible. A
+harvest that adds papers nothing embeds still reports success, the feed still
+shows the new papers, and only semantic search quietly answers from a shrinking
+share of the corpus. On 2026-09-01 a single OpenAlex run added 42,609 papers and
+search coverage fell from 30% to 13% with nothing anywhere reporting a failure.
+Scheduling harvest without scheduling embed makes that permanent.
+
+**The off-peak window is in UTC.** NCBI asks that large jobs run at weekends or
+21:00-05:00 US Eastern and enforces it with IP bans, while the host runs UTC.
+That window is 01:00-09:00 UTC under US daylight time and 02:00-10:00 under
+standard time; the nightly entries at 02:30 and 03:45 are inside both. Moving
+them means redoing that conversion. The hourly harvest runs outside the window
+by design and is safe only because no NCBI connector exists yet —
+[SRC-001](backlog.md#src-001) has to revisit this when PubMed lands.
+
+### Watching it
+
+```bash
+tail -f /var/log/academious/embed.log
+grep -c '"level": "error"' /var/log/academious/*.log
+```
+
+Nothing rotates these logs yet. `/etc/logrotate.d/academious`:
+
+```
+/var/log/academious/*.log {
+    weekly
+    rotate 8
+    compress
+    missingok
+    notifempty
+    copytruncate
+}
+```
+
+The corpus is also queryable directly, which is the check that matters most —
+whether embedding is keeping up with ingestion:
+
+```bash
+docker compose exec db psql -U academious -d academious   -c "select (select count(*) from paper) as papers,
+             (select count(*) from paper_embedding) as embedded"
+```
+
+A gap that grows run over run means the schedule is not draining the queue and
+search coverage is falling.
 
 ## Backups: encrypted and off-machine
 
@@ -420,7 +474,8 @@ The host must be provisioned first - see "Provisioning the host" above.
    reports nothing:
 
    ```bash
-   until [ "$(docker compose run --rm worker python -m academious.workers embed        --pending 2>/dev/null | tr -d "" | tail -1)" = "0" ]; do
+   until [ "$(docker compose run --rm worker python -m academious.workers embed        --pending 2>/dev/null | tr -d "
+" | tail -1)" = "0" ]; do
      docker compose run --rm worker python -m academious.workers embed
    done
    ```

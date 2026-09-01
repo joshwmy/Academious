@@ -103,7 +103,7 @@ it could be started but deliberately is not.
 | [SRC-003](#src-003) | Unpaywall fallback | DEFERRED | Phase 2 remainder |
 | [SRC-004](#src-004) | OpenAlex harvesting into the live corpus | READY | Phase 2 remainder |
 | [SRC-005](#src-005) | Corpus-admission policy for tertiary literature | DONE | — |
-| [SRC-006](#src-006) | Europe PMC harvest is unscheduled and unmeasured at volume | READY | Cron install |
+| [SRC-006](#src-006) | Europe PMC harvest is unscheduled and unmeasured at volume | READY | `crontab deploy/crontab` |
 | [SRC-007](#src-007) | OpenAlex incremental harvesting needs a paid plan | ACCEPTED | If a plan is ever bought |
 | [WEB-001](#web-001) | Visual design is a baseline, not a finished appearance | DEFERRED | Dedicated design pass |
 | [WEB-002](#web-002) | Filter UI over the filters `/papers` supports | DONE | — |
@@ -163,8 +163,8 @@ architectural one; [deployment.md](deployment.md) records why.
   (SEC-012); and the image installed no model stack, so it could ingest a corpus
   but not embed or answer a search.
 * **Still open** — the Vercel build still names the tunnel hostname (DEPLOY-002
-  follow-through), no cron is installed, and nothing is backed up
-  (DEPLOY-006).
+  follow-through), the schedule exists as [`deploy/crontab`](../deploy/crontab)
+  but is not installed on the box, and nothing is backed up (DEPLOY-006).
 * **Trigger to revisit** — before any public announcement, any real user, or
   anything that needs the API to answer while the developer is asleep.
 * **Depends on** — nothing. Blocks DEPLOY-002, DEPLOY-004, DEPLOY-006, SEC-003,
