@@ -20,6 +20,11 @@ A record is skipped at normalisation when it has no title, no resolvable
 identifier, or a work type that is not research output (`paratext`, `editorial`,
 `letter`, `erratum`, `grant`, `dataset`, `peer-review`).
 
+A Europe PMC window can be dominated by one journal supplement: the first live
+harvest rejected 445 conference abstracts out of 500 records, all from two
+supplement issues. That is the filter working, but it means a `--max-records`
+cap bounds *records fetched*, not papers gained.
+
 Europe PMC labels a record with both MEDLINE and JATS publication types, and
 the two disagree often enough to matter, so scope there is decided by looking
 for a research type first and only then for an excluded one. A **retraction
@@ -63,7 +68,7 @@ Cursor semantics differ by source:
 | OpenAlex | opaque `next_cursor` from `meta`; belongs to one filter expression |
 | arXiv | OAI-PMH `resumptionToken`; must be sent alone, with no other arguments |
 | bioRxiv | the window end date; the next run starts there |
-| Europe PMC | `start`&#124;`end`&#124;`cursorMark`, discarded when the window moves; an empty mark means that window finished |
+| Europe PMC | `queryfingerprint`&#124;`start`&#124;`end`&#124;`cursorMark`. Discarded when the query or the window moves; an empty mark means that window finished |
 
 ## Failure handling
 

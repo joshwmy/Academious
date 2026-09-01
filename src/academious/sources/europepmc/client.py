@@ -15,13 +15,16 @@ Three operational facts drive this client:
   `OPEN_ACCESS:Y`. Widening it is an environment decision, and one that has to
   be made against those terms rather than by accident.
 * **`cursorMark` belongs to one query.** It encodes a position in a result set,
-  so a mark minted against last week's date window is meaningless against this
-  week's. The cursor stored between runs therefore carries its window with it
-  (`start|end|mark`) and is discarded when the window moves - see `parse_cursor`.
+  so a mark minted against last week's window - or against a different query
+  expression, since all of them share one `source_cursor` row - is meaningless
+  here and is not rejected by the API, merely misapplied. The stored cursor
+  therefore carries both with it (`queryfingerprint|start|end|mark`) and is
+  discarded when either moves. See `parse_cursor`.
 """
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Iterator
 from datetime import date, timedelta
 from typing import Any
@@ -51,26 +54,48 @@ FIRST_MARK = "*"
 CURSOR_SEPARATOR = "|"
 
 
-def format_cursor(start: date, end: date, mark: str) -> str:
-    """A resumable position: the window it belongs to, plus the mark within it."""
-    return f"{start.isoformat()}{CURSOR_SEPARATOR}{end.isoformat()}{CURSOR_SEPARATOR}{mark}"
+def query_fingerprint(expression: str) -> str:
+    """Short stable digest of one query expression.
+
+    A `cursorMark` is a position in *one* result set, and every expression this
+    source harvests shares a single `source_cursor` row. Without this, a mark
+    minted by one expression can be replayed against another: the API does not
+    reject it, it simply resumes in the middle of a different result set and the
+    records before that position are never seen.
+    """
+    return hashlib.sha256(expression.encode("utf-8")).hexdigest()[:8]
 
 
-def parse_cursor(cursor: str | None) -> tuple[date, date, str] | None:
+def format_cursor(expression: str, start: date, end: date, mark: str) -> str:
+    """A resumable position: the query and window it belongs to, plus the mark."""
+    return CURSOR_SEPARATOR.join(
+        (query_fingerprint(expression), start.isoformat(), end.isoformat(), mark)
+    )
+
+
+def parse_cursor(cursor: str | None, expression: str) -> tuple[date, date, str] | None:
     """Reverse of `format_cursor`. None when there is nothing usable to resume.
 
+    Returns None - meaning "open a fresh window" - for a cursor belonging to a
+    different query expression, and for one written before the fingerprint
+    existed. Re-opening a window costs only the page fetches, because unchanged
+    payloads are hash-skipped by the pipeline; resuming the wrong result set
+    would silently lose records instead.
+
     A cursor with an empty mark means "this window was harvested to the end", so
-    it is deliberately not resumable: the next run opens a fresh window instead
-    of paging past the end of the previous one.
+    it is deliberately not resumable either.
     """
     if not cursor:
         return None
     parts = cursor.split(CURSOR_SEPARATOR)
-    if len(parts) != 3:
+    if len(parts) != 4:
         log.warning("europepmc.bad_cursor", cursor=cursor)
         return None
-    start_text, end_text, mark = parts
+    fingerprint, start_text, end_text, mark = parts
     if not mark:
+        return None
+    if fingerprint != query_fingerprint(expression):
+        log.info("europepmc.cursor_query_changed", cursor=cursor, query=expression)
         return None
     try:
         return date.fromisoformat(start_text), date.fromisoformat(end_text), mark
@@ -111,8 +136,10 @@ class EuropePmcClient:
             "cursorMark": mark,
         }
 
-    def _window(self, since: date | None, cursor: str | None) -> tuple[date, date, str]:
-        resumed = parse_cursor(cursor)
+    def _window(
+        self, expression: str, since: date | None, cursor: str | None
+    ) -> tuple[date, date, str]:
+        resumed = parse_cursor(cursor, expression)
         if resumed is not None:
             return resumed
         end = utcnow().date()
@@ -123,7 +150,7 @@ class EuropePmcClient:
         self, expression: str, since: date | None, cursor: str | None
     ) -> Iterator[HarvestPage]:
         """Cursor-paginate one query expression over one update window."""
-        start, end, mark = self._window(since, cursor)
+        start, end, mark = self._window(expression, since, cursor)
         query = build_query(expression, start, end)
 
         for page_number in range(MAX_PAGES_PER_RUN):
@@ -159,7 +186,9 @@ class EuropePmcClient:
             # starts a new window rather than resuming a finished one.
             yield HarvestPage(
                 records=records,
-                next_cursor=format_cursor(start, end, "" if exhausted else following),
+                next_cursor=format_cursor(
+                    expression, start, end, "" if exhausted else following
+                ),
             )
 
             if exhausted:

@@ -17,6 +17,7 @@ from academious.db.models.support import OaLocation, SourceRecord
 from academious.ingest.pipeline import IngestPipeline
 from academious.sources.arxiv.normalise import normalise as normalise_arxiv
 from academious.sources.biorxiv.normalise import normalise as normalise_biorxiv
+from academious.sources.europepmc.normalise import normalise as normalise_europepmc
 from academious.sources.openalex.normalise import normalise as normalise_openalex
 from tests.conftest import load_json, load_text
 from tests.factories import StubConnector, raw
@@ -27,6 +28,11 @@ pytestmark = pytest.mark.db
 def openalex_raw(name: str):
     work = load_json("openalex", f"{name}.json")
     return raw("openalex", work["id"], work)
+
+
+def europepmc_raw(overrides: dict | None = None):
+    result = load_json("europepmc", "preprint_biorxiv.json") | (overrides or {})
+    return raw("europepmc", f"{result['source']}:{result['id']}", result)
 
 
 def biorxiv_raw():
@@ -156,3 +162,77 @@ def test_open_access_metadata_is_captured_with_a_best_location(session):
     assert sum(1 for location in locations if location.is_best) == 1
     assert paper.best_oa_location_id is not None
     assert paper.fulltext_status == "linked"
+
+
+def test_europepmc_enriches_a_biorxiv_preprint_rather_than_duplicating_it(session):
+    """The shape the first live harvest produced: same DOI, two sources, one paper.
+
+    Europe PMC indexes bioRxiv and medRxiv preprints under the same DOI the
+    preprint server issues, so the identifier path has to recognise them. A
+    second paper row here would show the reader the same preprint twice.
+    """
+    preprint_doi = "10.64898/2026.08.11.744224"
+    biorxiv_payload = {
+        "doi": preprint_doi,
+        "version": "1",
+        "server": "biorxiv",
+        "title": "Photometallobiocatalytic Asymmetric Radical-Mediated Cross-Coupling",
+        "authors": "Wang, H.; Yang, Y.",
+        "date": "2026-08-11",
+        "license": "cc_by_nc_nd",
+        "abstract": "Short server abstract.",
+    }
+    run_pipeline(
+        session,
+        StubConnector(
+            "biorxiv", [[raw("biorxiv", f"{preprint_doi}v1", biorxiv_payload)]], normalise_biorxiv
+        ),
+    )
+    assert count(session, Paper) == 1
+
+    run_pipeline(
+        session, StubConnector("europepmc", [[europepmc_raw()]], normalise_europepmc)
+    )
+
+    assert count(session, Paper) == 1
+    paper = session.execute(select(Paper)).scalars().one()
+    assert paper.canonical_doi == preprint_doi
+    assert paper.is_preprint is True
+    assert paper.is_peer_reviewed is False
+    # Europe PMC outranks bioRxiv for the abstract, and both locations survive.
+    assert paper.abstract_source == "europepmc"
+    assert {location.discovered_via for location in paper.oa_locations} == {
+        "biorxiv",
+        "europepmc",
+    }
+    assert {(record.source_key) for record in session.execute(
+        select(SourceRecord)).scalars().all()} == {"biorxiv", "europepmc"}
+
+
+def test_europepmc_records_without_a_doi_still_reconcile_on_pmid(session):
+    """Two thirds of the first live harvest had no DOI; MED records carry a PMID.
+
+    Without this the identifier path would fall through to the fuzzy matcher for
+    the majority of Europe PMC records, which is a far weaker guarantee.
+    """
+    no_doi = {
+        "doi": None,
+        "pmid": "40000001",
+        "pmcid": None,
+        "source": "MED",
+        "id": "40000001",
+        "pubTypeList": {"pubType": ["Journal Article"]},
+    }
+    first = europepmc_raw(no_doi)
+    run_pipeline(session, StubConnector("europepmc", [[first]], normalise_europepmc))
+    assert count(session, Paper) == 1
+
+    # The same record seen again under a different Europe PMC database id.
+    again = europepmc_raw(no_doi | {"source": "PMC", "id": "PMC9999999", "pmcid": "PMC9999999"})
+    run_pipeline(session, StubConnector("europepmc", [[again]], normalise_europepmc))
+
+    assert count(session, Paper) == 1
+    paper = session.execute(select(Paper)).scalars().one()
+    identifiers = {(i.id_type, i.value) for i in paper.identifiers}
+    assert ("pmid", "40000001") in identifiers
+    assert ("pmcid", "PMC9999999") in identifiers

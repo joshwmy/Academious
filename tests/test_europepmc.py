@@ -6,7 +6,12 @@ from datetime import UTC, date, datetime
 
 from academious.core.ids import IdType
 from academious.sources.base import RawRecord
-from academious.sources.europepmc.client import build_query, format_cursor, parse_cursor
+from academious.sources.europepmc.client import (
+    build_query,
+    format_cursor,
+    parse_cursor,
+    query_fingerprint,
+)
 from academious.sources.europepmc.normalise import map_language, map_licence, normalise
 from tests.conftest import load_json
 
@@ -168,12 +173,40 @@ def test_query_is_scoped_to_the_update_window():
 
 
 def test_cursor_round_trips_with_the_window_it_belongs_to():
-    cursor = format_cursor(date(2026, 8, 1), date(2026, 8, 8), "AoIIP2b")
-    assert parse_cursor(cursor) == (date(2026, 8, 1), date(2026, 8, 8), "AoIIP2b")
+    cursor = format_cursor("OPEN_ACCESS:Y", date(2026, 8, 1), date(2026, 8, 8), "AoIIP2b")
+    assert parse_cursor(cursor, "OPEN_ACCESS:Y") == (
+        date(2026, 8, 1),
+        date(2026, 8, 8),
+        "AoIIP2b",
+    )
 
 
 def test_a_finished_window_is_not_resumable():
     """A mark-less cursor means the window was harvested to the end."""
-    assert parse_cursor(format_cursor(date(2026, 8, 1), date(2026, 8, 8), "")) is None
-    assert parse_cursor(None) is None
-    assert parse_cursor("nonsense") is None
+    finished = format_cursor("OPEN_ACCESS:Y", date(2026, 8, 1), date(2026, 8, 8), "")
+    assert parse_cursor(finished, "OPEN_ACCESS:Y") is None
+    assert parse_cursor(None, "OPEN_ACCESS:Y") is None
+    assert parse_cursor("nonsense", "OPEN_ACCESS:Y") is None
+
+
+def test_a_cursor_minted_by_another_query_is_never_resumed():
+    """Every expression shares one source_cursor row.
+
+    Replaying one query's mark against another is not an API error - it resumes
+    part-way through a different result set and the records before that position
+    are never seen. Found while validating the first live harvest, where a
+    DOI-scoped probe run overwrote the open-access window's cursor.
+    """
+    minted = format_cursor("OPEN_ACCESS:Y", date(2026, 8, 1), date(2026, 8, 8), "AoIIP2b")
+    assert parse_cursor(minted, 'DOI:"10.1038/x"') is None
+    assert parse_cursor(minted, "OPEN_ACCESS:Y") is not None
+
+
+def test_a_cursor_from_before_the_fingerprint_existed_is_discarded():
+    """Three-field cursors predate the query fingerprint; re-open the window."""
+    assert parse_cursor("2026-08-01|2026-08-08|AoIIP2b", "OPEN_ACCESS:Y") is None
+
+
+def test_query_fingerprint_is_stable_and_distinguishes_expressions():
+    assert query_fingerprint("OPEN_ACCESS:Y") == query_fingerprint("OPEN_ACCESS:Y")
+    assert query_fingerprint("OPEN_ACCESS:Y") != query_fingerprint("OPEN_ACCESS:Y ")

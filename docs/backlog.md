@@ -99,6 +99,8 @@ it could be started but deliberately is not.
 | [SRC-002](#src-002) | Europe PMC connector | DONE | — |
 | [SRC-003](#src-003) | Unpaywall fallback | DEFERRED | Phase 2 remainder |
 | [SRC-004](#src-004) | OpenAlex harvesting into the live corpus | READY | Phase 2 remainder |
+| [SRC-005](#src-005) | Europe PMC's open-access subset is majority tertiary literature | READY | Before WEB-011 |
+| [SRC-006](#src-006) | Europe PMC harvest is unscheduled and unmeasured at volume | BLOCKED | With DEPLOY-001 |
 | [WEB-001](#web-001) | Visual design is a baseline, not a finished appearance | DEFERRED | Dedicated design pass |
 | [WEB-002](#web-002) | Filter UI over the filters `/papers` supports | DONE | — |
 | [WEB-003](#web-003) | Feed by field | BLOCKED | With DATA-002 |
@@ -109,6 +111,7 @@ it could be started but deliberately is not.
 | [WEB-008](#web-008) | No analytics | WONTFIX | — |
 | [WEB-009](#web-009) | No accounts, saved papers or recommendations | DEFERRED | Phase 3 |
 | [WEB-010](#web-010) | `/search` accepts no filters, so filtering stops at the feed | DEFERRED | Phase 3 |
+| [WEB-011](#web-011) | Europe PMC is not offered in the frontend source filter | BLOCKED | With SRC-005 |
 | [PROD-001](#prod-001) | A generative explanation layer changes the threat model | DEFERRED | Phase 5 |
 | [PROD-002](#prod-002) | Accounts turn query logs and interest profiles into privacy assets | DEFERRED | Phase 3 |
 
@@ -601,6 +604,11 @@ metadata in bulk, because arXiv and bioRxiv both supply abstracts.
   metadata-completeness one. The two input strategies share only 41.7% of their
   top-10 results and agree on the top result for 7 of 12 queries, so a title-only
   paper lands somewhere materially different in vector space.
+* **First real exercise, 2026-09-01** — the Europe PMC harvest embedded 303
+  papers and **24 fell back to title-only** because Europe PMC supplied no
+  abstract for them. Small, but it is the first time the path has met sparse
+  metadata outside a unit test, and it neither failed nor produced an empty
+  vector.
 * **Depends on** — SRC-004; live OpenAlex records frequently have no abstract.
 
 ### DATA-004
@@ -675,10 +683,24 @@ with IP bans.
   100 with an open-access location. **1 of 100 carried MeSH**, because MEDLINE
   indexes months after publication — which is precisely why the harvest window
   filters on `UPDATE_DATE`: the paper returns when it is indexed.
-* **Still open** — no *sustained* harvest has run, so nothing here is measured at
-  volume: `europepmc` is absent from the frontend source filter
-  (`web/src/lib/filters.ts`) until the corpus actually contains it, and the
-  cost model's ingestion volumes (DATA-005) are still estimates.
+* **Validated against the development database on 2026-09-01** — four bounded
+  runs, 1,203 records fetched, **306 papers** carrying Europe PMC provenance.
+  Ingestion, deduplication, provenance and the read API all behave correctly;
+  the full evidence is in [sources.md](sources.md#first-live-harvest-2026-09-01)
+  and the numbers are summarised under SRC-005.
+* **What the harvest proved** — identifier dedup folds a Europe PMC record into
+  an existing bioRxiv paper (3 of 3 probed DOIs updated, 0 duplicated) and the
+  abstract precedence table then hands the abstract to Europe PMC; a source
+  outage mid-run marks the run `failed` and leaves the cursor where it was, so
+  nothing is skipped; a re-run hash-skips 480 of 500 records.
+* **What it changed** — the stored cursor now carries a fingerprint of the query
+  that minted it, not only the window. Two expressions share one `source_cursor`
+  row, and a mark replayed against a different expression is not rejected by the
+  API, only misapplied. Found by hitting it: a DOI-scoped probe run overwrote
+  the open-access window's cursor.
+* **Still open** — no *scheduled* harvest (SRC-006), the subset composition
+  problem (SRC-005), and the frontend filter (WEB-011). DATA-005's ingestion
+  volumes remain estimates.
 * **Depends on** — DEPLOY-001 for a sustained run, exactly as SRC-004 does.
 
 ### SRC-003
@@ -709,7 +731,64 @@ only.
 
 ---
 
+### SRC-005
+
+**Europe PMC's open-access subset is majority tertiary literature.** — `READY`
+
+The first live harvest ingested 306 papers. **173 of them are NCBI Bookshelf
+chapters** — StatPearls and GeneReviews reference articles whose best open-access
+location is `europepmc.org/books/NBK…`. 105 carry **no author list at all**,
+because a `core` result does not supply one for those records. Journal articles
+number 47; preprints 77.
+
+A further 445 records in the same window were conference abstracts from two
+journal supplements, correctly rejected at normalisation.
+
+* **Why it matters** — a reader who filters the feed to "Europe PMC" today would
+  mostly see clinical reference chapters with no authors, not research
+  literature. That is a product-quality problem, not a bug: the connector is
+  reporting what the subset contains.
+* **Options, none chosen yet** — (a) exclude Bookshelf records at normalisation,
+  keyed on `hasBook` / the `NCBI_Bookshelf` site, which is a scope decision
+  about tertiary literature and should be made once for every source, not just
+  this one; (b) narrow `ACADEMIOUS_EUROPEPMC_QUERIES` so they never arrive;
+  (c) keep them and let a `work_type` filter carry the distinction to the
+  reader. Option (c) needs WEB-010-style filter plumbing first.
+* **Also observed, deliberately not fixed** — two `book-review` records were
+  ingested as `work_type: article`. Two records is an edge case, and the same
+  scope decision covers it.
+* **Blocks** — WEB-011.
+
+### SRC-006
+
+**Europe PMC harvest is unscheduled and unmeasured at volume.** — `BLOCKED`
+
+Four bounded runs of 200–500 records each is not a sustained harvest. The window
+holds ~120,000–152,000 open-access records; at 100 records a page and 3 req/s,
+that is a job measured in hours, and the ingest rate observed here was
+~0.28 s/record, dominated by the database rather than the API.
+
+* **Depends on** — DEPLOY-001. A host that is up is the prerequisite, and this
+  entry exists so that a successful bounded run is never mistaken for one.
+* **Also unmeasured** — DATA-004 (`halfvec` at scale), DATA-005 (real ingestion
+  volumes), RETR-004 (retrieval quality beyond ~2.5k papers) all still want the
+  same thing.
+
 ## 8. Frontend
+
+### WEB-011
+
+**Europe PMC is not offered in the frontend source filter.** — `BLOCKED`
+
+`SOURCES` in `web/src/lib/filters.ts` lists arXiv, bioRxiv/medRxiv and OpenAlex.
+The backend already filters on `source=europepmc` correctly — verified against
+the live corpus, 303 papers returned with no duplicates and no serialisation
+errors — so this is one line of frontend transcription and nothing more.
+
+* **Why blocked** — SRC-005. The filter is a promise that the source is worth
+  filtering to; 57% Bookshelf chapters is not that yet.
+* **Not blocked by** — the API. `/papers`, `/papers/{id}` and `/search` were all
+  checked against Europe PMC records on 2026-09-01 and were correct.
 
 ### WEB-001
 

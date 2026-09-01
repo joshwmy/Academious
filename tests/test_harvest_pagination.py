@@ -218,9 +218,13 @@ def test_europepmc_stops_when_the_mark_does_not_advance(settings):
         return_value=epmc_page("mark-1", [{"id": "1", "source": "MED"}])
     )
     client = EuropePmcClient(settings=settings, http=fast_http("europepmc", settings))
-    pages = list(client.harvest_query("OPEN_ACCESS:Y", None, format_cursor(
-        date(2026, 8, 1), date(2026, 8, 8), "mark-1"
-    )))
+    pages = list(
+        client.harvest_query(
+            "OPEN_ACCESS:Y",
+            None,
+            format_cursor("OPEN_ACCESS:Y", date(2026, 8, 1), date(2026, 8, 8), "mark-1"),
+        )
+    )
     assert len(pages) == 1
 
 
@@ -231,7 +235,7 @@ def test_europepmc_resumes_the_window_the_cursor_belongs_to(settings):
         return_value=epmc_page(None, [])
     )
     client = EuropePmcClient(settings=settings, http=fast_http("europepmc", settings))
-    cursor = format_cursor(date(2026, 8, 1), date(2026, 8, 8), "mark-7")
+    cursor = format_cursor("OPEN_ACCESS:Y", date(2026, 8, 1), date(2026, 8, 8), "mark-7")
     list(client.harvest_query("OPEN_ACCESS:Y", date(2020, 1, 1), cursor))
     params = dict(route.calls[0].request.url.params)
     assert params["cursorMark"] == "mark-7"
