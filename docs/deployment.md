@@ -7,14 +7,20 @@ The provider is **netcup**, not Hetzner as originally specified. Hetzner was the
 Phase 0 choice and remains a fine one; every 8 GB plan was simply out of stock
 across Falkenstein, Helsinki and Nuremberg, on both x86 and Arm, at the point of
 purchase. Nothing in the repository is provider-specific - the stack is Docker
-Compose on Ubuntu - so this is a purchasing fact, not an architectural one.
+Compose on Debian 13 - so this is a purchasing fact, not an architectural one.
 
-> **This target is not what is running today.** Production testing currently
-> goes Vercel -> Cloudflare quick tunnel -> a development PC -> Caddy -> the
-> application, which means the backend is available only while that machine is,
-> and the tunnel hostname is ephemeral. Everything below describes the intended
-> deployment. The gap, and everything blocked behind it, is
-> [DEPLOY-001](backlog.md#deploy-001).
+> **The backend runs on this target as of 2026-09-01.** `api.academious.org`
+> resolves to the VPS, Caddy holds a Let's Encrypt certificate, and the corpus
+> is 33,169 papers across arXiv, bioRxiv/medRxiv and Europe PMC. The Cloudflare
+> tunnel off a development PC is retired.
+>
+> Two things are still true and worth stating plainly. **The frontend has not
+> been repointed**: the Vercel build still names the tunnel hostname, so the
+> deployed site calls a backend that no longer answers until
+> `VITE_API_BASE_URL` changes and it is rebuilt (DEPLOY-002). And **nothing is
+> scheduled** - no cron is installed, so the corpus is static rather than
+> growing. There are also no backups (DEPLOY-006), which mattered less when the
+> corpus was minutes of re-harvesting and matters more now that it is hours.
 
 ## Topology
 

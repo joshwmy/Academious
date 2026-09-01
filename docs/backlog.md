@@ -66,8 +66,8 @@ it could be started but deliberately is not.
 
 | ID | Item | Status | Target |
 |---|---|---|---|
-| [DEPLOY-001](#deploy-001) | Move the backend to the approved VPS topology | IN PROGRESS | Pre-launch |
-| [DEPLOY-002](#deploy-002) | Stable API hostname, DNS and TLS | IN PROGRESS | Pre-launch |
+| [DEPLOY-001](#deploy-001) | Move the backend to the approved VPS topology | DONE | — |
+| [DEPLOY-002](#deploy-002) | Stable API hostname, DNS and TLS | DONE | — |
 | [DEPLOY-003](#deploy-003) | Remove backend-only environment variables from the Vercel project | READY | Next infra pass |
 | [DEPLOY-004](#deploy-004) | Cut CORS and allowed hosts over to the permanent origin | BLOCKED | Pre-launch |
 | [DEPLOY-005](#deploy-005) | Decide the production frontend domain | DEFERRED | Pre-launch |
@@ -75,9 +75,9 @@ it could be started but deliberately is not.
 | [DEPLOY-007](#deploy-007) | CI/CD pipeline | DEFERRED | Phase 6 |
 | [SEC-001](#sec-001) | Rate limiter is process-local | DEFERRED | Before a second API process |
 | [SEC-002](#sec-002) | SPECTER2 concurrency gate is process-local | DEFERRED | Before a second API process |
-| [SEC-003](#sec-003) | Restrict `/metrics/*` and `/health/db` at the proxy | BLOCKED | With DEPLOY-001 |
-| [SEC-004](#sec-004) | Proxy trust configuration in production | BLOCKED | With DEPLOY-001 |
-| [SEC-005](#sec-005) | Transport limits: TLS, HSTS, request size, timeouts | BLOCKED | With DEPLOY-001 |
+| [SEC-003](#sec-003) | Restrict `/metrics/*` and `/health/db` at the proxy | DONE | — |
+| [SEC-004](#sec-004) | Proxy trust configuration in production | IN PROGRESS | Verify client attribution |
+| [SEC-005](#sec-005) | Transport limits: TLS, HSTS, request size, timeouts | DONE | — |
 | [SEC-006](#sec-006) | Vercel preview origins are not allowed by production CORS | WONTFIX | — |
 | [SEC-007](#sec-007) | Prompt-injection and tool-use threat model for a generative layer | DEFERRED | Before Phase 5 code |
 | [SEC-008](#sec-008) | No per-caller quota without accounts | DEFERRED | Phase 3 |
@@ -101,7 +101,7 @@ it could be started but deliberately is not.
 | [SRC-003](#src-003) | Unpaywall fallback | DEFERRED | Phase 2 remainder |
 | [SRC-004](#src-004) | OpenAlex harvesting into the live corpus | READY | Phase 2 remainder |
 | [SRC-005](#src-005) | Corpus-admission policy for tertiary literature | DONE | — |
-| [SRC-006](#src-006) | Europe PMC harvest is unscheduled and unmeasured at volume | BLOCKED | With DEPLOY-001 |
+| [SRC-006](#src-006) | Europe PMC harvest is unscheduled and unmeasured at volume | READY | Cron install |
 | [WEB-001](#web-001) | Visual design is a baseline, not a finished appearance | DEFERRED | Dedicated design pass |
 | [WEB-002](#web-002) | Filter UI over the filters `/papers` supports | DONE | — |
 | [WEB-003](#web-003) | Feed by field | BLOCKED | With DATA-002 |
@@ -122,7 +122,7 @@ it could be started but deliberately is not.
 
 ### DEPLOY-001
 
-**Move the backend to the approved VPS topology.** — `IN PROGRESS`
+**Move the backend to the approved VPS topology.** — `DONE`
 
 The production-testing topology today is:
 
@@ -149,13 +149,19 @@ architectural one; [deployment.md](deployment.md) records why.
   whichever hostname was current at build time, so a restart breaks the deployed
   site until it is rebuilt. This topology must not be described to anyone as
   production.
-* **Progress (2026-09-01)** — the VPS is allocated and provisioned: Debian 13
-  minimal, SSH hardened to key-only authentication, ufw enabled, and
-  `api.academious.org` cut over in DNS to the VPS address. A stale Vercel A
-  record on the same name was removed — it would have round-robined half of
-  Let's Encrypt's validation traffic to the wrong host. Remaining: Docker
-  Engine, `.env`, the production overlay, migrations, and repointing the Vercel
-  build at the new hostname.
+* **Resolution (2026-09-01)** — the backend runs on a netcup VPS: Debian 13
+  minimal, key-only SSH, ufw, Docker Compose behind Caddy with a Let's Encrypt
+  certificate on `api.academious.org`. Migrations `0001`-`0003` applied and the
+  corpus is 33,169 papers (arXiv 8,813, bioRxiv/medRxiv 1,946, Europe PMC
+  22,410). The Cloudflare tunnel is retired.
+* **Found on the way** — three things the plan did not anticipate, each fixed
+  and each recorded where it belongs: the worker auto-started on `up` and
+  harvested into an unmigrated database; `httpx` logged the OpenAlex key at INFO
+  (SEC-012); and the image installed no model stack, so it could ingest a corpus
+  but not embed or answer a search.
+* **Still open** — the Vercel build still names the tunnel hostname (DEPLOY-002
+  follow-through), no cron is installed, and nothing is backed up
+  (DEPLOY-006).
 * **Trigger to revisit** — before any public announcement, any real user, or
   anything that needs the API to answer while the developer is asleep.
 * **Depends on** — nothing. Blocks DEPLOY-002, DEPLOY-004, DEPLOY-006, SEC-003,
@@ -166,7 +172,7 @@ architectural one; [deployment.md](deployment.md) records why.
 
 ### DEPLOY-002
 
-**Stable API hostname, DNS and TLS.** — `IN PROGRESS`
+**Stable API hostname, DNS and TLS.** — `DONE`
 
 The API should answer on a permanent name — `api.<domain>` — with its own DNS
 record and TLS terminated at Caddy, replacing the Cloudflare quick-tunnel
@@ -174,9 +180,15 @@ hostname the Vercel build currently points at.
 
 * **Why deferred** — a stable name is only meaningful once the thing behind it is
   stable, which is DEPLOY-001.
-* **Progress (2026-09-01)** — DNS is done. `api.academious.org` resolves to the
-  VPS over both A and AAAA, hosted at Porkbun. TLS is still outstanding: Caddy
-  has not run, so no certificate has been issued.
+* **Resolution (2026-09-01)** — `api.academious.org` resolves to the VPS over
+  both A and AAAA at Porkbun, and Caddy holds a Let's Encrypt certificate
+  obtained via tls-alpn-01. A stale Vercel A record on the same name had to be
+  removed first: two A records mean round-robin, so half of ACME's validation
+  traffic would have reached the wrong host, against a limit of five issuance
+  failures per hour.
+* **Follow-through** — the hostname is stable but unused. `VITE_API_BASE_URL` in
+  the Vercel project still names the tunnel, so the deployed frontend calls a
+  backend that no longer answers until it is changed and rebuilt.
 * **Risk/impact** — until then every tunnel restart is a frontend rebuild, and no
   external party can be given a durable link to the API.
 * **Trigger to revisit** — with DEPLOY-001.
