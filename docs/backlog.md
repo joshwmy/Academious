@@ -69,7 +69,7 @@ it could be started but deliberately is not.
 | [DEPLOY-001](#deploy-001) | Move the backend to the approved VPS topology | DONE | — |
 | [DEPLOY-002](#deploy-002) | Stable API hostname, DNS and TLS | DONE | — |
 | [DEPLOY-003](#deploy-003) | Remove backend-only environment variables from the Vercel project | READY | Next infra pass |
-| [DEPLOY-004](#deploy-004) | Cut CORS and allowed hosts over to the permanent origin | BLOCKED | Pre-launch |
+| [DEPLOY-004](#deploy-004) | Cut CORS and allowed hosts over to the permanent origin | DONE | — |
 | [DEPLOY-005](#deploy-005) | Decide the production frontend domain | DEFERRED | Pre-launch |
 | [DEPLOY-006](#deploy-006) | Encrypted off-machine backups and a restore drill | BLOCKED | Phase 6 exit criterion |
 | [DEPLOY-007](#deploy-007) | CI/CD pipeline | DEFERRED | Phase 6 |
@@ -222,13 +222,21 @@ key, and other server-only values. Vercel now builds only the Vite frontend in
 
 ### DEPLOY-004
 
-**Cut CORS and allowed hosts over to the permanent origin.** — `BLOCKED`
+**Cut CORS and allowed hosts over to the permanent origin.** — `DONE`
 
-`ACADEMIOUS_CORS_ALLOWED_ORIGINS` and `ACADEMIOUS_ALLOWED_HOSTS` currently name
-the temporary tunnel host and the current Vercel origin. Both move to the
-permanent hostnames, and the temporary values are removed rather than left
-alongside.
+`ACADEMIOUS_CORS_ALLOWED_ORIGINS` is `https://academious.org` and
+`ACADEMIOUS_ALLOWED_HOSTS` is `api.academious.org`. The tunnel values are gone
+rather than left alongside, so there is no stale trusted origin.
 
+* **Verified (2026-09-01)** — a request carrying `Origin: https://academious.org`
+  comes back with a matching `access-control-allow-origin`, and the deployed
+  frontend loads its feed from `api.academious.org`. Checked against the running
+  host, because the failure mode is a browser silently discarding a response the
+  server was happy to send.
+* **Note** — `ACADEMIOUS_ALLOWED_HOSTS` also means a request addressed to
+  `127.0.0.1` is refused with `Invalid host header`. That is correct behaviour
+  and it makes the documented way of reading the restricted ops endpoints from
+  the box need an explicit `Host` header; deployment.md now says so.
 * **Risk/impact** — a stale allowed origin is a permanently trusted origin that
   somebody else may later be able to claim.
 * **Depends on** — DEPLOY-001, DEPLOY-002, DEPLOY-005.
