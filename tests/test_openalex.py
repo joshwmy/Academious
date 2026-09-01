@@ -106,3 +106,19 @@ def test_incremental_window_uses_the_configured_date_field() -> None:
     params = paid._params("primary_topic.domain.id:1", date(2026, 8, 25), "*")
     assert "from_updated_date:2026-08-25" in params["filter"]
     assert params["sort"] == "updated_date:asc"
+
+
+def test_configured_filters_split_into_separate_harvests() -> None:
+    """`;` separates expressions, and each is its own harvest.
+
+    The default once used `|`, which reads as "either domain", but OpenAlex
+    accepts `|` only between values of a single filter key. A cross-key OR is
+    rejected with HTTP 400, so the whole source contributed nothing.
+    """
+    from academious.core.config import Settings
+
+    settings = Settings()
+    expressions = [e.strip() for e in settings.openalex_filters.split(";") if e.strip()]
+
+    assert len(expressions) == 2
+    assert all("|" not in expression for expression in expressions)

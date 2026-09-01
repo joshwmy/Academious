@@ -28,7 +28,11 @@ class Settings(BaseSettings):
     contact_email: str = "unset@example.com"
 
     openalex_api_key: str = ""
-    openalex_filters: str = "primary_topic.domain.id:1|primary_topic.field.id:17"
+    # `;`-separated, one harvest per expression - the client splits on `;`.
+    # NOT `|`: OpenAlex allows `|` only between values of the same filter key,
+    # so `domain.id:1|field.id:17` is a cross-key OR it rejects with HTTP 400.
+    # The two launch domains are two separate harvests, not one OR.
+    openalex_filters: str = "primary_topic.domain.id:1;primary_topic.field.id:17"
     # Which date field drives incremental harvesting. `updated_date` is the one
     # we want - it catches corrections and late metadata on records we already
     # hold - but OpenAlex moved it behind a Premium/Institutional/Partner plan
