@@ -420,10 +420,14 @@ The host must be provisioned first - see "Provisioning the host" above.
    reports nothing:
 
    ```bash
-   until docker compose run --rm worker python -m academious.workers embed --pending        | grep -q '"papers": 0'; do
+   until [ "$(docker compose run --rm worker python -m academious.workers embed        --pending 2>/dev/null | tr -d "" | tail -1)" = "0" ]; do
      docker compose run --rm worker python -m academious.workers embed
    done
    ```
+
+   `--pending` prints a bare count, not JSON. A loop that greps for a JSON key
+   never satisfies its condition and spins re-running a no-op embed forever
+   once the backlog clears - which looks like progress in `ps` and is not.
 
    At the measured 1.0-1.4 papers/second (see
    [performance.md](performance.md) §2) a 33k corpus is 7-9 hours, so run it
