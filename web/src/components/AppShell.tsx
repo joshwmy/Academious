@@ -57,8 +57,8 @@ export function AppShell() {
 
       <footer className="app-footer">
         <p>
-          Academious searches its own curated corpus of recent literature from arXiv and
-          bioRxiv/medRxiv. It is not a search over all published science.
+          Academious searches its own curated corpus of recent research from arXiv,
+          bioRxiv/medRxiv and Europe PMC. It is not a search over all published science.
         </p>
       </footer>
     </>

@@ -111,7 +111,7 @@ it could be started but deliberately is not.
 | [WEB-008](#web-008) | No analytics | WONTFIX | — |
 | [WEB-009](#web-009) | No accounts, saved papers or recommendations | DEFERRED | Phase 3 |
 | [WEB-010](#web-010) | `/search` accepts no filters, so filtering stops at the feed | DEFERRED | Phase 3 |
-| [WEB-011](#web-011) | Europe PMC is not offered in the frontend source filter | READY | Next frontend pass |
+| [WEB-011](#web-011) | Europe PMC is not offered in the frontend source filter | DONE | — |
 | [PROD-001](#prod-001) | A generative explanation layer changes the threat model | DEFERRED | Phase 5 |
 | [PROD-002](#prod-002) | Accounts turn query logs and interest profiles into privacy assets | DEFERRED | Phase 3 |
 
@@ -801,18 +801,22 @@ that is a job measured in hours, and the ingest rate observed here was
 
 ### WEB-011
 
-**Europe PMC is not offered in the frontend source filter.** — `READY`
+**Europe PMC is not offered in the frontend source filter.** — `DONE`
 
-`SOURCES` in `web/src/lib/filters.ts` lists arXiv, bioRxiv/medRxiv and OpenAlex.
-The backend already filters on `source=europepmc` correctly, so this is one line
-of frontend transcription.
+`SOURCES` in `web/src/lib/filters.ts` listed arXiv, bioRxiv/medRxiv and OpenAlex.
+The backend already filtered on `source=europepmc` correctly, so this was one
+line of frontend transcription.
 
 * **Unblocked** — SRC-005 closed the corpus-quality objection. The slice is now
   438 journal articles, 101 preprints and 74 review articles, with no reference
   chapters in it.
-* **Scope** — add the entry to `SOURCES`; the filter UI itself is not being
-  redesigned. Worth a glance at whether the corpus-description copy in
-  `AppShell.tsx` ("arXiv and bioRxiv/medRxiv") should now mention Europe PMC.
+* **Resolution** — the entry is in `SOURCES`, and the corpus-description copy in
+  `AppShell.tsx` now names Europe PMC alongside arXiv and bioRxiv/medRxiv. The
+  filter UI was not redesigned.
+* **Note** — the `FilterPanel` test that claimed to list "every source the
+  backend knows about" asserted a hard-coded count of three, so adding a
+  connector broke the test that existed to catch a missing connector. It now
+  counts against `SOURCES` and compares the rendered labels.
 
 ### WEB-001
 

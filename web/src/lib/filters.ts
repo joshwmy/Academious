@@ -35,6 +35,7 @@ import type { PaperFilterParams, PreprintPolicy } from "../api/types";
 export const SOURCES = [
   { key: "arxiv", label: "arXiv" },
   { key: "biorxiv", label: "bioRxiv / medRxiv" },
+  { key: "europepmc", label: "Europe PMC" },
   { key: "openalex", label: "OpenAlex" },
 ] as const;
 

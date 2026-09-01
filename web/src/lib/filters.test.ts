@@ -44,6 +44,16 @@ describe("parseFilters", () => {
     );
   });
 
+  it("accepts every source the backend harvests", () => {
+    // The transcription of the connector registry is the thing most likely to
+    // fall behind it, and a source missing here is silently unfilterable.
+    expect(parseFilters(query("source=europepmc")).sources).toEqual(["europepmc"]);
+    expect(
+      parseFilters(query("source=openalex&source=europepmc&source=arxiv&source=biorxiv"))
+        .sources,
+    ).toEqual(["arxiv", "biorxiv", "europepmc", "openalex"]);
+  });
+
   it("falls back to 'any' for an unrecognised preprint policy", () => {
     expect(parseFilters(query("preprints=maybe")).preprints).toBe("any");
   });

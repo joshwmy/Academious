@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { NO_FILTERS, type PaperFilters } from "../lib/filters";
+import { NO_FILTERS, SOURCES, type PaperFilters } from "../lib/filters";
 import { FilterPanel } from "./FilterPanel";
 
 function renderPanel(filters: PaperFilters = NO_FILTERS) {
@@ -39,6 +39,15 @@ describe("FilterPanel", () => {
     await user.click(screen.getByRole("checkbox", { name: /arxiv/i }));
 
     expect(onChange).toHaveBeenCalledWith({ ...NO_FILTERS, sources: ["arxiv"] });
+  });
+
+  it("offers Europe PMC alongside the other sources", async () => {
+    const user = userEvent.setup();
+    const onChange = renderPanel();
+
+    await user.click(screen.getByRole("checkbox", { name: /europe pmc/i }));
+
+    expect(onChange).toHaveBeenCalledWith({ ...NO_FILTERS, sources: ["europepmc"] });
   });
 
   it("reports a source being removed without disturbing the others", async () => {
@@ -113,6 +122,12 @@ describe("FilterPanel", () => {
     const sources = within(screen.getByRole("group", { name: /source/i })).getAllByRole(
       "checkbox",
     );
-    expect(sources).toHaveLength(3);
+    // Counted against the registry rather than a literal: a hard-coded number
+    // makes this test the thing that breaks when a connector is added, which
+    // is the opposite of what it is for.
+    expect(sources).toHaveLength(SOURCES.length);
+    expect(sources.map((el) => el.closest("label")?.textContent?.trim())).toEqual(
+      SOURCES.map((source) => source.label),
+    );
   });
 });
