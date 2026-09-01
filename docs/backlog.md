@@ -66,8 +66,8 @@ it could be started but deliberately is not.
 
 | ID | Item | Status | Target |
 |---|---|---|---|
-| [DEPLOY-001](#deploy-001) | Move the backend to the approved VPS topology | DEFERRED | Pre-launch |
-| [DEPLOY-002](#deploy-002) | Stable API hostname, DNS and TLS | BLOCKED | Pre-launch |
+| [DEPLOY-001](#deploy-001) | Move the backend to the approved VPS topology | IN PROGRESS | Pre-launch |
+| [DEPLOY-002](#deploy-002) | Stable API hostname, DNS and TLS | IN PROGRESS | Pre-launch |
 | [DEPLOY-003](#deploy-003) | Remove backend-only environment variables from the Vercel project | READY | Next infra pass |
 | [DEPLOY-004](#deploy-004) | Cut CORS and allowed hosts over to the permanent origin | BLOCKED | Pre-launch |
 | [DEPLOY-005](#deploy-005) | Decide the production frontend domain | DEFERRED | Pre-launch |
@@ -121,7 +121,7 @@ it could be started but deliberately is not.
 
 ### DEPLOY-001
 
-**Move the backend to the approved VPS topology.** — `DEFERRED`
+**Move the backend to the approved VPS topology.** — `IN PROGRESS`
 
 The production-testing topology today is:
 
@@ -133,8 +133,10 @@ Vercel (static frontend)
            -> FastAPI / PostgreSQL / SPECTER2
 ```
 
-The permanent target is unchanged from the Phase 0 decision: a Hetzner VPS
-running Docker Compose behind Caddy — see [deployment.md](deployment.md).
+The permanent target is unchanged from the Phase 0 decision: a single VPS
+running Docker Compose behind Caddy — see [deployment.md](deployment.md). The
+provider is netcup rather than Hetzner, which is a purchasing fact and not an
+architectural one; [deployment.md](deployment.md) records why.
 
 * **Why deferred** — the tunnel exercises the whole stack end to end from a real
   browser making a real cross-origin request, which is what the frontend
@@ -146,6 +148,13 @@ running Docker Compose behind Caddy — see [deployment.md](deployment.md).
   whichever hostname was current at build time, so a restart breaks the deployed
   site until it is rebuilt. This topology must not be described to anyone as
   production.
+* **Progress (2026-09-01)** — the VPS is allocated and provisioned: Debian 13
+  minimal, SSH hardened to key-only authentication, ufw enabled, and
+  `api.academious.org` cut over in DNS to the VPS address. A stale Vercel A
+  record on the same name was removed — it would have round-robined half of
+  Let's Encrypt's validation traffic to the wrong host. Remaining: Docker
+  Engine, `.env`, the production overlay, migrations, and repointing the Vercel
+  build at the new hostname.
 * **Trigger to revisit** — before any public announcement, any real user, or
   anything that needs the API to answer while the developer is asleep.
 * **Depends on** — nothing. Blocks DEPLOY-002, DEPLOY-004, DEPLOY-006, SEC-003,
@@ -156,7 +165,7 @@ running Docker Compose behind Caddy — see [deployment.md](deployment.md).
 
 ### DEPLOY-002
 
-**Stable API hostname, DNS and TLS.** — `BLOCKED`
+**Stable API hostname, DNS and TLS.** — `IN PROGRESS`
 
 The API should answer on a permanent name — `api.<domain>` — with its own DNS
 record and TLS terminated at Caddy, replacing the Cloudflare quick-tunnel
@@ -164,6 +173,9 @@ hostname the Vercel build currently points at.
 
 * **Why deferred** — a stable name is only meaningful once the thing behind it is
   stable, which is DEPLOY-001.
+* **Progress (2026-09-01)** — DNS is done. `api.academious.org` resolves to the
+  VPS over both A and AAAA, hosted at Porkbun. TLS is still outstanding: Caddy
+  has not run, so no certificate has been issued.
 * **Risk/impact** — until then every tunnel restart is a frontend rebuild, and no
   external party can be given a durable link to the API.
 * **Trigger to revisit** — with DEPLOY-001.
