@@ -17,10 +17,9 @@ Compose on Debian 13 - so this is a purchasing fact, not an architectural one.
 > Two things are still true and worth stating plainly. **The frontend has not
 > been repointed**: the Vercel build still names the tunnel hostname, so the
 > deployed site calls a backend that no longer answers until
-> `VITE_API_BASE_URL` changes and it is rebuilt (DEPLOY-002). And **the schedule
-> is written but not installed**: [`deploy/crontab`](../deploy/crontab) exists,
-> `crontab -l` on the box does not yet list it, so the corpus grows only when a
-> harvest is run by hand. There are also no backups (DEPLOY-006), which mattered less when the
+> `VITE_API_BASE_URL` changes and it is rebuilt (DEPLOY-002). The schedule from
+> [`deploy/crontab`](../deploy/crontab) is installed, so harvesting and
+> embedding now run unattended. There are also no backups (DEPLOY-006), which mattered less when the
 > corpus was minutes of re-harvesting and matters more now that it is hours.
 
 ## Topology
