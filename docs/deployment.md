@@ -391,6 +391,21 @@ The host must be provisioned first - see "Provisioning the host" above.
    docker compose run --rm worker python -m academious.workers harvest --source all
    ```
 
+7. **Embed the corpus.** A harvested corpus is not yet a searchable one:
+   `/search` encodes the query at request time and ranks against
+   `paper_embedding`, so until this runs the API answers every search with
+   nothing while looking entirely healthy.
+
+   ```bash
+   docker compose run --rm worker python -m academious.workers embed --pending
+   docker compose run --rm worker python -m academious.workers embed
+   ```
+
+   `--pending` reports the backlog without loading the model, which makes it a
+   cheap check that the queue is what you expect before committing to the work.
+   The first real run downloads ~440 MB of SPECTER2 weights into the
+   `modelcache` volume; later runs reuse it.
+
 Then confirm the deployment-layer controls actually hold, from the server:
 
 ```bash
