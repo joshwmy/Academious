@@ -412,6 +412,24 @@ The host must be provisioned first - see "Provisioning the host" above.
    The first real run downloads ~440 MB of SPECTER2 weights into the
    `modelcache` volume; later runs reuse it.
 
+   **One pass is not the whole corpus.** `MAX_PENDING_SCAN` in
+   `embeddings/service.py` caps each enqueue at 10,000 papers, so a corpus
+   larger than that needs the command run repeatedly - and the failure mode is
+   silent, because the papers that were embedded search perfectly well while
+   the rest are simply absent from every result. Repeat until `--pending`
+   reports nothing:
+
+   ```bash
+   until docker compose run --rm worker python -m academious.workers embed --pending        | grep -q '"papers": 0'; do
+     docker compose run --rm worker python -m academious.workers embed
+   done
+   ```
+
+   At the measured 1.0-1.4 papers/second (see
+   [performance.md](performance.md) §2) a 33k corpus is 7-9 hours, so run it
+   detached - `docker compose run -d --rm worker ...` - rather than from a
+   session that ends when the laptop sleeps.
+
 Then confirm the deployment-layer controls actually hold, from the server:
 
 ```bash
