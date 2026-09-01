@@ -1,19 +1,47 @@
 # Academious
 
-A discovery layer over global scientific literature.
+**A personalised discovery layer over scientific literature.**
 
-The product answers two questions, in order: *what new research came out that I
-would probably care about?* and then *help me understand it.* Discovery is the
-product; AI explanation is an enhancement on top of it.
+Academious is being built to answer one question:
 
-**Status: Phase 2, public web.** The retrieval foundation passed its quality
-gate, the public read API is live, and there is now a browsable interface. There
-is still no personalisation and no LLM anywhere in the codebase.
+> **What new research came out that I would probably care about?**
+
+Then *why should I care about it?*, and only then *help me understand it.* That
+order is the product. Discovery comes first; explanation and summarisation are
+how a recommendation becomes useful, not what the product is.
+
+Recommendation and discovery features already exist in academic tooling —
+Academious is not claiming to invent them. The bet is on **hierarchy**: those
+capabilities usually sit inside a search engine, citation graph, reference
+manager or literature-review workflow, whereas Academious is being designed
+around the personalised feed itself, with search and reading tools serving it
+rather than the other way round.
+
+Think of what recommendation did to how people find music or video, applied to
+research literature: you should not have to know what you want before you open
+it.
+
+[docs/product.md](docs/product.md) is the canonical statement of that direction.
+
+## Where this actually is
+
+**Phase 2, public web.** What runs today is the foundation discovery needs, not
+discovery itself:
+
+| | Today | Direction |
+|---|---|---|
+| **Corpus** | Five sources harvested, normalised, deduplicated into one corpus | Broader coverage, scheduled freshness |
+| **Retrieval** | Semantic, lexical and hybrid search over a research-interest description | Candidate generation for a feed |
+| **Feed** | `/papers` is newest-first and identical for every visitor | Personalised ranking |
+| **Personalisation** | None. No accounts, no interest model, no feedback signals | Multi-centroid interest profiles |
+| **Explanation** | None | Why this paper, for this reader |
+| **Understanding** | None. No LLM anywhere in the codebase | Summaries, after discovery works |
 
 Phase 1 built the literature-data foundation. Phase 2 built the layer that makes
 it searchable — SPECTER2 embeddings in pgvector, semantic, lexical and hybrid
 retrieval, and a reproducible way to measure whether any of it is any good —
-then put a public API and a React frontend on top of it.
+then put a public API and a React frontend on top of it. **Personalised ranking
+is the next product layer, and none of it exists yet.**
 
 ```bash
 # API
@@ -166,6 +194,7 @@ Measurements are reproduced by:
 
 | Document | Contents |
 |---|---|
+| [docs/product.md](docs/product.md) | **What Academious is for — positioning, hierarchy, current state vs direction** |
 | [docs/phase-0-report.md](docs/phase-0-report.md) | API landscape, architecture, V1 scope, risks, disagreements |
 | [docs/phase-1-report.md](docs/phase-1-report.md) | What Phase 1 built, what it proved, what it found |
 | [docs/phase-2-report.md](docs/phase-2-report.md) | What Phase 2 built, measured, and what contradicted earlier assumptions |

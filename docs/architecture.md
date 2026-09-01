@@ -1,5 +1,36 @@
 # Architecture
 
+## What this architecture is for
+
+Academious is a personalised ranking and discovery layer over scientific
+literature ([product.md](product.md)). That intent explains the shape of
+everything below: the system's eventual job is to decide which few papers
+deserve one person's attention, and it cannot rank what it never collected,
+cannot compare what it failed to deduplicate, and cannot explain a
+recommendation whose provenance it did not keep.
+
+```mermaid
+flowchart LR
+    COL[Collect<br/>broadly] --> NRM[Normalise<br/>consistently]
+    NRM --> IDN[Resolve<br/>identity] --> COR[(Unified<br/>corpus)]
+    COR --> RET[Retrieve<br/>candidates]
+    RET -.-> RNK[Rank<br/>personally]
+    RNK -.-> EXP[Explain<br/>relevance] -.-> FEE[Feed]
+    FEE -.-> LRN[Learn from<br/>feedback]
+    LRN -.-> RNK
+
+    classDef planned stroke-dasharray: 5 4;
+    class RNK,EXP,FEE,LRN planned;
+```
+
+Solid is implemented; dashed is designed and unbuilt.
+
+Everything from `collect` to `retrieve` runs today. Everything after it is
+designed and unbuilt: there are no accounts, no interest model, no feedback
+signals, and the browsable feed is reverse-chronological rather than ranked. The
+recommendation design that ranking will be built against is
+[phase-0-report §6](phase-0-report.md#6-recommendation-engine).
+
 ## Shape
 
 One FastAPI application, one PostgreSQL, background workers in the same

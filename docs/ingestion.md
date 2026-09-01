@@ -22,8 +22,8 @@ identifier, or a work type the corpus does not admit.
 ### What the corpus admits
 
 Academious answers *what new research came out that I would probably care
-about?* It is a discovery layer over research literature, not a library
-catalogue, and [ingest/scope.py](../src/academious/ingest/scope.py) owns that
+about?* It is a personalised discovery layer over research literature
+([product.md](product.md)), not a library catalogue, and [ingest/scope.py](../src/academious/ingest/scope.py) owns that
 decision for **every** source so a new connector inherits it rather than
 restating it. A connector maps its upstream vocabulary onto `scope.WorkType`;
 the policy decides admission.

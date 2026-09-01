@@ -6,6 +6,8 @@ down here, it is not deferred, it is forgotten.
 
 It is not a roadmap. The roadmap is the intended *sequence* of product phases
 and lives in [phase-0-report.md §13](phase-0-report.md#13-phased-implementation-plan).
+What the product is *for* — and which layers of it exist today versus remain
+direction — is [product.md](product.md).
 This file is the *open engineering work* that sits alongside that sequence —
 things measured and postponed, blocked on infrastructure, or consciously scoped
 out. Items point at a target phase; they do not restate it.
@@ -611,6 +613,16 @@ Deliberate. Learning-to-rank in particular waits until there are ≥100k labelle
 interactions; there are zero, because there are no users. Personalisation is
 Phase 3. Re-ranking has no evidence yet that it would help.
 
+Ordering matters here and the dependency runs one way: personalised ranking
+needs an interest model, which needs accounts (WEB-009), which needs a reason
+for someone to create one. The design ranking will be built against — one
+centroid per coherent interest, `max` over centroids rather than an averaged
+vector, and `argmax` as the explanation string — is
+[phase-0-report §6.2](phase-0-report.md#62-multi-centroid-interest-profiles).
+The evaluation harness ([evaluation.md](evaluation.md)) measures query
+relevance, which is not the same thing as recommendation usefulness; that
+measurement problem opens when the feed becomes personalised.
+
 ---
 
 ## 6. Embeddings and data
@@ -999,6 +1011,13 @@ history is stored; no query is sent to any third party.
 
 Roadmap Phase 3 and Phase 4. Public browsing never requires an account;
 authentication gates personalisation only.
+
+This is the largest gap between what Academious *is* and what it is *for*. The
+product is a personalised discovery feed ([product.md](product.md)); with no
+accounts there is no user to model, no interest profile to rank against, and no
+interaction to learn from, so the whole Personalise → Discover → Rank → Explain
+chain is unstartable. What ships today — corpus, retrieval, browsing — is the
+foundation that layer will be built on, not a smaller version of it.
 
 ### WEB-010
 

@@ -6,6 +6,15 @@ before ranking begins.
 Measured latency is in [performance.md](performance.md); quality measurement is
 in [evaluation.md](evaluation.md).
 
+**Retrieval is not personalisation.** Everything here is query-driven: the
+caller supplies a research-interest description, gets ranked results, and the
+system retains nothing about them. There is no user model, no stored interest
+and no feedback. In the product direction ([product.md §5](product.md#5-product-hierarchy))
+this layer becomes *candidate generation* — the stage that narrows a corpus to
+a few thousand plausible papers, which a personalised ranker then orders for one
+reader. The interest-description framing below is what makes that transition
+natural: a stored interest is the same kind of input as a typed one.
+
 ---
 
 ## 1. What a query is
