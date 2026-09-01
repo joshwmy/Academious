@@ -1,0 +1,114 @@
+{
+  "id": "PPR1297577",
+  "source": "PPR",
+  "doi": "10.64898/2026.08.11.744224",
+  "title": "Photometallobiocatalytic Asymmetric Radical-Mediated Cross-Coupling of Organotrifluoroborate Salts and Pyridotriazoles",
+  "authorString": "Wang H, Mai BK, Zhang X, Li C, Liu P, Yang Y.",
+  "authorList": {
+    "author": [
+      {
+        "fullName": "Wang H",
+        "firstName": "Huanan",
+        "lastName": "Wang",
+        "initials": "H",
+        "authorId": {
+          "type": "ORCID",
+          "value": "0000-0001-9699-3358"
+        }
+      },
+      {
+        "fullName": "Mai BK",
+        "firstName": "Binh Khanh",
+        "lastName": "Mai",
+        "initials": "BK"
+      },
+      {
+        "fullName": "Zhang X",
+        "firstName": "Xingjie",
+        "lastName": "Zhang",
+        "initials": "X"
+      },
+      {
+        "fullName": "Li C",
+        "firstName": "Chongtao",
+        "lastName": "Li",
+        "initials": "C"
+      },
+      {
+        "fullName": "Liu P",
+        "firstName": "Peng",
+        "lastName": "Liu",
+        "initials": "P"
+      },
+      {
+        "fullName": "Yang Y",
+        "firstName": "Yang",
+        "lastName": "Yang",
+        "initials": "Y"
+      }
+    ]
+  },
+  "authorIdList": {
+    "authorId": [
+      {
+        "type": "ORCID",
+        "value": "0000-0001-9699-3358"
+      }
+    ]
+  },
+  "pubYear": "2026",
+  "abstractText": "The cooperative integration of photoredox catalysis and metalloenzyme catalysis has emerged as a powerful strategy for enabling stereoselective radical transformations beyond the capabilities of either catalytic mode alone. Herein, we report a photometallobiocatalytic enantioselective intermolecular C–C cross-coupling of pyridotriazoles and secondary alkyltrifluoroborate salts through cooperative catalysis between an organic photosensitizer and an engineered protoglobin. By combining visible-light-mediated radical generation with enzymatic activation of pyridotriazoles to form reactive Fe carbenoid intermediates, this transformation enabled highly enantioselective radical C–C bond formation through a proposed outer-sphere coupling mechanism. Through biocatalyst mining and directed evolution, engineered Aeropyrum pernix protoglobin catalysts were developed that catalyzed this radical C–C coupling with excellent efficiency and stereocontrol. The photobiocatalytic platform exhibited a broad substrate scope with respect to both secondary alkyltrifluoroborate salts and pyridotriazoles, affording a range of valuable N-heterocyclic products in excellent yields and enantioselectivities. Mechanistic studies supported the involvement of radical intermediates and revealed spontaneous binding between the photocatalyst eosin B and the engineered metalloenzyme. By leveraging cooperative photometallobiocatalysis, this work established an underexplored strategy for asymmetric intermolecular radical cross-coupling via an outer-sphere mechanism, further expanding the catalytic repertoire of transition-metal carbenoid chemistry. <h4>Entry for the Table of Contents</h4>  An enantioselective photometallobiocatalytic cross-coupling of pyridotriazoles and secondary alkyltrifluoroborate salts is developed. Cooperative catalysis using eosin B and an engineered protoglobin combines visible-light-mediated radical generation with enzymatic metal carbenoid activation, affording valuable  N -heterocyclic products in excellent yield and enantioselectivity through an outer-sphere radical coupling pathway.",
+  "pubTypeList": {
+    "pubType": [
+      "Preprint"
+    ]
+  },
+  "bookOrReportDetails": {
+    "publisher": "bioRxiv",
+    "yearOfPublication": 2026
+  },
+  "fullTextUrlList": {
+    "fullTextUrl": [
+      {
+        "availability": "Free",
+        "availabilityCode": "F",
+        "documentStyle": "doi",
+        "site": "DOI",
+        "url": "https://doi.org/10.64898/2026.08.11.744224"
+      }
+    ]
+  },
+  "commentCorrectionList": {
+    "commentCorrection": [
+      {
+        "id": "42631360",
+        "source": "MED",
+        "reference": "Angewandte Chemie (International ed. in English). \n    2026 Aug;:e7251439",
+        "type": "Preprint of",
+        "note": "Link created based on a title-first author match",
+        "orderIn": 10001
+      }
+    ]
+  },
+  "isOpenAccess": "N",
+  "inEPMC": "N",
+  "inPMC": "N",
+  "hasPDF": "N",
+  "hasBook": "N",
+  "hasSuppl": "N",
+  "citedByCount": 0,
+  "hasData": "N",
+  "hasReferences": "Y",
+  "hasTextMinedTerms": "Y",
+  "hasDbCrossReferences": "N",
+  "hasLabsLinks": "N",
+  "license": "cc by-nc-nd",
+  "hasEvaluations": "N",
+  "authMan": "N",
+  "epmcAuthMan": "N",
+  "nihAuthMan": "N",
+  "hasTMAccessionNumbers": "N",
+  "dateOfCreation": "2026-08-13",
+  "firstIndexDate": "2026-08-13",
+  "firstPublicationDate": "2026-08-12"
+}

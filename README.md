@@ -32,10 +32,11 @@ See [docs/api.md](docs/api.md) for the HTTP contract,
 ## What Phase 1 does
 
 ```
-OpenAlex ─┐
-arXiv    ─┼─▶ harvest ─▶ normalise ─▶ canonicalise ─▶ enrich ─▶ PostgreSQL
-bioRxiv  ─┤              (pure)       (dedup)         (OA,
-medRxiv  ─┘                                            retractions)
+OpenAlex   ─┐
+arXiv      ─┤
+bioRxiv    ─┼─▶ harvest ─▶ normalise ─▶ canonicalise ─▶ enrich ─▶ PostgreSQL
+medRxiv    ─┤              (pure)       (dedup)         (OA,
+Europe PMC ─┘                                            retractions)
 ```
 
 * **OpenAlex** is the metadata spine - CC0, every discipline, with OA status,
@@ -43,6 +44,10 @@ medRxiv  ─┘                                            retractions)
 * **arXiv** (OAI-PMH) and **bioRxiv/medRxiv** exist to fix OpenAlex's latency on
   brand-new preprints, and bioRxiv additionally provides the only authoritative
   preprint-to-published DOI map.
+* **Europe PMC** (added in Phase 2, over the same pipeline) brings
+  peer-reviewed biomedical records, MeSH descriptors and author affiliations,
+  harvested over its open-access subset - the only content its terms permit an
+  automated process to take in bulk.
 * **Retraction Watch** (via Crossref, CC-BY 4.0) supplies retraction, correction
   and expression-of-concern notices.
 

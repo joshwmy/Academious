@@ -17,9 +17,9 @@ from academious.sources.base import PaperCandidate
 
 # Higher number wins. Sources absent from a list never supply that field.
 ABSTRACT_PRIORITY = {"pubmed": 50, "europepmc": 40, "openalex": 30, "biorxiv": 20, "arxiv": 10}
-TITLE_PRIORITY = {"openalex": 30, "pubmed": 25, "biorxiv": 20, "arxiv": 10}
-VENUE_PRIORITY = {"openalex": 30, "pubmed": 20, "biorxiv": 10, "arxiv": 5}
-TOPIC_PRIORITY = {"openalex": 30, "pubmed": 20, "biorxiv": 10, "arxiv": 5}
+TITLE_PRIORITY = {"openalex": 30, "pubmed": 25, "europepmc": 22, "biorxiv": 20, "arxiv": 10}
+VENUE_PRIORITY = {"openalex": 30, "europepmc": 25, "pubmed": 20, "biorxiv": 10, "arxiv": 5}
+TOPIC_PRIORITY = {"openalex": 30, "pubmed": 20, "europepmc": 20, "biorxiv": 10, "arxiv": 5}
 # Citation counts are only meaningful from a source that computes them globally.
 CITATION_SOURCES = frozenset({"openalex"})
 

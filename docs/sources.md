@@ -83,6 +83,57 @@ Licence codes are bioRxiv's own short forms (`cc_by`, `cc_no`, `cc0`, ...) and a
 mapped to SPDX-style strings in `sources/biorxiv/normalise.py`. `cc_no` means "no
 reuse without permission" and is not storable.
 
+## Europe PMC
+
+| | |
+|---|---|
+| Endpoint | `https://www.ebi.ac.uk/europepmc/webservices/rest/search` |
+| Auth | None. No key, no registration. |
+| Quota | No published ceiling. Configured here at 3 req/s, the polite-pool convention used for Crossref. |
+| Pagination | `cursorMark=*`, then `nextCursorMark` |
+| Result type | `core` - MeSH terms, affiliations, licences and full-text URLs. `lite` has none of them |
+
+**The bulk prohibition, quoted from europepmc.org/developers:** *"It is not
+permissible to use any kind of automated process to bulk download other content
+from Europe PMC."* Their protocols exist to serve the open-access subset and
+metadata, so `ACADEMIOUS_EUROPEPMC_QUERIES` defaults to `OPEN_ACCESS:Y`. It is a
+`;`-separated list of query expressions, each harvested separately; widening it
+is a decision to be made against those terms, not by accident.
+
+The harvest window filters on `UPDATE_DATE`, not `FIRST_PDATE`: a paper whose
+MeSH terms, licence or retraction status changed today has to come back today,
+and its publication date has not moved.
+
+**Quirks verified against live payloads** (`tests/fixtures/europepmc/`):
+
+* `pubTypeList` mixes MEDLINE and JATS vocabularies on the same record
+  (`Retracted Publication` beside `research-article`).
+* A **retraction notice** (`Retraction of Publication`) is a different document
+  from the **retracted article** (`Retracted Publication`).
+* `license` is populated on records that are not open access at all: a
+  subscription-only article carries `cc by` with `isOpenAccess` `N`. Licence
+  never decides OA status.
+* `oa_status` from this source is only ever `green`, `bronze` or `closed`.
+  Europe PMC reports that a free copy exists and where; it does not report
+  whether the *journal* is open access, so `gold` and `hybrid` stay OpenAlex's
+  to compute.
+* `author.fullName` is the MEDLINE abbreviation ("Jumper J"); `firstName` and
+  `lastName` sit beside it and are preferred, because dedup compares surnames
+  against other sources' full names.
+* HTML and PDF renderings of one copy are listed as two URLs. They are grouped
+  into a single location with a `pdf_url`.
+* A `Preprint of` entry in `commentCorrectionList` is **heuristic** - the
+  payload's own `note` says "Link created based on a title-first author match" -
+  and carries a citation string rather than a DOI. It is deliberately **not**
+  turned into a preprint relation. bioRxiv's `/pubs/` map stays the only
+  authoritative link, and a wrong relation is worse than a missing one.
+* MeSH descriptors arrive without their descriptor UI, so topics are keyed by
+  the term itself under scheme `mesh`.
+* **MeSH is indexed months after publication.** A live page of 100 records
+  from a one-week update window carried MeSH on **1** of them. That is not a
+  defect and it is the reason the window filters on `UPDATE_DATE`: the same
+  paper comes back when it is indexed, and the topics land then.
+
 ## Retraction Watch, via Crossref
 
 | | |
@@ -108,7 +159,6 @@ Downloaded whole and diffed rather than queried per paper.
 | Source | Role | Phase |
 |---|---|---|
 | PubMed / NCBI E-utilities | biomedical freshness, MeSH. 10 req/s with a **registered** key; large jobs off-peak (21:00-05:00 US Eastern, or weekends). | 2 |
-| Europe PMC | legal OA full text as XML, ~3.2M articles. Bulk download permitted for the **OA subset only**. | 2 |
 | Unpaywall | OA fallback resolver, 100k calls/day, `?email=` required. | 2 |
 | Crossref | DOI validation, reference lists. Public pool 1 req/s on list endpoints since 2025-12-01; polite pool 3 req/s. | 3 |
 | Semantic Scholar | TLDRs, citation context. ~1 req/s per key - unacceptable on a critical path. | 8 |

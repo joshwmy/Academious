@@ -7,12 +7,14 @@ from collections.abc import Callable
 from academious.sources.arxiv.connector import ArxivConnector
 from academious.sources.base import SourceConnector
 from academious.sources.biorxiv.connector import BiorxivConnector
+from academious.sources.europepmc.connector import EuropePmcConnector
 from academious.sources.openalex.connector import OpenAlexConnector
 
 CONNECTOR_FACTORIES: dict[str, Callable[[], SourceConnector]] = {
     "openalex": OpenAlexConnector,
     "arxiv": ArxivConnector,
     "biorxiv": BiorxivConnector,
+    "europepmc": EuropePmcConnector,
 }
 
 ALL_SOURCES = tuple(CONNECTOR_FACTORIES)

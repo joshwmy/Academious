@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     openalex_filters: str = "primary_topic.domain.id:1|primary_topic.field.id:17"
     arxiv_sets: str = "cs,stat"
     biorxiv_servers: str = "biorxiv,medrxiv"
+    # `;`-separated Europe PMC query expressions, each harvested separately
+    # over the update window. The default is the open-access subset, which is
+    # what Europe PMC's terms exist to serve; see docs/sources.md before
+    # widening it.
+    europepmc_queries: str = "OPEN_ACCESS:Y"
 
     initial_backfill_days: int = 7
     retractionwatch_url: str = "https://api.labs.crossref.org/data/retractionwatch"
@@ -129,6 +134,10 @@ class Settings(BaseSettings):
     @property
     def biorxiv_server_list(self) -> list[str]:
         return [s.strip() for s in self.biorxiv_servers.split(",") if s.strip()]
+
+    @property
+    def europepmc_query_list(self) -> list[str]:
+        return [q.strip() for q in self.europepmc_queries.split(";") if q.strip()]
 
     @property
     def cors_origin_list(self) -> list[str]:

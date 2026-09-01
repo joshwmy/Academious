@@ -121,8 +121,9 @@ Declared as data in `ingest/merge.py`, not as branches:
 | Field | Precedence |
 |---|---|
 | Abstract | PubMed > Europe PMC > OpenAlex > bioRxiv > arXiv; ties break toward the longer text |
-| Title | OpenAlex > PubMed > bioRxiv > arXiv |
-| Venue, topics | OpenAlex > PubMed > bioRxiv > arXiv |
+| Title | OpenAlex > PubMed > Europe PMC > bioRxiv > arXiv |
+| Venue | OpenAlex > Europe PMC > PubMed > bioRxiv > arXiv |
+| Topics | OpenAlex > PubMed = Europe PMC > bioRxiv > arXiv |
 | Citation count | OpenAlex only - it is the only source that computes them globally |
 | `first_seen_online` | Earliest across all sources |
 | `is_peer_reviewed` | Sticky: true once **any** source reports it |

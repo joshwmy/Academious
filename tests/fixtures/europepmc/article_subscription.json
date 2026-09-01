@@ -1,0 +1,290 @@
+{
+  "id": "39356853",
+  "source": "MED",
+  "pmid": "39356853",
+  "doi": "10.31729/jnma.8527",
+  "title": "Peptic Ulcer Disease among Patients Undergoing Upper Gastrointestinal Endoscopy in a Tertiary Care Centre: A Descriptive Cross-sectional Study.",
+  "authorString": "Sapkota S, Oli SS, Karki M, Rokaha PS.",
+  "authorList": {
+    "author": [
+      {
+        "fullName": "Sapkota S",
+        "firstName": "Shova",
+        "lastName": "Sapkota",
+        "initials": "S",
+        "authorId": {
+          "type": "ORCID",
+          "value": "0000-0003-4463-055X"
+        },
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "Kathmandu Medical College Public Limited, Sinamangal, Kathmandu, Nepal."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Oli SS",
+        "firstName": "Saurav Sen",
+        "lastName": "Oli",
+        "initials": "SS",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "Kathmandu Medical College Public Limited, Sinamangal, Kathmandu, Nepal."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Karki M",
+        "firstName": "Mamata",
+        "lastName": "Karki",
+        "initials": "M",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "Lumbini Medical College and Teaching Hospital, Tansen, Palpa, Nepal."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Rokaha PS",
+        "firstName": "Prerana Singh",
+        "lastName": "Rokaha",
+        "initials": "PS",
+        "authorId": {
+          "type": "ORCID",
+          "value": "0009-0000-6966-6642"
+        },
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "Kathmandu Medical College and Teaching Hospital, Sinamangal, Kathmandu."
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "authorIdList": {
+    "authorId": [
+      {
+        "type": "ORCID",
+        "value": "0000-0003-4463-055X"
+      },
+      {
+        "type": "ORCID",
+        "value": "0009-0000-6966-6642"
+      }
+    ]
+  },
+  "journalInfo": {
+    "issue": "272",
+    "volume": "62",
+    "journalIssueId": 3834882,
+    "dateOfPublication": "2024 Mar",
+    "monthOfPublication": 3,
+    "yearOfPublication": 2024,
+    "printPublicationDate": "2024-03-01",
+    "journal": {
+      "title": "JNMA; journal of the Nepal Medical Association",
+      "medlineAbbreviation": "JNMA J Nepal Med Assoc",
+      "issn": "0028-2715",
+      "essn": "1815-672X",
+      "nlmid": "0045233",
+      "isoabbreviation": "JNMA J Nepal Med Assoc"
+    }
+  },
+  "pubYear": "2024",
+  "pageInfo": "226-228",
+  "abstractText": "<h4>Introduction</h4>Peptic ulcer is a common disease of gastrointestinal tract usually present with epigastric pain and discomfort. Upper gastrointestinal endoscopy is its gold standard investigation. There has been limited study on the prevalence of peptic ulcer disease among patients undergoing upper GI endoscopy especially in Nepal. Our study aimed to find the prevalence of peptic ulcer disease among patients undergoing upper GI endoscopy at our centre.<h4>Methods</h4>A descriptive cross-sectional study was conducted among patients undergoing upper gastrointestinal endoscopy at a tertiary care centre from October 1, 2022 to March 31, 2023. Data was retrieved from hospital records using a preformed proforma and sample size of 219 was calculated and data of 273 cases was collected using the convenience method of sampling.<h4>Results</h4>Among 273 patients, peptic ulcer disease was found in 29 (10.62%) of patients among which 28 (10.25%) had antral ulcer and only 1 (0.36%) had duodenal ulcer.<h4>Conclusions</h4>The prevalence of peptic ulcer disease is lower in our study centre compared to other studies and further studies can be conducted on the associated risk factors and socio-demographic distribution of peptic ulcer disease.",
+  "affiliation": "Kathmandu Medical College Public Limited, Sinamangal, Kathmandu, Nepal.",
+  "publicationStatus": "epublish",
+  "language": "eng",
+  "pubModel": "Electronic",
+  "pubTypeList": {
+    "pubType": [
+      "Journal Article"
+    ]
+  },
+  "meshHeadingList": {
+    "meshHeading": [
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Humans"
+      },
+      {
+        "majorTopic_YN": "Y",
+        "descriptorName": "Peptic Ulcer",
+        "meshQualifierList": {
+          "meshQualifier": [
+            {
+              "abbreviation": "DI",
+              "qualifierName": "diagnosis",
+              "majorTopic_YN": "N"
+            },
+            {
+              "abbreviation": "EP",
+              "qualifierName": "epidemiology",
+              "majorTopic_YN": "N"
+            }
+          ]
+        }
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Duodenal Ulcer",
+        "meshQualifierList": {
+          "meshQualifier": [
+            {
+              "abbreviation": "DI",
+              "qualifierName": "diagnosis",
+              "majorTopic_YN": "N"
+            },
+            {
+              "abbreviation": "EP",
+              "qualifierName": "epidemiology",
+              "majorTopic_YN": "N"
+            }
+          ]
+        }
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Stomach Ulcer",
+        "meshQualifierList": {
+          "meshQualifier": [
+            {
+              "abbreviation": "EP",
+              "qualifierName": "epidemiology",
+              "majorTopic_YN": "N"
+            }
+          ]
+        }
+      },
+      {
+        "majorTopic_YN": "Y",
+        "descriptorName": "Endoscopy, Gastrointestinal",
+        "meshQualifierList": {
+          "meshQualifier": [
+            {
+              "abbreviation": "MT",
+              "qualifierName": "methods",
+              "majorTopic_YN": "N"
+            },
+            {
+              "abbreviation": "SN",
+              "qualifierName": "statistics & numerical data",
+              "majorTopic_YN": "N"
+            }
+          ]
+        }
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Prevalence"
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Cross-Sectional Studies"
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Adolescent"
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Adult"
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Aged"
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Middle Aged"
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Nepal",
+        "meshQualifierList": {
+          "meshQualifier": [
+            {
+              "abbreviation": "EP",
+              "qualifierName": "epidemiology",
+              "majorTopic_YN": "N"
+            }
+          ]
+        }
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Female"
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Male"
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Young Adult"
+      },
+      {
+        "majorTopic_YN": "Y",
+        "descriptorName": "Tertiary Care Centers"
+      }
+    ]
+  },
+  "keywordList": {
+    "keyword": [
+      "Digestive System Endoscopy",
+      "Duodenal Ulcer Stomach Ulcer."
+    ]
+  },
+  "subsetList": {
+    "subset": [
+      {
+        "code": "IM",
+        "name": "Index Medicus"
+      }
+    ]
+  },
+  "fullTextUrlList": {
+    "fullTextUrl": [
+      {
+        "availability": "Subscription required",
+        "availabilityCode": "S",
+        "documentStyle": "doi",
+        "site": "DOI",
+        "url": "https://doi.org/10.31729/jnma.8527"
+      }
+    ]
+  },
+  "isOpenAccess": "N",
+  "inEPMC": "N",
+  "inPMC": "N",
+  "hasPDF": "N",
+  "hasBook": "N",
+  "hasSuppl": "N",
+  "citedByCount": 0,
+  "hasData": "N",
+  "hasReferences": "Y",
+  "hasTextMinedTerms": "Y",
+  "hasDbCrossReferences": "N",
+  "hasLabsLinks": "N",
+  "license": "cc by",
+  "hasEvaluations": "N",
+  "authMan": "N",
+  "epmcAuthMan": "N",
+  "nihAuthMan": "N",
+  "hasTMAccessionNumbers": "N",
+  "dateOfCompletion": "2024-10-02",
+  "dateOfCreation": "2024-10-02",
+  "firstIndexDate": "2024-10-02",
+  "dateOfRevision": "2024-10-04",
+  "electronicPublicationDate": "2024-03-31",
+  "firstPublicationDate": "2024-03-31"
+}

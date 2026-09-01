@@ -20,6 +20,12 @@ A record is skipped at normalisation when it has no title, no resolvable
 identifier, or a work type that is not research output (`paratext`, `editorial`,
 `letter`, `erratum`, `grant`, `dataset`, `peer-review`).
 
+Europe PMC labels a record with both MEDLINE and JATS publication types, and
+the two disagree often enough to matter, so scope there is decided by looking
+for a research type first and only then for an excluded one. A **retraction
+notice** is excluded; the **retracted article** it refers to is kept and
+flagged, because the paper is still the record of what was claimed.
+
 **An abstract is not required.** Live OpenAlex data shows many published journal
 articles with no abstract; requiring one would silently discard a large fraction
 of the biomedical corpus. Abstract coverage is instead a metric to watch.
@@ -57,6 +63,7 @@ Cursor semantics differ by source:
 | OpenAlex | opaque `next_cursor` from `meta`; belongs to one filter expression |
 | arXiv | OAI-PMH `resumptionToken`; must be sent alone, with no other arguments |
 | bioRxiv | the window end date; the next run starts there |
+| Europe PMC | `start`&#124;`end`&#124;`cursorMark`, discarded when the window moves; an empty mark means that window finished |
 
 ## Failure handling
 
@@ -93,6 +100,7 @@ run picks them up once both exist.
 python -m academious.workers harvest --source all
 python -m academious.workers harvest --source openalex --since 2026-08-01 --max-records 500
 python -m academious.workers harvest --source arxiv --no-cursor
+python -m academious.workers harvest --source europepmc --since 2026-08-01
 python -m academious.workers retractions
 python -m academious.workers link-publications --since 2026-08-01
 ```

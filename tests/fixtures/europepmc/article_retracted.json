@@ -1,0 +1,231 @@
+{
+  "id": "42234697",
+  "source": "MED",
+  "pmid": "42234697",
+  "pmcid": "PMC13232856",
+  "fullTextIdList": {
+    "fullTextId": [
+      "PMC13232856"
+    ]
+  },
+  "doi": "10.1371/journal.pone.0350561",
+  "title": "RETRACTED: Research on anomaly detection and operational status evaluation methods for smart electricity meters based on hybrid deep learning.",
+  "authorString": "Zhang J, Zhao Y, Zhang J, Bai Z.",
+  "authorList": {
+    "author": [
+      {
+        "fullName": "Zhang J",
+        "firstName": "Junqing",
+        "lastName": "Zhang",
+        "initials": "J",
+        "authorId": {
+          "type": "ORCID",
+          "value": "0009-0003-5027-312X"
+        },
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "State Grid Shanxi Electric Power Company Limited Shuozhou Power Supply, Shuozhou, Shanxi, China."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Zhao Y",
+        "firstName": "Yugui",
+        "lastName": "Zhao",
+        "initials": "Y",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "State Grid Shanxi Electric Power Company Limited Shuozhou Power Supply, Shuozhou, Shanxi, China."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Zhang J",
+        "firstName": "Junyu",
+        "lastName": "Zhang",
+        "initials": "J",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "State Grid Shanxi Electric Power Company Limited Shuozhou Power Supply, Shuozhou, Shanxi, China."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Bai Z",
+        "firstName": "Zhengxin",
+        "lastName": "Bai",
+        "initials": "Z",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "State Grid Shanxi Electric Power Company Limited Shuozhou Power Supply, Shuozhou, Shanxi, China."
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "authorIdList": {
+    "authorId": [
+      {
+        "type": "ORCID",
+        "value": "0009-0003-5027-312X"
+      }
+    ]
+  },
+  "dataLinksTagsList": {
+    "dataLinkstag": [
+      "supporting_data"
+    ]
+  },
+  "journalInfo": {
+    "issue": "6",
+    "volume": "21",
+    "journalIssueId": 4204536,
+    "dateOfPublication": "2026 ",
+    "monthOfPublication": 0,
+    "yearOfPublication": 2026,
+    "printPublicationDate": "2026-01-01",
+    "journal": {
+      "title": "PloS one",
+      "medlineAbbreviation": "PLoS One",
+      "isoabbreviation": "PLoS One",
+      "nlmid": "101285081",
+      "issn": "1932-6203",
+      "essn": "1932-6203"
+    }
+  },
+  "pubYear": "2026",
+  "pageInfo": "e0350561",
+  "abstractText": "To address the limitations of single-image feature information and the insufficient recognition capability of traditional power quality disturbance (PQD) identification systems, this paper proposes a PQD recognition method based on feature-image combination and an improved ResNet-18, following the concept of feature fusion. First, the PQD signal is subjected to variational mode decomposition (VMD) to obtain a series of intrinsic mode functions (IMFs) and a residual component. Second, the IMFs, residual component, original disturbance signal, and Subtract component are vertically concatenated into a component matrix, from which a color feature-component image is generated via a signal-to-image transformation method. Third, the original disturbance signal is processed using continuous wavelet transform (CWT) to produce a time-frequency scalogram. Finally, the color feature-component image and the wavelet time-frequency image are combined and input into an improved six-channel ResNet-18 for training and disturbance classification. Simulation analyses of the proposed PQD identification method are conducted and compared with commonly used recognition systems. The results demonstrate that the proposed method exhibits strong noise robustness, effectively extracts PQD feature information, and achieves higher recognition accuracy.",
+  "affiliation": "State Grid Shanxi Electric Power Company Limited Shuozhou Power Supply, Shuozhou, Shanxi, China.",
+  "publicationStatus": "epublish",
+  "language": "eng",
+  "pubModel": "Electronic-eCollection",
+  "pubTypeList": {
+    "pubType": [
+      "Retracted Publication",
+      "research-article",
+      "Journal Article"
+    ]
+  },
+  "grantsList": {
+    "grant": [
+      {
+        "grantId": "SGSXSZ00YCJS2500441",
+        "agency": "State Grid Science and Technology Project",
+        "orderIn": 0
+      }
+    ]
+  },
+  "meshHeadingList": {
+    "meshHeading": [
+      {
+        "majorTopic_YN": "Y",
+        "descriptorName": "Electricity"
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Algorithms"
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Image Processing, Computer-Assisted",
+        "meshQualifierList": {
+          "meshQualifier": [
+            {
+              "abbreviation": "MT",
+              "qualifierName": "methods",
+              "majorTopic_YN": "N"
+            }
+          ]
+        }
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Wavelet Analysis"
+      },
+      {
+        "majorTopic_YN": "Y",
+        "descriptorName": "Deep Learning"
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Convolutional Neural Networks"
+      }
+    ]
+  },
+  "subsetList": {
+    "subset": [
+      {
+        "code": "IM",
+        "name": "Index Medicus"
+      }
+    ]
+  },
+  "fullTextUrlList": {
+    "fullTextUrl": [
+      {
+        "availability": "Subscription required",
+        "availabilityCode": "S",
+        "documentStyle": "doi",
+        "site": "DOI",
+        "url": "https://doi.org/10.1371/journal.pone.0350561"
+      },
+      {
+        "availability": "Open access",
+        "availabilityCode": "OA",
+        "documentStyle": "html",
+        "site": "Europe_PMC",
+        "url": "https://europepmc.org/articles/PMC13232856"
+      }
+    ]
+  },
+  "commentCorrectionList": {
+    "commentCorrection": [
+      {
+        "id": "42545951",
+        "source": "MED",
+        "reference": "PLoS One. 2026 Aug 3;21(8):e0355030. doi: 10.1371/journal.pone.0355030.",
+        "type": "Retraction in",
+        "orderIn": 1
+      }
+    ]
+  },
+  "isOpenAccess": "Y",
+  "inEPMC": "Y",
+  "inPMC": "Y",
+  "hasPDF": "N",
+  "hasBook": "N",
+  "hasSuppl": "Y",
+  "citedByCount": 1,
+  "hasData": "Y",
+  "hasReferences": "Y",
+  "hasTextMinedTerms": "Y",
+  "hasDbCrossReferences": "N",
+  "hasLabsLinks": "N",
+  "license": "cc by",
+  "hasEvaluations": "N",
+  "authMan": "N",
+  "epmcAuthMan": "N",
+  "nihAuthMan": "N",
+  "hasTMAccessionNumbers": "Y",
+  "tmAccessionTypeList": {
+    "accessionType": [
+      "doi"
+    ]
+  },
+  "dateOfCompletion": "2026-06-06",
+  "dateOfCreation": "2026-06-03",
+  "firstIndexDate": "2026-06-05",
+  "fullTextReceivedDate": "2026-06-04",
+  "dateOfRevision": "2026-08-13",
+  "electronicPublicationDate": "2026-06-03",
+  "firstPublicationDate": "2026-06-03"
+}

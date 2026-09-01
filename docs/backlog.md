@@ -96,7 +96,7 @@ it could be started but deliberately is not.
 | [DATA-004](#data-004) | `halfvec` quantisation effect not re-checked at scale | DEFERRED | At 10x corpus |
 | [DATA-005](#data-005) | Cost model still rests on estimated ingestion volumes | DEFERRED | After a week of real harvesting |
 | [SRC-001](#src-001) | PubMed connector | DEFERRED | Phase 2 remainder |
-| [SRC-002](#src-002) | Europe PMC connector | DEFERRED | Phase 2 remainder |
+| [SRC-002](#src-002) | Europe PMC connector | DONE | — |
 | [SRC-003](#src-003) | Unpaywall fallback | DEFERRED | Phase 2 remainder |
 | [SRC-004](#src-004) | OpenAlex harvesting into the live corpus | READY | Phase 2 remainder |
 | [WEB-001](#web-001) | Visual design is a baseline, not a finished appearance | DEFERRED | Dedicated design pass |
@@ -581,7 +581,12 @@ corpus is arXiv and bioRxiv only, whose topics carry `{id, label, scheme}` and n
 which is why it is not exposed.
 
 * **Risk/impact** — blocks WEB-003 (feed by field), a named Phase 2 deliverable.
-* **Depends on** — SRC-004.
+* **Two unblocking paths now, not one.** OpenAlex topics carry `field` and
+  `domain` (SRC-004). Europe PMC (SRC-002) carries MeSH descriptors under scheme
+  `mesh`, which is a real taxonomy but a biomedical one with no `field` key
+  either — so whichever arrives first, `SearchFilters.fields` still needs a
+  mapping layer rather than a passthrough, and that decision is the work here.
+* **Depends on** — a live harvest of SRC-004 or SRC-002.
 * **Source** — [api.md §2](api.md#filtering).
 
 ### DATA-003
@@ -645,9 +650,36 @@ with IP bans.
 
 ### SRC-002
 
-**Europe PMC connector.** — `DEFERRED`
+**Europe PMC connector.** — `DONE` (2026-09-01) — built and tested, not yet harvested live
 
-The best free full-text source. Roadmap Phase 2.
+* **Closed by** — `feat: Europe PMC connector over the open-access subset`.
+* **What was built** — `sources/europepmc/{client,normalise,connector}.py`, four
+  payloads captured from the live API in `tests/fixtures/europepmc/`, and 24
+  tests across `test_europepmc.py` and `test_harvest_pagination.py`.
+* **Scope decision** — `ACADEMIOUS_EUROPEPMC_QUERIES` defaults to
+  `OPEN_ACCESS:Y`. Europe PMC's terms prohibit automated bulk download of
+  anything outside the open-access subset, and a default that has to be widened
+  deliberately is the only version of that rule a scheduler cannot break by
+  accident. See [sources.md](sources.md#europe-pmc).
+* **What it adds that nothing else does** — MeSH descriptors (topics under
+  scheme `mesh`), author affiliations, and peer-reviewed non-preprint records,
+  which the corpus has never held. It is the first source to give DATA-002 a
+  taxonomy that is not OpenAlex's.
+* **What was deliberately left out** — the `Preprint of` link in
+  `commentCorrectionList`. The payload's own `note` says it is a title-first
+  author match and it carries a citation string rather than a DOI, so promoting
+  it to a relation would put a guess in the graph. bioRxiv's `/pubs/` map
+  remains the only authoritative link.
+* **Verified against live traffic** — one real page, no database: 100 of 100
+  records normalised, 87 peer reviewed, 13 preprints, 99 with an abstract, all
+  100 with an open-access location. **1 of 100 carried MeSH**, because MEDLINE
+  indexes months after publication — which is precisely why the harvest window
+  filters on `UPDATE_DATE`: the paper returns when it is indexed.
+* **Still open** — no *sustained* harvest has run, so nothing here is measured at
+  volume: `europepmc` is absent from the frontend source filter
+  (`web/src/lib/filters.ts`) until the corpus actually contains it, and the
+  cost model's ingestion volumes (DATA-005) are still estimates.
+* **Depends on** — DEPLOY-001 for a sustained run, exactly as SRC-004 does.
 
 ### SRC-003
 

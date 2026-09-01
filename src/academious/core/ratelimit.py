@@ -106,6 +106,9 @@ SOURCE_LIMITS: dict[str, RateLimit] = {
     # Terms of use: no more than one request every three seconds, one connection.
     "arxiv": RateLimit(requests=1, per_seconds=3.0, burst=1),
     "biorxiv": RateLimit(requests=2, per_seconds=1.0, burst=2),
+    # No key and no published ceiling. Set at the polite-pool convention
+    # used for Crossref, because an unstated limit is not an absent one.
+    "europepmc": RateLimit(requests=3, per_seconds=1.0, burst=3),
     # Polite pool: 3 req/s on list endpoints, 3 concurrent.
     "crossref": RateLimit(requests=3, per_seconds=1.0, burst=3),
     "retractionwatch": RateLimit(requests=1, per_seconds=2.0, burst=1),

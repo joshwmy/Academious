@@ -1,0 +1,788 @@
+{
+  "id": "34265844",
+  "source": "MED",
+  "pmid": "34265844",
+  "pmcid": "PMC8371605",
+  "fullTextIdList": {
+    "fullTextId": [
+      "PMC8371605"
+    ]
+  },
+  "doi": "10.1038/s41586-021-03819-2",
+  "title": "Highly accurate protein structure prediction with AlphaFold.",
+  "authorString": "Jumper J, Evans R, Pritzel A, Green T, Figurnov M, Ronneberger O, Tunyasuvunakool K, Bates R, Žídek A, Potapenko A, Bridgland A, Meyer C, Kohl SAA, Ballard AJ, Cowie A, Romera-Paredes B, Nikolov S, Jain R, Adler J, Back T, Petersen S, Reiman D, Clancy E, Zielinski M, Steinegger M, Pacholska M, Berghammer T, Bodenstein S, Silver D, Vinyals O, Senior AW, Kavukcuoglu K, Kohli P, Hassabis D.",
+  "authorList": {
+    "author": [
+      {
+        "fullName": "Jumper J",
+        "firstName": "John",
+        "lastName": "Jumper",
+        "initials": "J",
+        "authorId": {
+          "type": "ORCID",
+          "value": "0000-0001-6169-6580"
+        },
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK. jumper@deepmind.com."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Evans R",
+        "firstName": "Richard",
+        "lastName": "Evans",
+        "initials": "R",
+        "authorId": {
+          "type": "ORCID",
+          "value": "0000-0003-4675-8469"
+        },
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Pritzel A",
+        "firstName": "Alexander",
+        "lastName": "Pritzel",
+        "initials": "A",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Green T",
+        "firstName": "Tim",
+        "lastName": "Green",
+        "initials": "T",
+        "authorId": {
+          "type": "ORCID",
+          "value": "0000-0002-3227-1505"
+        },
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Figurnov M",
+        "firstName": "Michael",
+        "lastName": "Figurnov",
+        "initials": "M",
+        "authorId": {
+          "type": "ORCID",
+          "value": "0000-0003-1386-8741"
+        },
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Ronneberger O",
+        "firstName": "Olaf",
+        "lastName": "Ronneberger",
+        "initials": "O",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Tunyasuvunakool K",
+        "firstName": "Kathryn",
+        "lastName": "Tunyasuvunakool",
+        "initials": "K",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Bates R",
+        "firstName": "Russ",
+        "lastName": "Bates",
+        "initials": "R",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Žídek A",
+        "firstName": "Augustin",
+        "lastName": "Žídek",
+        "initials": "A",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Potapenko A",
+        "firstName": "Anna",
+        "lastName": "Potapenko",
+        "initials": "A",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Bridgland A",
+        "firstName": "Alex",
+        "lastName": "Bridgland",
+        "initials": "A",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Meyer C",
+        "firstName": "Clemens",
+        "lastName": "Meyer",
+        "initials": "C",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Kohl SAA",
+        "firstName": "Simon A A",
+        "lastName": "Kohl",
+        "initials": "SAA",
+        "authorId": {
+          "type": "ORCID",
+          "value": "0000-0003-4271-4418"
+        },
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Ballard AJ",
+        "firstName": "Andrew J",
+        "lastName": "Ballard",
+        "initials": "AJ",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Cowie A",
+        "firstName": "Andrew",
+        "lastName": "Cowie",
+        "initials": "A",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Romera-Paredes B",
+        "firstName": "Bernardino",
+        "lastName": "Romera-Paredes",
+        "initials": "B",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Nikolov S",
+        "firstName": "Stanislav",
+        "lastName": "Nikolov",
+        "initials": "S",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Jain R",
+        "firstName": "Rishub",
+        "lastName": "Jain",
+        "initials": "R",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Adler J",
+        "firstName": "Jonas",
+        "lastName": "Adler",
+        "initials": "J",
+        "authorId": {
+          "type": "ORCID",
+          "value": "0000-0001-9928-3407"
+        },
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Back T",
+        "firstName": "Trevor",
+        "lastName": "Back",
+        "initials": "T",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Petersen S",
+        "firstName": "Stig",
+        "lastName": "Petersen",
+        "initials": "S",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Reiman D",
+        "firstName": "David",
+        "lastName": "Reiman",
+        "initials": "D",
+        "authorId": {
+          "type": "ORCID",
+          "value": "0000-0002-1605-7197"
+        },
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Clancy E",
+        "firstName": "Ellen",
+        "lastName": "Clancy",
+        "initials": "E",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Zielinski M",
+        "firstName": "Michal",
+        "lastName": "Zielinski",
+        "initials": "M",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Steinegger M",
+        "firstName": "Martin",
+        "lastName": "Steinegger",
+        "initials": "M",
+        "authorId": {
+          "type": "ORCID",
+          "value": "0000-0001-8781-9753"
+        },
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "School of Biological Sciences, Seoul National University, Seoul, South Korea."
+            },
+            {
+              "affiliation": "Artificial Intelligence Institute, Seoul National University, Seoul, South Korea."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Pacholska M",
+        "firstName": "Michalina",
+        "lastName": "Pacholska",
+        "initials": "M",
+        "authorId": {
+          "type": "ORCID",
+          "value": "0000-0002-2160-6226"
+        },
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Berghammer T",
+        "firstName": "Tamas",
+        "lastName": "Berghammer",
+        "initials": "T",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Bodenstein S",
+        "firstName": "Sebastian",
+        "lastName": "Bodenstein",
+        "initials": "S",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Silver D",
+        "firstName": "David",
+        "lastName": "Silver",
+        "initials": "D",
+        "authorId": {
+          "type": "ORCID",
+          "value": "0000-0002-5197-2892"
+        },
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Vinyals O",
+        "firstName": "Oriol",
+        "lastName": "Vinyals",
+        "initials": "O",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Senior AW",
+        "firstName": "Andrew W",
+        "lastName": "Senior",
+        "initials": "AW",
+        "authorId": {
+          "type": "ORCID",
+          "value": "0000-0002-2401-5691"
+        },
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Kavukcuoglu K",
+        "firstName": "Koray",
+        "lastName": "Kavukcuoglu",
+        "initials": "K",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Kohli P",
+        "firstName": "Pushmeet",
+        "lastName": "Kohli",
+        "initials": "P",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK."
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Hassabis D",
+        "firstName": "Demis",
+        "lastName": "Hassabis",
+        "initials": "D",
+        "authorId": {
+          "type": "ORCID",
+          "value": "0000-0003-2812-9917"
+        },
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "DeepMind, London, UK. dhcontact@deepmind.com."
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "authorIdList": {
+    "authorId": [
+      {
+        "type": "ORCID",
+        "value": "0000-0001-6169-6580"
+      },
+      {
+        "type": "ORCID",
+        "value": "0000-0001-8781-9753"
+      },
+      {
+        "type": "ORCID",
+        "value": "0000-0001-9928-3407"
+      },
+      {
+        "type": "ORCID",
+        "value": "0000-0002-1605-7197"
+      },
+      {
+        "type": "ORCID",
+        "value": "0000-0002-2160-6226"
+      },
+      {
+        "type": "ORCID",
+        "value": "0000-0002-2401-5691"
+      },
+      {
+        "type": "ORCID",
+        "value": "0000-0002-3227-1505"
+      },
+      {
+        "type": "ORCID",
+        "value": "0000-0002-5197-2892"
+      },
+      {
+        "type": "ORCID",
+        "value": "0000-0003-1386-8741"
+      },
+      {
+        "type": "ORCID",
+        "value": "0000-0003-2812-9917"
+      },
+      {
+        "type": "ORCID",
+        "value": "0000-0003-4271-4418"
+      },
+      {
+        "type": "ORCID",
+        "value": "0000-0003-4675-8469"
+      },
+      {
+        "type": "ORCID",
+        "value": "0009-0002-4951-7513"
+      }
+    ]
+  },
+  "dataLinksTagsList": {
+    "dataLinkstag": [
+      "altmetrics",
+      "supporting_data",
+      "recommended_reviews",
+      "related_data"
+    ]
+  },
+  "journalInfo": {
+    "issue": "7873",
+    "volume": "596",
+    "journalIssueId": 3221533,
+    "dateOfPublication": "2021 Aug",
+    "monthOfPublication": 8,
+    "yearOfPublication": 2021,
+    "printPublicationDate": "2021-08-01",
+    "journal": {
+      "title": "Nature",
+      "medlineAbbreviation": "Nature",
+      "issn": "0028-0836",
+      "essn": "1476-4687",
+      "nlmid": "0410462",
+      "isoabbreviation": "Nature"
+    }
+  },
+  "pubYear": "2021",
+  "pageInfo": "583-589",
+  "abstractText": "Proteins are essential to life, and understanding their structure can facilitate a mechanistic understanding of their function. Through an enormous experimental effort<sup>1-4</sup>, the structures of around 100,000 unique proteins have been determined<sup>5</sup>, but this represents a small fraction of the billions of known protein sequences<sup>6,7</sup>. Structural coverage is bottlenecked by the months to years of painstaking effort required to determine a single protein structure. Accurate computational approaches are needed to address this gap and to enable large-scale structural bioinformatics. Predicting the three-dimensional structure that a protein will adopt based solely on its amino acid sequence-the structure prediction component of the 'protein folding problem'<sup>8</sup>-has been an important open research problem for more than 50 years<sup>9</sup>. Despite recent progress<sup>10-14</sup>, existing methods fall far short of atomic accuracy, especially when no homologous structure is available. Here we provide the first computational method that can regularly predict protein structures with atomic accuracy even in cases in which no similar structure is known. We validated an entirely redesigned version of our neural network-based model, AlphaFold, in the challenging 14th Critical Assessment of protein Structure Prediction (CASP14)<sup>15</sup>, demonstrating accuracy competitive with experimental structures in a majority of cases and greatly outperforming other methods. Underpinning the latest version of AlphaFold is a novel machine learning approach that incorporates physical and biological knowledge about protein structure, leveraging multi-sequence alignments, into the design of the deep learning algorithm.",
+  "affiliation": "DeepMind, London, UK. jumper@deepmind.com.",
+  "publicationStatus": "ppublish",
+  "language": "eng",
+  "pubModel": "Print-Electronic",
+  "pubTypeList": {
+    "pubType": [
+      "Research Support, Non-U.S. Gov't",
+      "research-article",
+      "Journal Article"
+    ]
+  },
+  "meshHeadingList": {
+    "meshHeading": [
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Proteins",
+        "meshQualifierList": {
+          "meshQualifier": [
+            {
+              "abbreviation": "CH",
+              "qualifierName": "chemistry",
+              "majorTopic_YN": "Y"
+            }
+          ]
+        }
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Reproducibility of Results"
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Sequence Alignment"
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Computational Biology",
+        "meshQualifierList": {
+          "meshQualifier": [
+            {
+              "abbreviation": "MT",
+              "qualifierName": "methods",
+              "majorTopic_YN": "N"
+            },
+            {
+              "abbreviation": "ST",
+              "qualifierName": "standards",
+              "majorTopic_YN": "N"
+            }
+          ]
+        }
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Amino Acid Sequence"
+      },
+      {
+        "majorTopic_YN": "Y",
+        "descriptorName": "Protein Conformation"
+      },
+      {
+        "majorTopic_YN": "Y",
+        "descriptorName": "Protein Folding"
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Models, Molecular"
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Databases, Protein"
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Deep Learning",
+        "meshQualifierList": {
+          "meshQualifier": [
+            {
+              "abbreviation": "ST",
+              "qualifierName": "standards",
+              "majorTopic_YN": "N"
+            }
+          ]
+        }
+      },
+      {
+        "majorTopic_YN": "Y",
+        "descriptorName": "Neural Networks, Computer"
+      }
+    ]
+  },
+  "chemicalList": {
+    "chemical": [
+      {
+        "name": "Proteins",
+        "registryNumber": "0"
+      }
+    ]
+  },
+  "subsetList": {
+    "subset": [
+      {
+        "code": "IM",
+        "name": "Index Medicus"
+      }
+    ]
+  },
+  "fullTextUrlList": {
+    "fullTextUrl": [
+      {
+        "availability": "Open access",
+        "availabilityCode": "OA",
+        "documentStyle": "pdf",
+        "site": "Unpaywall",
+        "url": "https://www.nature.com/articles/s41586-021-03819-2.pdf"
+      },
+      {
+        "availability": "Subscription required",
+        "availabilityCode": "S",
+        "documentStyle": "doi",
+        "site": "DOI",
+        "url": "https://doi.org/10.1038/s41586-021-03819-2"
+      },
+      {
+        "availability": "Open access",
+        "availabilityCode": "OA",
+        "documentStyle": "html",
+        "site": "Europe_PMC",
+        "url": "https://europepmc.org/articles/PMC8371605"
+      },
+      {
+        "availability": "Open access",
+        "availabilityCode": "OA",
+        "documentStyle": "pdf",
+        "site": "Europe_PMC",
+        "url": "https://europepmc.org/articles/PMC8371605?pdf=render"
+      }
+    ]
+  },
+  "commentCorrectionList": {
+    "commentCorrection": [
+      {
+        "id": "34426694",
+        "source": "MED",
+        "reference": "Nature. 2021 Aug;596(7873):487-488. doi: 10.1038/d41586-021-02265-4",
+        "type": "Comment in",
+        "orderIn": 1
+      },
+      {
+        "id": "36644294",
+        "source": "MED",
+        "reference": "Fac Rev. 2022 Dec 14;11:38. doi: 10.12703/r-01-0000020",
+        "type": "Comment in",
+        "orderIn": 2
+      }
+    ]
+  },
+  "isOpenAccess": "Y",
+  "inEPMC": "Y",
+  "inPMC": "Y",
+  "hasPDF": "Y",
+  "hasBook": "N",
+  "hasSuppl": "Y",
+  "citedByCount": 34984,
+  "hasData": "Y",
+  "hasReferences": "Y",
+  "hasTextMinedTerms": "Y",
+  "hasDbCrossReferences": "Y",
+  "dbCrossReferenceList": {
+    "dbName": [
+      "PDB"
+    ]
+  },
+  "hasLabsLinks": "Y",
+  "license": "cc by",
+  "hasEvaluations": "N",
+  "authMan": "N",
+  "epmcAuthMan": "N",
+  "nihAuthMan": "N",
+  "hasTMAccessionNumbers": "Y",
+  "tmAccessionTypeList": {
+    "accessionType": [
+      "pdb",
+      "doi"
+    ]
+  },
+  "dateOfCompletion": "2022-02-11",
+  "dateOfCreation": "2021-07-15",
+  "firstIndexDate": "2021-07-16",
+  "fullTextReceivedDate": "2025-02-05",
+  "dateOfRevision": "2024-12-07",
+  "electronicPublicationDate": "2021-07-15",
+  "firstPublicationDate": "2021-07-15"
+}
