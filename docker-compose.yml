@@ -36,6 +36,14 @@ services:
         condition: service_healthy
 
   worker:
+    # Not started by `up`. Cron invokes this with `run --rm`, and `run` starts a
+    # profiled service on demand, so the profile costs nothing operationally and
+    # buys the thing that matters: `up -d` on a fresh machine used to launch a
+    # harvest against a database that had not been migrated yet, and every
+    # connector died on a missing `source_cursor`. It also meant each deploy
+    # fired an unscheduled harvest, ignoring the off-peak windows the sources
+    # ask for.
+    profiles: ["manual"]
     build: .
     command: python -m academious.workers harvest --source all
     environment:

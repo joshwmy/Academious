@@ -29,7 +29,10 @@
 	# corpus size. 404 rather than 403: a 403 confirms the route exists.
 	#
 	# Plain /health stays public - uptime checks need it and it reveals nothing.
-	# Read the restricted ones from the box itself: curl 127.0.0.1:8000/metrics/ingestion
+	# Read the restricted ones from the box itself. The Host header is not
+	# optional: ACADEMIOUS_ALLOWED_HOSTS names the public hostname, so the
+	# application rejects a request addressed to 127.0.0.1 before routing it.
+	#   curl -H 'Host: api.academious.org' 127.0.0.1:8000/metrics/ingestion
 	@ops path /metrics /metrics/* /health/db
 	respond @ops 404
 

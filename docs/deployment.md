@@ -187,6 +187,24 @@ chmod 600 .env
 `.env` holds the database password and every API key, so it is `600` and it is
 never committed - `.gitignore` already excludes it.
 
+### Pinning the compose files
+
+Every command on the server needs both files. A bare `docker compose ...` reads
+`docker-compose.yml` alone, which has no `caddy` service, no restart policies and
+none of the proxy pinning - so the mistake does not error, it silently runs the
+development topology. Set this once, in the server's `.env`:
+
+```bash
+COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml
+```
+
+`docker compose` reads `COMPOSE_FILE` from `.env` in the project directory, so
+plain `docker compose up -d`, `logs`, `ps` and `run` all pick up the overlay
+afterwards, including the cron entries under "Scheduling" below. The variable is
+also passed into the containers, where it is inert.
+
+Development machines leave it unset and get the base file, which is the point.
+
 ### Still root-only
 
 Everything above runs as root over SSH, which is what the CI/CD step in this
@@ -307,8 +325,13 @@ layer: TLS and HSTS (SEC-005), transport and body size limits (SEC-005), and a
 uptime checks. Read the restricted endpoints from the box itself:
 
 ```bash
-curl -s 127.0.0.1:8000/metrics/ingestion
+curl -s -H 'Host: api.academious.org' 127.0.0.1:8000/metrics/ingestion
 ```
+
+The `Host` header is not decoration. `ACADEMIOUS_ALLOWED_HOSTS` names the
+public hostname, so a request addressed to `127.0.0.1` is answered with
+`Invalid host header` before it reaches the route - the endpoint looks broken
+when it is in fact working exactly as configured.
 
 ### Host firewall
 
@@ -342,11 +365,47 @@ The host must be provisioned first - see "Provisioning the host" above.
    validation requests reach the wrong host. Issuance failures are rate-limited
    at 5/hour per hostname, so this is checked, not assumed.
 
-2. **`.env` on the server**, with a generated `POSTGRES_PASSWORD` and the
-   production values above.
-3. `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d`
-4. `docker compose run --rm api alembic upgrade head`
-5. `curl https://api.academious.org/health`
+2. **`.env` on the server**, with a generated `POSTGRES_PASSWORD`, the
+   production values above, and `COMPOSE_FILE` set as described under "Pinning
+   the compose files".
+3. **Database first, then migrations, then the rest.** The order is not
+   cosmetic: the API answers requests as soon as it starts, and anything that
+   touches a table before `alembic` has created it fails on a missing relation.
+
+   ```bash
+   docker compose up -d db
+   docker compose run --rm api alembic upgrade head
+   docker compose up -d
+   ```
+
+4. `curl https://api.academious.org/health` - expect `{"status":"ok"}`.
+5. Watch the certificate being issued, once:
+
+   ```bash
+   docker compose logs caddy | grep -i "certificate obtained"
+   ```
+
+6. First harvest, by hand rather than waiting for cron:
+
+   ```bash
+   docker compose run --rm worker python -m academious.workers harvest --source all
+   ```
+
+Then confirm the deployment-layer controls actually hold, from the server:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}
+" https://api.academious.org/metrics/ingestion  # 404
+curl -s -o /dev/null -w "%{http_code}
+" https://api.academious.org/health/db          # 404
+curl -sI https://api.academious.org/health | grep -iE 'strict-transport|^server'        # HSTS, no Server
+```
+
+and that Postgres is not listening publicly, from somewhere else entirely:
+
+```bash
+nc -vz <vps address> 5432    # must fail
+```
 
 Then repoint the frontend: the Vercel project is still built against the
 Cloudflare tunnel hostname, so its API base URL has to become
