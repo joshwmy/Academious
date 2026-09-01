@@ -35,6 +35,17 @@ def configure_logging() -> None:
     )
 
     logging.basicConfig(format="%(message)s", stream=sys.stdout, level=level)
+
+    # httpx logs every request at INFO as `HTTP Request: GET <full url>`, query
+    # string included. OpenAlex takes its API key as a query parameter, so at
+    # ACADEMIOUS_LOG_LEVEL=INFO that line publishes the credential into the
+    # container log. Pinned rather than inherited: the point is that raising the
+    # application's log level must not raise this one with it. WARNING and above
+    # still comes through, because a transport warning is often the only
+    # explanation for a stalled harvest.
+    for noisy in ("httpx", "httpcore"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
+
     structlog.configure(
         processors=[*shared, renderer],
         wrapper_class=structlog.make_filtering_bound_logger(level),

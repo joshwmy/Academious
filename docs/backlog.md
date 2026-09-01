@@ -84,6 +84,7 @@ it could be started but deliberately is not.
 | [SEC-009](#sec-009) | Query text is not logged; logging it is a privacy decision | DEFERRED | Whenever analytics is proposed |
 | [SEC-010](#sec-010) | `transformers` 4.x advisories, unreachable but pinned | DEFERRED | When `adapters` supports 5.x |
 | [SEC-011](#sec-011) | No automated secret scanning | DEFERRED | With DEPLOY-007 |
+| [SEC-012](#sec-012) | OpenAlex API key was written to the logs by httpx | DONE | — |
 | [RETR-001](#retr-001) | The default retrieval method is provisional | DEFERRED | First phase exposing ranking to users |
 | [RETR-002](#retr-002) | Six benchmark queries held out, unjudged | DEFERRED | See trigger |
 | [RETR-003](#retr-003) | Hybrid/RRF investigation is frozen | DEFERRED | With RETR-002 |
@@ -425,6 +426,32 @@ is git-ignored; the only committed connection string is the local development
 placeholder.
 
 * **Trigger to revisit** — with DEPLOY-007. A scanner belongs in CI.
+
+### SEC-012
+
+**OpenAlex API key was written to the logs by httpx.** — `DONE`
+
+`httpx` logs every request at INFO as `HTTP Request: GET <full url>`, query
+string included. The OpenAlex client passes its key as the `api_key` query
+parameter, so at `ACADEMIOUS_LOG_LEVEL=INFO` - the default, and what the VPS
+runs - every harvest wrote the credential to stdout, and from there to the
+container log.
+
+Found on the first production harvest, 2026-09-01. Nothing in `academious` logs
+a URL with its query string, so this was the only escape path.
+
+* **Resolution** — `configure_logging` pins the `httpx` and `httpcore` loggers to
+  WARNING explicitly, rather than letting them inherit the application level, so
+  raising `ACADEMIOUS_LOG_LEVEL` for debugging cannot re-expose the key. Warnings
+  still come through; a transport warning is often the only explanation for a
+  stalled harvest. Covered by `tests/test_logging.py`.
+* **Exposure** — the key was in container logs on the VPS and was pasted into a
+  terminal session. Treated as disclosed and **rotated**. The credential is
+  read-only and scoped to OpenAlex's public corpus, so the blast radius is quota
+  rather than data.
+* **Related** — SEC-011: an automated scanner would not have caught this, since
+  the credential was never in the source. Log output is a second place secrets
+  escape, and it wants its own check.
 
 ---
 
