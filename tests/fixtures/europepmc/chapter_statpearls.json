@@ -1,0 +1,130 @@
+{
+  "id": "30422475",
+  "pmid": "30422475",
+  "inPMC": "Y",
+  "title": "Saphenous Vein Cutdown",
+  "bookid": "NBK532880",
+  "hasPDF": "N",
+  "inEPMC": "Y",
+  "source": "MED",
+  "authMan": "N",
+  "hasBook": "Y",
+  "hasData": "N",
+  "pubYear": "2026",
+  "hasSuppl": "N",
+  "language": "eng",
+  "authorList": {
+    "author": [
+      {
+        "authorId": {
+          "type": "ORCID",
+          "value": "0000-0003-1096-317X"
+        },
+        "fullName": "McMahon K",
+        "initials": "K",
+        "lastName": "McMahon",
+        "firstName": "Kathleen",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "Cedars Sinai Marina Del Rey Hospital, Kaiser Permanente"
+            }
+          ]
+        }
+      },
+      {
+        "authorId": {
+          "type": "ORCID",
+          "value": "0000-0002-0447-2350"
+        },
+        "fullName": "Anand S",
+        "initials": "S",
+        "lastName": "Anand",
+        "firstName": "Sachit",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "All India Institute of Medical Sciences"
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Loyd JW",
+        "initials": "JW",
+        "lastName": "Loyd",
+        "firstName": "Joshua W.",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "Novant Health"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "nihAuthMan": "N",
+  "affiliation": "Cedars Sinai Marina Del Rey Hospital, Kaiser Permanente",
+  "epmcAuthMan": "N",
+  "pubTypeList": {
+    "pubType": [
+      "Study Guide"
+    ]
+  },
+  "abstractText": "Rapid establishment of venous access is essential for treating and resuscitating critically ill and injured individuals. Recent Advanced Trauma Life Support (ATLS) guidelines prioritize hemorrhage control over airway management, emphasizing intravascular access and volume resuscitation in certain scenarios. Adequate venous access facilitates blood draws for diagnostics and enables delivery of intravenous (IV) fluids, blood products, and medications. Peripheral IV placement may be difficult in patients with intravascular volume depletion, peripheral vascular diseases, aberrant vascular anatomy, high body mass index, young age (particularly neonatal and young pediatric patients), history of IV drug use, history of repeated IV or central line placement, and extremity trauma, among other factors. Venous cutdown procedures were more often performed when traditional IV placement failed before the introduction of alternative IV access techniques in the 2000s. Ultrasound-guided peripheral IV placement, intraosseous access devices, and Seldinger techniques have largely replaced venous cutdowns for emergent IV access. Notably, central line placement is not often practical in a chaotic resuscitation, nor does it confer benefits over large-bore peripheral access for treatment of acutely hypotensive or hemorrhaging patients. When other techniques have failed or are not feasible, venous cutdown procedures may be needed to secure peripheral IV access.  Historically, cutdown of the proximal greater saphenous vein (GSV) near the saphenofemoral junction in the upper thigh was also used for quick IV access. Proximal GSV cutdown has fallen out of favor in adult patients due to its deeper location and proximity to other major neurovascular structures. This method is still described in recent pediatric surgical literature as a potential venous cutdown site in small children. Cutdown techniques for veins in the cervical region and upper extremity have also been described. Cutdown to the vessels in the neck and groin may still be performed in other scenarios, such as for cannulation for extracorporeal membrane oxygenation (ECMO) and in vascular surgery. This review focuses primarily on cutdown of the distal GSV at the ankle, as this location is the optimal site for lower extremity venous cutdown because of its predictable superficial position and distance from the torso.",
+  "authorIdList": {
+    "authorId": [
+      {
+        "type": "ORCID",
+        "value": "0000-0002-0447-2350"
+      },
+      {
+        "type": "ORCID",
+        "value": "0000-0003-1096-317X"
+      }
+    ]
+  },
+  "authorString": "McMahon K, Anand S, Loyd JW.",
+  "citedByCount": 0,
+  "hasLabsLinks": "Y",
+  "isOpenAccess": "Y",
+  "hasReferences": "N",
+  "dateOfCreation": "2026-08-16",
+  "firstIndexDate": "2018-11-17",
+  "hasEvaluations": "N",
+  "fullTextUrlList": {
+    "fullTextUrl": [
+      {
+        "url": "http://europepmc.org/books/NBK532880",
+        "site": "Europe_PMC",
+        "availability": "Free",
+        "documentStyle": "html",
+        "availabilityCode": "F"
+      },
+      {
+        "url": "https://www.ncbi.nlm.nih.gov/books/NBK532880",
+        "site": "NCBI_Bookshelf",
+        "availability": "Free",
+        "documentStyle": "html",
+        "availabilityCode": "F"
+      }
+    ]
+  },
+  "dataLinksTagsList": {
+    "dataLinkstag": [
+      "altmetrics",
+      "wikipedia"
+    ]
+  },
+  "hasTextMinedTerms": "Y",
+  "publicationStatus": "ppublish",
+  "bookOrReportDetails": {
+    "publisher": "StatPearls Publishing, Treasure Island (FL)",
+    "comprisingTitle": "StatPearls",
+    "yearOfPublication": 2026
+  },
+  "firstPublicationDate": "2026-08-16",
+  "hasDbCrossReferences": "N",
+  "hasTMAccessionNumbers": "N"
+}

@@ -25,7 +25,7 @@ from academious.core.logging import get_logger
 from academious.db.models.ops import IngestionRun, RunStatus, SourceCursor
 from academious.db.models.paper import Paper, PaperIdentifier
 from academious.db.models.support import SourceRecord, Venue
-from academious.ingest import canonicalise, oa, relations
+from academious.ingest import canonicalise, oa, relations, scope
 from academious.ingest.merge import apply_candidate
 from academious.sources.base import PaperCandidate, RawRecord, SourceConnector
 
@@ -133,6 +133,18 @@ class IngestPipeline:
             return
 
         candidate = connector.normalise(raw)
+        # Corpus admission is one decision for every source (ingest/scope.py).
+        # Connectors apply it while normalising, because that is the earliest
+        # point the work type is known; it is enforced again here so a source
+        # that forgets cannot quietly widen the corpus.
+        if candidate is not None and not scope.is_discovery_eligible(candidate.work_type):
+            log.info(
+                "ingest.out_of_scope",
+                source=raw.source_key,
+                source_id=raw.source_id,
+                reason=scope.describe(candidate.work_type),
+            )
+            candidate = None
         if candidate is None:
             counters.records_skipped += 1
             if stored is None:

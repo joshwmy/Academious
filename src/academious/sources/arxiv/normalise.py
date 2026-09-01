@@ -18,6 +18,7 @@ from typing import Any
 from academious.core import ids as idutil
 from academious.core.ids import IdType
 from academious.core.text import clean_display_text
+from academious.ingest.scope import WorkType
 from academious.sources.base import (
     CandidateAuthor,
     CandidateIdentifier,
@@ -95,7 +96,7 @@ def normalise(raw: RawRecord) -> PaperCandidate | None:
         # the arXiv copy itself is still the preprint record.
         is_preprint=True,
         is_peer_reviewed=bool(journal_ref),
-        work_type="preprint",
+        work_type=WorkType.PREPRINT,
         language="en",
         topics=[
             {"id": category, "label": category, "scheme": "arxiv"} for category in categories

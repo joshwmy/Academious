@@ -15,6 +15,7 @@ from academious.db.models.ops import RunStatus
 from academious.db.models.paper import Paper, PaperRelation, RelationType
 from academious.db.models.support import OaLocation, SourceRecord
 from academious.ingest.pipeline import IngestPipeline
+from academious.ingest.scope import WorkType
 from academious.sources.arxiv.normalise import normalise as normalise_arxiv
 from academious.sources.biorxiv.normalise import normalise as normalise_biorxiv
 from academious.sources.europepmc.normalise import normalise as normalise_europepmc
@@ -236,3 +237,73 @@ def test_europepmc_records_without_a_doi_still_reconcile_on_pmid(session):
     identifiers = {(i.id_type, i.value) for i in paper.identifiers}
     assert ("pmid", "40000001") in identifiers
     assert ("pmcid", "PMC9999999") in identifiers
+
+
+def test_a_reference_chapter_never_reaches_the_corpus(session):
+    """Bookshelf chapters are refused, whatever else the record looks like."""
+    connector = StubConnector(
+        "europepmc", [[europepmc_raw()]], normalise_europepmc
+    )
+    chapter = load_json("europepmc", "chapter_statpearls.json")
+    run = run_pipeline(
+        session,
+        StubConnector(
+            "europepmc",
+            [[raw("europepmc", f"MED:{chapter['id']}", chapter)]],
+            normalise_europepmc,
+        ),
+    )
+    assert run.records_fetched == 1
+    assert run.records_skipped == 1
+    assert count(session, Paper) == 0
+    # The payload is still stored, so a re-run is a hash-skip rather than a refetch.
+    assert count(session, SourceRecord) == 1
+
+    # A preprint through the same connector still lands.
+    run_pipeline(session, connector)
+    assert count(session, Paper) == 1
+
+
+def test_the_admission_policy_is_enforced_for_any_source_not_only_europe_pmc(session):
+    """A connector that forgets to apply the policy cannot widen the corpus.
+
+    This is what a future PubMed connector inherits: the type vocabulary is
+    shared, and the pipeline refuses tertiary material regardless of which
+    source produced it.
+    """
+
+    def normalise_reference_entry(record):
+        candidate = normalise_openalex(record)
+        if candidate is not None:
+            candidate.work_type = WorkType.REFERENCE_ENTRY
+        return candidate
+
+    run = run_pipeline(
+        session,
+        StubConnector(
+            "some_new_source",
+            [[openalex_raw("work_published_integron")]],
+            normalise_reference_entry,
+        ),
+    )
+    assert run.records_skipped == 1
+    assert count(session, Paper) == 0
+
+
+def test_an_unknown_work_type_from_a_new_source_is_still_admitted(session):
+    """The conservative fallback, enforced end to end."""
+
+    def normalise_unknown(record):
+        candidate = normalise_openalex(record)
+        if candidate is not None:
+            candidate.work_type = "some-new-crossref-type"
+        return candidate
+
+    run = run_pipeline(
+        session,
+        StubConnector(
+            "some_new_source", [[openalex_raw("work_published_integron")]], normalise_unknown
+        ),
+    )
+    assert run.papers_created == 1
+    assert count(session, Paper) == 1

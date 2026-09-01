@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime
 
 from academious.core.ids import IdType
+from academious.ingest.scope import WorkType
 from academious.sources.base import RawRecord
 from academious.sources.europepmc.client import (
     build_query,
@@ -12,7 +13,13 @@ from academious.sources.europepmc.client import (
     parse_cursor,
     query_fingerprint,
 )
-from academious.sources.europepmc.normalise import map_language, map_licence, normalise
+from academious.sources.europepmc.normalise import (
+    is_bookshelf,
+    map_language,
+    map_licence,
+    normalise,
+    work_type_of,
+)
 from tests.conftest import load_json
 
 FETCHED_AT = datetime(2026, 8, 28, tzinfo=UTC)
@@ -136,6 +143,82 @@ def test_retraction_notice_is_out_of_scope():
     }
     raw = RawRecord("europepmc", "MED:1", result, FETCHED_AT)
     assert normalise(raw) is None
+
+
+def test_statpearls_chapter_is_refused_as_reference_material():
+    """Typed `Study Guide` upstream; it is a clinical reference chapter."""
+    record = as_record("chapter_statpearls")
+    assert is_bookshelf(record.payload) is True
+    assert work_type_of(record.payload, is_preprint=False) == WorkType.REFERENCE_ENTRY
+    assert normalise(record) is None
+
+
+def test_a_bookshelf_chapter_typed_review_is_still_reference_material():
+    """The case publication type cannot see.
+
+    Europe PMC types these chapters exactly as it types a review article, so
+    only the book metadata separates them - and 130 of the first live harvest's
+    306 papers arrived this way.
+    """
+    record = as_record("chapter_genereviews")
+    assert record.payload["pubTypeList"]["pubType"] == ["Review"]
+    assert is_bookshelf(record.payload) is True
+    assert normalise(record) is None
+
+
+def test_a_review_article_in_a_journal_is_kept():
+    """The other half of that distinction: reviews are research synthesis."""
+    record = as_record("article_review")
+    assert is_bookshelf(record.payload) is False
+    candidate = normalise(record)
+    assert candidate is not None
+    assert candidate.work_type == WorkType.REVIEW
+    assert candidate.venue is not None and candidate.venue.venue_type == "journal"
+
+
+def test_systematic_reviews_and_meta_analyses_are_kept():
+    for pub_type in ("Systematic Review", "Meta-Analysis", "scoping review"):
+        result = load_json("europepmc", "article_review.json") | {
+            "pubTypeList": {"pubType": [pub_type, "Journal Article"]}
+        }
+        candidate = normalise(RawRecord("europepmc", "MED:5", result, FETCHED_AT))
+        assert candidate is not None, pub_type
+        assert candidate.work_type in {WorkType.REVIEW, WorkType.ARTICLE}
+
+
+def test_conference_abstract_is_refused():
+    """A paragraph in a supplement: no DOI, no abstract text, no authors."""
+    record = as_record("conference_abstract")
+    assert record.payload["pubTypeList"]["pubType"] == ["Abstract"]
+    assert work_type_of(record.payload, is_preprint=False) == WorkType.ABSTRACT
+    assert normalise(record) is None
+
+
+def test_a_book_review_is_refused():
+    result = load_json("europepmc", "article_review.json") | {
+        "pubTypeList": {"pubType": ["book-review", "Book Review"]}
+    }
+    assert normalise(RawRecord("europepmc", "MED:6", result, FETCHED_AT)) is None
+
+
+def test_an_unrecognised_publication_type_is_kept_with_no_work_type():
+    """The documented fallback: never silently discard possible research."""
+    result = load_json("europepmc", "article_alphafold.json") | {
+        "pubTypeList": {"pubType": ["Some-New-Type"]}
+    }
+    candidate = normalise(RawRecord("europepmc", "MED:7", result, FETCHED_AT))
+    assert candidate is not None
+    assert candidate.work_type is None
+
+
+def test_a_bookshelf_record_is_refused_on_the_site_signal_alone():
+    """Either structural signal is sufficient; neither is load-bearing alone."""
+    result = load_json("europepmc", "chapter_statpearls.json") | {
+        "hasBook": "N",
+        "pubTypeList": {"pubType": ["Journal Article"]},
+    }
+    assert is_bookshelf(result) is True
+    assert normalise(RawRecord("europepmc", "MED:8", result, FETCHED_AT)) is None
 
 
 def test_correction_is_out_of_scope_even_beside_a_journal_article_type():

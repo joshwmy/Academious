@@ -99,7 +99,7 @@ it could be started but deliberately is not.
 | [SRC-002](#src-002) | Europe PMC connector | DONE | — |
 | [SRC-003](#src-003) | Unpaywall fallback | DEFERRED | Phase 2 remainder |
 | [SRC-004](#src-004) | OpenAlex harvesting into the live corpus | READY | Phase 2 remainder |
-| [SRC-005](#src-005) | Europe PMC's open-access subset is majority tertiary literature | READY | Before WEB-011 |
+| [SRC-005](#src-005) | Corpus-admission policy for tertiary literature | DONE | — |
 | [SRC-006](#src-006) | Europe PMC harvest is unscheduled and unmeasured at volume | BLOCKED | With DEPLOY-001 |
 | [WEB-001](#web-001) | Visual design is a baseline, not a finished appearance | DEFERRED | Dedicated design pass |
 | [WEB-002](#web-002) | Filter UI over the filters `/papers` supports | DONE | — |
@@ -111,7 +111,7 @@ it could be started but deliberately is not.
 | [WEB-008](#web-008) | No analytics | WONTFIX | — |
 | [WEB-009](#web-009) | No accounts, saved papers or recommendations | DEFERRED | Phase 3 |
 | [WEB-010](#web-010) | `/search` accepts no filters, so filtering stops at the feed | DEFERRED | Phase 3 |
-| [WEB-011](#web-011) | Europe PMC is not offered in the frontend source filter | BLOCKED | With SRC-005 |
+| [WEB-011](#web-011) | Europe PMC is not offered in the frontend source filter | READY | Next frontend pass |
 | [PROD-001](#prod-001) | A generative explanation layer changes the threat model | DEFERRED | Phase 5 |
 | [PROD-002](#prod-002) | Accounts turn query logs and interest profiles into privacy assets | DEFERRED | Phase 3 |
 
@@ -698,9 +698,9 @@ with IP bans.
   row, and a mark replayed against a different expression is not rejected by the
   API, only misapplied. Found by hitting it: a DOI-scoped probe run overwrote
   the open-access window's cursor.
-* **Still open** — no *scheduled* harvest (SRC-006), the subset composition
-  problem (SRC-005), and the frontend filter (WEB-011). DATA-005's ingestion
-  volumes remain estimates.
+* **Still open** — no *scheduled* harvest (SRC-006). The subset-composition
+  problem was SRC-005 and is closed; the frontend filter (WEB-011) is now
+  READY. DATA-005's ingestion volumes remain estimates.
 * **Depends on** — DEPLOY-001 for a sustained run, exactly as SRC-004 does.
 
 ### SRC-003
@@ -733,31 +733,42 @@ only.
 
 ### SRC-005
 
-**Europe PMC's open-access subset is majority tertiary literature.** — `READY`
+**Corpus-admission policy for tertiary literature.** — `DONE` (2026-09-01)
 
-The first live harvest ingested 306 papers. **173 of them are NCBI Bookshelf
-chapters** — StatPearls and GeneReviews reference articles whose best open-access
-location is `europepmc.org/books/NBK…`. 105 carry **no author list at all**,
-because a `core` result does not supply one for those records. Journal articles
-number 47; preprints 77.
+Was: *Europe PMC's open-access subset is majority tertiary literature.* 173 of
+the first 306 papers were NCBI Bookshelf chapters — StatPearls and GeneReviews —
+105 of them with no author list, against 47 journal articles.
 
-A further 445 records in the same window were conference abstracts from two
-journal supplements, correctly rejected at normalisation.
-
-* **Why it matters** — a reader who filters the feed to "Europe PMC" today would
-  mostly see clinical reference chapters with no authors, not research
-  literature. That is a product-quality problem, not a bug: the connector is
-  reporting what the subset contains.
-* **Options, none chosen yet** — (a) exclude Bookshelf records at normalisation,
-  keyed on `hasBook` / the `NCBI_Bookshelf` site, which is a scope decision
-  about tertiary literature and should be made once for every source, not just
-  this one; (b) narrow `ACADEMIOUS_EUROPEPMC_QUERIES` so they never arrive;
-  (c) keep them and let a `work_type` filter carry the distinction to the
-  reader. Option (c) needs WEB-010-style filter plumbing first.
-* **Also observed, deliberately not fixed** — two `book-review` records were
-  ingested as `work_type: article`. Two records is an edge case, and the same
-  scope decision covers it.
-* **Blocks** — WEB-011.
+* **Closed by** — `feat: corpus-admission policy for tertiary literature`.
+* **The decision** — Academious answers *what new research came out that I would
+  probably care about?*, so the corpus is research literature: articles,
+  preprints, reviews, conference papers, dissertations, reports. Excluded are
+  tertiary reference material (books, book chapters, reference entries) and
+  records that are not a work at all (conference abstracts, editorials, letters,
+  comments, book reviews, corrections, retraction notices). **Reviews stay in** —
+  a systematic review is research synthesis, not a reference work.
+* **Where it lives** — [`ingest/scope.py`](../src/academious/ingest/scope.py),
+  one policy for every source. Connectors map their upstream vocabulary onto
+  `scope.WorkType`; the policy decides admission, applied in `normalise` and
+  enforced again in the pipeline. **PubMed (SRC-001) inherits this**: it needs a
+  publication-type mapping and nothing else. The two per-source exclusion tables
+  that used to disagree are gone.
+* **How Bookshelf is identified** — structurally, never by venue name.
+  `hasBook` and the `NCBI_Bookshelf` full-text site each fired on 174 of 174
+  Bookshelf records and 0 of 132 others. Publication type cannot do it: MEDLINE
+  types GeneReviews chapters `Review`, exactly as it types a review article.
+* **Unknown types are admitted**, deliberately. Dropping an unrecognised type
+  silently loses research; admitting one shows a visible, harmless row. Five of
+  618 papers sit there today, all typed `other` by PMC.
+* **The already-harvested records** — [`scripts/prune_out_of_scope.py`](../scripts/prune_out_of_scope.py)
+  replays stored payloads through the current policy and removes what would no
+  longer be admitted. 179 papers removed, of which 174 Bookshelf, 3 book
+  reviews, 1 award announcement, 1 addendum; every one inspected, no research
+  paper among them. It is reproducible after the *next* policy change too, which
+  a hand-written DELETE would not have been.
+* **Result** — the Europe PMC slice is now 618 papers: 438 articles, 101
+  preprints, 74 reviews, 5 unknown; **0 Bookshelf**; 98% with authors, 100% with
+  a venue, 91% with a DOI, 90% with an abstract. Unblocks WEB-011.
 
 ### SRC-006
 
@@ -778,17 +789,18 @@ that is a job measured in hours, and the ingest rate observed here was
 
 ### WEB-011
 
-**Europe PMC is not offered in the frontend source filter.** — `BLOCKED`
+**Europe PMC is not offered in the frontend source filter.** — `READY`
 
 `SOURCES` in `web/src/lib/filters.ts` lists arXiv, bioRxiv/medRxiv and OpenAlex.
-The backend already filters on `source=europepmc` correctly — verified against
-the live corpus, 303 papers returned with no duplicates and no serialisation
-errors — so this is one line of frontend transcription and nothing more.
+The backend already filters on `source=europepmc` correctly, so this is one line
+of frontend transcription.
 
-* **Why blocked** — SRC-005. The filter is a promise that the source is worth
-  filtering to; 57% Bookshelf chapters is not that yet.
-* **Not blocked by** — the API. `/papers`, `/papers/{id}` and `/search` were all
-  checked against Europe PMC records on 2026-09-01 and were correct.
+* **Unblocked** — SRC-005 closed the corpus-quality objection. The slice is now
+  438 journal articles, 101 preprints and 74 review articles, with no reference
+  chapters in it.
+* **Scope** — add the entry to `SOURCES`; the filter UI itself is not being
+  redesigned. Worth a glance at whether the corpus-description copy in
+  `AppShell.tsx` ("arXiv and bioRxiv/medRxiv") should now mention Europe PMC.
 
 ### WEB-001
 

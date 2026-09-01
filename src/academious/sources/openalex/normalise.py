@@ -22,6 +22,7 @@ from typing import Any
 from academious.core import ids as idutil
 from academious.core.ids import IdType
 from academious.core.text import clean_display_text
+from academious.ingest.scope import WorkType, is_discovery_eligible
 from academious.sources.base import (
     CandidateAuthor,
     CandidateIdentifier,
@@ -34,11 +35,11 @@ from academious.sources.base import (
 SOURCE_KEY = "openalex"
 
 PREPRINT_TYPES = frozenset({"preprint"})
-PEER_REVIEWED_TYPES = frozenset({"article", "review", "book-chapter", "conference-paper"})
-# Not research output. Excluded at normalisation; see docs/ingestion.md.
-EXCLUDED_TYPES = frozenset(
-    {"paratext", "editorial", "letter", "erratum", "grant", "dataset", "peer-review"}
-)
+PEER_REVIEWED_TYPES = frozenset({"article", "review", "conference-paper"})
+# OpenAlex's `type` is Crossref's vocabulary, which `ingest.scope.WorkType`
+# adopts wholesale - so admission needs no mapping table here, only the shared
+# policy. `erratum` is OpenAlex's spelling of a correction.
+TYPE_ALIASES = {"erratum": WorkType.CORRECTION}
 
 
 def reconstruct_abstract(inverted: dict[str, list[int]] | None) -> str | None:
@@ -199,7 +200,9 @@ def normalise(raw: RawRecord) -> PaperCandidate | None:
         return None
 
     work_type = (work.get("type") or "").lower()
-    if work_type in EXCLUDED_TYPES or work.get("is_paratext"):
+    work_type = TYPE_ALIASES.get(work_type, work_type)
+    # `is_paratext` is OpenAlex's own front-matter flag and outranks the type.
+    if work.get("is_paratext") or not is_discovery_eligible(work_type):
         return None
 
     identifiers = _identifiers(work)

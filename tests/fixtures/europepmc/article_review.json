@@ -1,0 +1,210 @@
+{
+  "id": "42383540",
+  "doi": "10.1002/evan.70039",
+  "pmid": "42383540",
+  "inPMC": "Y",
+  "pmcid": "PMC13321133",
+  "title": "The Origins of Fashion.",
+  "hasPDF": "Y",
+  "inEPMC": "Y",
+  "source": "MED",
+  "authMan": "N",
+  "hasBook": "N",
+  "hasData": "Y",
+  "license": "cc by",
+  "pubYear": "2026",
+  "hasSuppl": "N",
+  "language": "eng",
+  "pageInfo": "e70039",
+  "pubModel": "Print",
+  "authorList": {
+    "author": [
+      {
+        "authorId": {
+          "type": "ORCID",
+          "value": "0000-0002-2422-3079"
+        },
+        "fullName": "d'Errico F",
+        "initials": "F",
+        "lastName": "d'Errico",
+        "firstName": "Francesco",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "CNRS, Univ. Bordeaux, UMR 5199 PACEA, Batiment B2, Créteil, France."
+            },
+            {
+              "affiliation": "Department of Archaeology, History, Cultural Studies and Religion, Centre for Early Sapiens Behaviour (SapienCE), University of Bergen, Bergen, Norway."
+            }
+          ]
+        }
+      },
+      {
+        "authorId": {
+          "type": "ORCID",
+          "value": "0000-0002-9108-200X"
+        },
+        "fullName": "Rigaud S",
+        "initials": "S",
+        "lastName": "Rigaud",
+        "firstName": "Solange",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "CNRS, Univ. Bordeaux, UMR 5199 PACEA, Batiment B2, Créteil, France."
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "nihAuthMan": "N",
+  "subsetList": {
+    "subset": [
+      {
+        "code": "IM",
+        "name": "Index Medicus"
+      }
+    ]
+  },
+  "affiliation": "CNRS, Univ. Bordeaux, UMR 5199 PACEA, Batiment B2, Créteil, France.",
+  "epmcAuthMan": "N",
+  "journalInfo": {
+    "issue": "3",
+    "volume": "35",
+    "journal": {
+      "essn": "1520-6505",
+      "issn": "1060-1538",
+      "nlmid": "9306331",
+      "title": "Evolutionary anthropology",
+      "isoabbreviation": "Evol Anthropol",
+      "medlineAbbreviation": "Evol Anthropol"
+    },
+    "journalIssueId": 4223605,
+    "dateOfPublication": "2026 Sep",
+    "yearOfPublication": 2026,
+    "monthOfPublication": 9,
+    "printPublicationDate": "2026-09-01"
+  },
+  "keywordList": {
+    "keyword": [
+      "Cultural Evolution",
+      "Social Information",
+      "Body Modification",
+      "Distributed Cognition",
+      "Identity Signaling",
+      "Epistemic Niche Construction",
+      "Personal Ornaments"
+    ]
+  },
+  "pubTypeList": {
+    "pubType": [
+      "Historical Article",
+      "review-article",
+      "Review",
+      "Journal Article"
+    ]
+  },
+  "abstractText": "This paper reconceptualizes fashion as a deep-time system of bodily communication rather than a byproduct of modern consumer societies. We define fashion as a socially transmitted system of bodily display in which patterned variation occurs within shared conventions of appearance. Archaeologically, fashion becomes identifiable when recurring forms of body modification and ornamentation coexist with socially meaningful differences in their selection, combination, and arrangement. From this perspective, fashion emerged through the long-term culturalization of the human body, whereby appearance became an increasingly important medium for communicating identity, affiliation, status, and social relationships. Archaeological evidence suggests that this process began at least 400,000 years ago with pigment use, intensified with the emergence of personal ornaments, and developed into regionally differentiated systems of bodily display during the Upper Paleolithic, Neolithic, and Metal Ages. Drawing on archaeological, anthropological, and cognitive approaches, we interpret this trajectory as a cultural evolutionary process involving the generation of novel forms of bodily variation, their transmission through socially learned conventions, and their persistence, transformation, or disappearance under changing social and economic conditions. We argue that fashion functioned as an externalized social memory system that reduced cognitive demands by embedding social information in material form. In this sense, fashion emerged as a cultural technology that made social information increasingly visible, interpretable, and transmissible through bodily display.",
+  "authorIdList": {
+    "authorId": [
+      {
+        "type": "ORCID",
+        "value": "0000-0002-2422-3079"
+      },
+      {
+        "type": "ORCID",
+        "value": "0000-0002-9108-200X"
+      }
+    ]
+  },
+  "authorString": "d'Errico F, Rigaud S.",
+  "citedByCount": 0,
+  "hasLabsLinks": "N",
+  "isOpenAccess": "Y",
+  "hasReferences": "Y",
+  "dateOfCreation": "2026-07-01",
+  "dateOfRevision": "2026-08-20",
+  "firstIndexDate": "2026-07-02",
+  "fullTextIdList": {
+    "fullTextId": [
+      "PMC13321133"
+    ]
+  },
+  "hasEvaluations": "N",
+  "fullTextUrlList": {
+    "fullTextUrl": [
+      {
+        "url": "https://doi.org/10.1002/evan.70039",
+        "site": "DOI",
+        "availability": "Subscription required",
+        "documentStyle": "doi",
+        "availabilityCode": "S"
+      },
+      {
+        "url": "https://europepmc.org/articles/PMC13321133",
+        "site": "Europe_PMC",
+        "availability": "Open access",
+        "documentStyle": "html",
+        "availabilityCode": "OA"
+      },
+      {
+        "url": "https://europepmc.org/articles/PMC13321133?pdf=render",
+        "site": "Europe_PMC",
+        "availability": "Open access",
+        "documentStyle": "pdf",
+        "availabilityCode": "OA"
+      }
+    ]
+  },
+  "meshHeadingList": {
+    "meshHeading": [
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Humans"
+      },
+      {
+        "majorTopic_YN": "Y",
+        "descriptorName": "Body Modification, Non-Therapeutic",
+        "meshQualifierList": {
+          "meshQualifier": [
+            {
+              "abbreviation": "HI",
+              "majorTopic_YN": "N",
+              "qualifierName": "history"
+            }
+          ]
+        }
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "Archaeology"
+      },
+      {
+        "majorTopic_YN": "Y",
+        "descriptorName": "Cultural Evolution"
+      },
+      {
+        "majorTopic_YN": "N",
+        "descriptorName": "History, Ancient"
+      }
+    ]
+  },
+  "dateOfCompletion": "2026-07-01",
+  "dataLinksTagsList": {
+    "dataLinkstag": [
+      "supporting_data"
+    ]
+  },
+  "hasTextMinedTerms": "Y",
+  "publicationStatus": "ppublish",
+  "tmAccessionTypeList": {
+    "accessionType": [
+      "doi"
+    ]
+  },
+  "firstPublicationDate": "2026-09-01",
+  "fullTextReceivedDate": "2026-08-19",
+  "hasDbCrossReferences": "N",
+  "hasTMAccessionNumbers": "Y"
+}

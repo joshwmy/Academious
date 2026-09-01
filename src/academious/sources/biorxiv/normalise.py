@@ -16,6 +16,7 @@ from datetime import date
 from academious.core import ids as idutil
 from academious.core.ids import IdType
 from academious.core.text import clean_display_text
+from academious.ingest.scope import WorkType
 from academious.sources.base import (
     CandidateAuthor,
     CandidateIdentifier,
@@ -101,7 +102,7 @@ def normalise(raw: RawRecord) -> PaperCandidate | None:
         first_seen_online=posted,
         is_preprint=True,
         is_peer_reviewed=False,
-        work_type="preprint",
+        work_type=WorkType.PREPRINT,
         language="en",
         topics=[{"id": category, "label": category, "scheme": "biorxiv"}] if category else [],
         keywords=[],

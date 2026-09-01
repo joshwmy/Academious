@@ -136,32 +136,39 @@ and its publication date has not moved.
 
 ### First live harvest, 2026-09-01
 
-A bounded harvest of `OPEN_ACCESS:Y` over `UPDATE_DATE:[2026-08-18 TO 2026-09-01]`
-(1,203 records fetched across four runs, 306 papers). What it taught, which no
-fixture could:
+A bounded harvest of `OPEN_ACCESS:Y` over an `UPDATE_DATE` window, and then a
+second one after the corpus-admission policy landed. What the subset contains,
+and what Academious takes from it:
 
-| What arrived | Share |
-|---|---|
-| NCBI Bookshelf chapters (StatPearls, GeneReviews) | **173 of 306** |
-| Preprints (medRxiv 47, Research Square 27, bioRxiv 3) | 77 |
-| Journal articles and reviews in journals | 47 |
-| Conference abstracts, rejected at normalisation | 445 further records |
+| | Before the policy | After |
+|---|---|---|
+| Papers from Europe PMC | 306 | 618 |
+| NCBI Bookshelf chapters | **173** | **0** |
+| Journal articles | 47 | 438 |
+| Reviews in journals | - | 74 |
+| Preprints | 77 | 101 |
+| With an author list | 63% | 98% |
+| With a venue | 41% | 100% |
+| With a DOI | 34% | 91% |
 
-Three properties of the open-access subset follow from that table:
+The open-access subset is not a stream of research papers, and three properties
+of it drive everything above:
 
+* **Reference works dominate it.** StatPearls and GeneReviews chapters
+  outnumbered journal articles roughly four to one, and 105 of them carried no
+  author list at all. They are excluded as tertiary literature - see
+  [ingestion.md](ingestion.md#what-the-corpus-admits) - and identified through
+  `hasBook` and the `NCBI_Bookshelf` full-text site, each of which fired on
+  **174 of 174** Bookshelf records and **0 of 132** others. Publication type
+  cannot do this job: MEDLINE types GeneReviews chapters as `Review`, exactly
+  as it types a review article.
 * **A single supplement can dominate a window.** 445 of the first 500 records
   were conference abstracts from two supplement issues (`BJPsych open` Suppl 1,
-  `ASHE`), page ranges `S92-S93`, carrying no DOI, no PMID and no abstract text.
-  They are correctly rejected as out of scope, but they consume the record
-  budget of a bounded run.
-* **The subset is majority tertiary literature.** Bookshelf reference chapters
-  outnumber journal articles roughly four to one, and 105 of them carry **no
-  author list at all** in a `core` result. This is Europe PMC reporting its
-  holdings accurately; it is not a normalisation defect.
+  `ASHE`), page ranges `S92-S93`, with no DOI, no PMID and no abstract text.
 * **Europe PMC marks preprints `isOpenAccess: N`.** Verified against three
   bioRxiv DOIs already in the corpus: all three are indexed by Europe PMC, all
-  three are excluded by the default query. The preprints that *do* arrive are
-  the minority flagged open access.
+  three are excluded by the default query. The preprints that do arrive are the
+  minority flagged open access.
 
 ## Retraction Watch, via Crossref
 

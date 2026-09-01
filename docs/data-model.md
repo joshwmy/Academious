@@ -114,6 +114,15 @@ are separate OpenAlex works **with different titles**. No title matching would
 ever link them, and no identifier is shared. Only the bioRxiv publication map
 connects them.
 
+## Work types
+
+`paper.work_type` holds a value from `ingest.scope.WorkType`, a controlled
+vocabulary shared by every source and following OpenAlex's (that is, Crossref's)
+`type` field. It is not free text: connectors map their upstream vocabularies
+onto it, and corpus admission is decided from it - see
+[ingestion.md](ingestion.md#what-the-corpus-admits). A record whose type cannot
+be mapped stores `NULL` and is admitted.
+
 ## Field precedence on merge
 
 Declared as data in `ingest/merge.py`, not as branches:

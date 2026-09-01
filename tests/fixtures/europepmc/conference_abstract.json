@@ -1,0 +1,160 @@
+{
+  "id": "PMC13325035",
+  "inPMC": "Y",
+  "pmcid": "PMC13325035",
+  "title": "Learning From the Use of Generative AI in Fourth-Year Psychiatry Teaching at Aston Medical School",
+  "hasPDF": "Y",
+  "inEPMC": "Y",
+  "source": "PMC",
+  "authMan": "N",
+  "hasBook": "N",
+  "hasData": "N",
+  "license": "cc by",
+  "hasSuppl": "N",
+  "language": "eng",
+  "pageInfo": "S92-S93",
+  "pubModel": "Undetermined",
+  "authorList": {
+    "author": [
+      {
+        "fullName": "Adil S",
+        "initials": "S",
+        "lastName": "Adil",
+        "firstName": "Shahnoor",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "Aston Medical School , Birmingham,"
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Hassan-Smith G",
+        "initials": "G",
+        "lastName": "Hassan-Smith",
+        "firstName": "Ghaniah",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "Aston Medical School , Birmingham,"
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Bakour S",
+        "initials": "S",
+        "lastName": "Bakour",
+        "firstName": "Shagaf",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "Aston Medical School , Birmingham,"
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Ahmed A",
+        "initials": "A",
+        "lastName": "Ahmed",
+        "firstName": "Anis",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "Aston Medical School , Birmingham,"
+            }
+          ]
+        }
+      },
+      {
+        "fullName": "Sharma P",
+        "initials": "P",
+        "lastName": "Sharma",
+        "firstName": "Priyanka",
+        "authorAffiliationDetailsList": {
+          "authorAffiliation": [
+            {
+              "affiliation": "Aston Medical School , Birmingham,"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "nihAuthMan": "N",
+  "epmcAuthMan": "N",
+  "journalInfo": {
+    "issue": "Suppl 1",
+    "volume": "12",
+    "journal": {
+      "essn": "2056-4724",
+      "issn": "2056-4724",
+      "nlmid": "101667931",
+      "title": "BJPsych open",
+      "isoabbreviation": "BJPsych Open",
+      "medlineAbbreviation": "BJPsych Open"
+    },
+    "journalIssueId": 4245663,
+    "dateOfPublication": " ",
+    "yearOfPublication": 0,
+    "monthOfPublication": 0
+  },
+  "pubTypeList": {
+    "pubType": [
+      "Abstract"
+    ]
+  },
+  "authorString": "Adil S, Hassan-Smith G, Bakour S, Ahmed A, Sharma P.",
+  "citedByCount": 0,
+  "hasLabsLinks": "N",
+  "isOpenAccess": "Y",
+  "hasReferences": "N",
+  "dateOfCreation": "2026-08-20",
+  "dateOfRevision": "2026-08-20",
+  "firstIndexDate": "2026-08-22",
+  "fullTextIdList": {
+    "fullTextId": [
+      "PMC13325035"
+    ]
+  },
+  "hasEvaluations": "N",
+  "fullTextUrlList": {
+    "fullTextUrl": [
+      {
+        "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC13325035/?tool=EBI",
+        "site": "PubMedCentral",
+        "availability": "Free",
+        "documentStyle": "html",
+        "availabilityCode": "F"
+      },
+      {
+        "url": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC13325035/pdf/?tool=EBI",
+        "site": "PubMedCentral",
+        "availability": "Free",
+        "documentStyle": "pdf",
+        "availabilityCode": "F"
+      },
+      {
+        "url": "https://europepmc.org/articles/PMC13325035",
+        "site": "Europe_PMC",
+        "availability": "Free",
+        "documentStyle": "html",
+        "availabilityCode": "F"
+      },
+      {
+        "url": "https://europepmc.org/articles/PMC13325035?pdf=render",
+        "site": "Europe_PMC",
+        "availability": "Free",
+        "documentStyle": "pdf",
+        "availabilityCode": "F"
+      }
+    ]
+  },
+  "hasTextMinedTerms": "N",
+  "firstPublicationDate": "2026-08-20",
+  "fullTextReceivedDate": "2026-08-20",
+  "hasDbCrossReferences": "N",
+  "hasTMAccessionNumbers": "N"
+}

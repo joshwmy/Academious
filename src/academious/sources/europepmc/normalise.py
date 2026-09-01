@@ -5,8 +5,11 @@ tests/fixtures/europepmc/, not inferred from documentation:
 
 * `pubTypeList` mixes two vocabularies - MEDLINE ("Journal Article", "Review",
   "Retracted Publication") and JATS ("research-article", "correction"). A record
-  routinely carries both, so scope is decided by looking for a research type
-  first and only then for an excluded one.
+  routinely carries both, so types are mapped onto `ingest.scope.WorkType` and
+  the most substantive one wins; admission is then the shared policy's call.
+* **NCBI Bookshelf chapters are typed as ordinary literature.** GeneReviews
+  arrives as `Review`, StatPearls as `Study Guide`. Only the book metadata
+  separates them from research articles - see `is_bookshelf`.
 * A **retraction notice** ("Retraction of Publication") is a different document
   from the **retracted article** ("Retracted Publication"). The first is not
   research output; the second is a paper that must be kept and flagged.
@@ -33,6 +36,7 @@ from typing import Any
 from academious.core import ids as idutil
 from academious.core.ids import IdType
 from academious.core.text import clean_display_text
+from academious.ingest.scope import WorkType, is_discovery_eligible
 from academious.sources.base import (
     CandidateAuthor,
     CandidateIdentifier,
@@ -49,48 +53,88 @@ SOURCE_KEY = "europepmc"
 PEER_REVIEWED_DATABASES = frozenset({"MED", "PMC", "AGR", "CBA"})
 PREPRINT_DATABASE = "PPR"
 
-#: Any of these means the record is research output, whatever else it carries.
-RESEARCH_TYPES = frozenset(
-    {
-        "journal article",
-        "research-article",
-        "review",
-        "review-article",
-        "case reports",
-        "case-report",
-        "case-study",
-        "clinical trial",
-        "clinical trial protocol",
-        "randomized controlled trial",
-        "observational study",
-        "meta-analysis",
-        "systematic review",
-        "preprint",
-        "book chapter",
-        "chapter",
-    }
-)
-#: Not research output. Excluded at normalisation; see docs/ingestion.md.
-EXCLUDED_TYPES = frozenset(
-    {
-        "published erratum",
-        "erratum",
-        "correction",
-        "retraction of publication",
-        "retraction notice",
-        "expression of concern",
-        "editorial",
-        "editorial-material",
-        "comment",
-        "letter",
-        "news",
-        "obituary",
-        "abstract",
-        "congress",
-    }
+#: Europe PMC publication types, mapped onto the corpus vocabulary. The list
+#: mixes two upstream vocabularies - MEDLINE ("Journal Article", "Review") and
+#: JATS ("research-article", "correction") - and one record routinely carries
+#: both, so this is a mapping rather than an allow-list.
+PUB_TYPE_MAP = {
+    "journal article": WorkType.ARTICLE,
+    "research-article": WorkType.ARTICLE,
+    "case reports": WorkType.ARTICLE,
+    "case-report": WorkType.ARTICLE,
+    "case-study": WorkType.ARTICLE,
+    "clinical trial": WorkType.ARTICLE,
+    "clinical trial protocol": WorkType.ARTICLE,
+    "randomized controlled trial": WorkType.ARTICLE,
+    "observational study": WorkType.ARTICLE,
+    "historical article": WorkType.ARTICLE,
+    "brief-report": WorkType.ARTICLE,
+    "data-paper": WorkType.ARTICLE,
+    "protocol": WorkType.ARTICLE,
+    "review": WorkType.REVIEW,
+    "review-article": WorkType.REVIEW,
+    "systematic review": WorkType.REVIEW,
+    "scoping review": WorkType.REVIEW,
+    "meta-analysis": WorkType.REVIEW,
+    "preprint": WorkType.PREPRINT,
+    "conference-paper": WorkType.CONFERENCE_PAPER,
+    "proceedings-article": WorkType.CONFERENCE_PAPER,
+    "chapter": WorkType.BOOK_CHAPTER,
+    "book chapter": WorkType.BOOK_CHAPTER,
+    "book-chapter": WorkType.BOOK_CHAPTER,
+    "book": WorkType.BOOK,
+    "study guide": WorkType.REFERENCE_ENTRY,
+    "book-review": WorkType.BOOK_REVIEW,
+    "book review": WorkType.BOOK_REVIEW,
+    # A paragraph in a conference supplement, not a paper.
+    "abstract": WorkType.ABSTRACT,
+    "congress": WorkType.ABSTRACT,
+    "meeting abstract": WorkType.ABSTRACT,
+    "published erratum": WorkType.CORRECTION,
+    "erratum": WorkType.CORRECTION,
+    "correction": WorkType.CORRECTION,
+    "expression of concern": WorkType.CORRECTION,
+    "retraction of publication": WorkType.RETRACTION_NOTICE,
+    "retraction notice": WorkType.RETRACTION_NOTICE,
+    "editorial": WorkType.EDITORIAL,
+    "editorial-material": WorkType.EDITORIAL,
+    "comment": WorkType.COMMENT,
+    "letter": WorkType.LETTER,
+    "news": WorkType.PARATEXT,
+    "obituary": WorkType.PARATEXT,
+    # Journal front matter, found by watching what the unknown-type fallback
+    # admitted: "Issue Information", "In This Issue", "In this month's Bulletin".
+    "introduction": WorkType.PARATEXT,
+    "in brief": WorkType.PARATEXT,
+    "in-brief": WorkType.PARATEXT,
+    "addresses": WorkType.PARATEXT,
+    "oration": WorkType.PARATEXT,
+    "addendum": WorkType.PARATEXT,
+}
+#: When a record carries several types, the most substantive one wins, and among
+#: admitted types the most specific one does. MEDLINE types a review article as
+#: "Review" *and* "Journal Article", so REVIEW leads: both are admitted, and
+#: "review" is the more informative thing to show a reader. A retracted research
+#: article is typed "Retracted Publication" *and* "research-article"; it is a
+#: paper, and its retraction travels separately on `is_retracted_hint`.
+TYPE_PRECEDENCE = (
+    WorkType.REVIEW,
+    WorkType.ARTICLE,
+    WorkType.CONFERENCE_PAPER,
+    WorkType.PREPRINT,
+    WorkType.BOOK_CHAPTER,
+    WorkType.BOOK,
+    WorkType.REFERENCE_ENTRY,
+    WorkType.BOOK_REVIEW,
+    WorkType.ABSTRACT,
+    WorkType.CORRECTION,
+    WorkType.RETRACTION_NOTICE,
+    WorkType.EDITORIAL,
+    WorkType.COMMENT,
+    WorkType.LETTER,
+    WorkType.PARATEXT,
 )
 RETRACTED_TYPES = frozenset({"retracted publication", "retracted-article"})
-REVIEW_TYPES = frozenset({"review", "review-article", "systematic review"})
 
 #: Full-text URLs worth recording. "Subscription required" is not a location a
 #: reader can be sent to, so it is dropped rather than stored as a dead end.
@@ -152,25 +196,46 @@ def map_licence(code: str | None) -> str | None:
     return folded.replace(" ", "-") or None
 
 
-def is_in_scope(result: dict[str, Any]) -> bool:
-    """Research output, by publication type. Notices and paratext are not."""
-    types = _pub_types(result)
-    if types & RESEARCH_TYPES:
+def is_bookshelf(result: dict[str, Any]) -> bool:
+    """True for an NCBI Bookshelf record - StatPearls, GeneReviews and the rest.
+
+    Publication type cannot decide this. MEDLINE types GeneReviews chapters as
+    `Review` and StatPearls chapters as `Study Guide`, so a type-only rule either
+    keeps reference chapters or throws away genuine review articles with them.
+
+    Two structural signals do decide it, and they were checked against the whole
+    first live harvest: `hasBook` and an `NCBI_Bookshelf` full-text site each
+    fired on **174 of 174** Bookshelf records and **0 of 132** others. Either is
+    sufficient; both are read so that one going missing upstream is not silent.
+    A book *publisher* is not a signal - `bookOrReportDetails` is also present on
+    preprints, where it names the preprint server.
+    """
+    if result.get("hasBook") == "Y":
         return True
-    # Unlabelled records are kept: Europe PMC leaves pubTypeList empty on some
-    # preprints, and dropping them would silently lose whole sources.
-    return not types & EXCLUDED_TYPES
+    return any(
+        (entry.get("site") or "").strip().lower() == "ncbi_bookshelf"
+        for entry in (result.get("fullTextUrlList") or {}).get("fullTextUrl") or []
+    )
 
 
-def work_type_of(result: dict[str, Any], *, is_preprint: bool) -> str:
+def work_type_of(result: dict[str, Any], *, is_preprint: bool) -> str | None:
+    """Map Europe PMC's publication types onto the corpus vocabulary.
+
+    Returns None when no type is recognised, which `ingest.scope` admits: an
+    unlabelled record is more likely to be research Europe PMC has not finished
+    indexing than something to throw away.
+    """
+    if is_bookshelf(result):
+        return WorkType.REFERENCE_ENTRY
     if is_preprint:
-        return "preprint"
-    types = _pub_types(result)
-    if types & REVIEW_TYPES:
-        return "review"
-    if result.get("hasBook") == "Y" or types & {"chapter", "book chapter"}:
-        return "book-chapter"
-    return "article"
+        return WorkType.PREPRINT
+    mapped = {
+        PUB_TYPE_MAP[pub_type] for pub_type in _pub_types(result) if pub_type in PUB_TYPE_MAP
+    }
+    for work_type in TYPE_PRECEDENCE:
+        if work_type in mapped:
+            return work_type
+    return None
 
 
 def _identifiers(result: dict[str, Any]) -> list[CandidateIdentifier]:
@@ -348,15 +413,20 @@ def normalise(raw: RawRecord) -> PaperCandidate | None:
     """Returns None when the record is out of ingestion scope."""
     result = raw.payload
     title = clean_display_text(result.get("title"))
-    if not title or not is_in_scope(result):
+    if not title:
+        return None
+
+    database = str(result.get("source") or "").upper()
+    is_preprint = database == PREPRINT_DATABASE or "preprint" in _pub_types(result)
+    work_type = work_type_of(result, is_preprint=is_preprint)
+    # The corpus-admission policy lives in ingest.scope and is shared by every
+    # source; this is the earliest safe place to apply it.
+    if not is_discovery_eligible(work_type):
         return None
 
     identifiers = _identifiers(result)
     if not identifiers:
         return None
-
-    database = str(result.get("source") or "").upper()
-    is_preprint = database == PREPRINT_DATABASE or "preprint" in _pub_types(result)
     published = (
         _parse_date(result.get("firstPublicationDate"))
         or _parse_date(result.get("electronicPublicationDate"))
@@ -376,7 +446,7 @@ def normalise(raw: RawRecord) -> PaperCandidate | None:
         first_seen_online=published,
         is_preprint=is_preprint,
         is_peer_reviewed=not is_preprint and database in PEER_REVIEWED_DATABASES,
-        work_type=work_type_of(result, is_preprint=is_preprint),
+        work_type=work_type,
         language=map_language(result.get("language")),
         topics=_topics(result),
         keywords=_keywords(result),

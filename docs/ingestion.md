@@ -17,8 +17,56 @@
 ## Ingestion filters
 
 A record is skipped at normalisation when it has no title, no resolvable
-identifier, or a work type that is not research output (`paratext`, `editorial`,
-`letter`, `erratum`, `grant`, `dataset`, `peer-review`).
+identifier, or a work type the corpus does not admit.
+
+### What the corpus admits
+
+Academious answers *what new research came out that I would probably care
+about?* It is a discovery layer over research literature, not a library
+catalogue, and [ingest/scope.py](../src/academious/ingest/scope.py) owns that
+decision for **every** source so a new connector inherits it rather than
+restating it. A connector maps its upstream vocabulary onto `scope.WorkType`;
+the policy decides admission.
+
+| Class | Types | In the corpus? |
+|---|---|---|
+| Research | `article`, `review`, `preprint`, `conference-paper`, `dissertation`, `report` | **yes** |
+| Tertiary | `book`, `book-chapter`, `reference-entry` | no |
+| Not a work | `abstract`, `editorial`, `letter`, `comment`, `book-review`, `correction`, `retraction-notice`, `peer-review`, `dataset`, `grant`, `paratext` | no |
+| Unrecognised | anything else, and a missing type | **yes** |
+
+Three consequences worth stating plainly:
+
+* **Reviews stay in.** A systematic review or meta-analysis is current research
+  synthesis and is exactly what a feed should carry. Only *reference-work*
+  entries are excluded, and they are identified structurally rather than by
+  publication type - Europe PMC types GeneReviews chapters as `Review`.
+* **An unrecognised type is admitted.** The two errors do not cost the same:
+  an odd row in a feed is visible and harmless, while dropping an unrecognised
+  type silently loses research nothing else will surface. `scope.is_recognised`
+  exists so those admissions can be watched and the vocabulary extended from
+  evidence - which is how `introduction` and `in-brief` came to be mapped.
+* **Corrections reach readers through `retraction_status`**, on the paper they
+  correct, never as a paper of their own.
+
+The policy is applied twice on purpose: in each connector's `normalise`, which
+is the earliest point the type is known, and again in the pipeline, so a source
+that forgets cannot quietly widen the corpus.
+
+### Re-applying the policy to papers already stored
+
+Changing the policy does not change the corpus by itself. `source_record` keeps
+every raw payload, so the fix is a replay rather than a migration:
+
+```bash
+python scripts/prune_out_of_scope.py                    # report only
+python scripts/prune_out_of_scope.py --source europepmc --apply
+```
+
+It re-normalises stored payloads through the current policy and removes papers
+that would no longer be admitted. Raw payloads are never deleted - `paper_id` is
+set to NULL, so a later harvest hash-skips the record instead of refetching it -
+and a paper backed by another source that still admits it is kept.
 
 A Europe PMC window can be dominated by one journal supplement: the first live
 harvest rejected 445 conference abstracts out of 500 records, all from two
@@ -26,10 +74,10 @@ supplement issues. That is the filter working, but it means a `--max-records`
 cap bounds *records fetched*, not papers gained.
 
 Europe PMC labels a record with both MEDLINE and JATS publication types, and
-the two disagree often enough to matter, so scope there is decided by looking
-for a research type first and only then for an excluded one. A **retraction
-notice** is excluded; the **retracted article** it refers to is kept and
-flagged, because the paper is still the record of what was claimed.
+the two disagree often enough to matter, so its types are mapped onto the
+vocabulary above and the most substantive one wins. A **retraction notice** is
+excluded; the **retracted article** it refers to is kept and flagged, because
+the paper is still the record of what was claimed.
 
 **An abstract is not required.** Live OpenAlex data shows many published journal
 articles with no abstract; requiring one would silently discard a large fraction
