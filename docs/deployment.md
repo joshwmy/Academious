@@ -240,10 +240,18 @@ document, so that what runs on the box is a file under version control instead
 of a snippet somebody pasted once.
 
 ```bash
+timedatectl                       # must report UTC before this means anything
 mkdir -p /var/log/academious
 crontab /srv/academious/deploy/crontab
 crontab -l
 ```
+
+**Check the clock first.** cron fires on the host's *local* time, not UTC, and a
+VPS comes up in its datacentre's zone — netcup's German images on UTC+2. The
+schedule then runs at the wrong hour without any error: on UTC+2 the 02:30 entry
+lands at 20:30 US Eastern, half an hour outside the window NCBI enforces with IP
+bans. `journalctl` prints local time while `date -u` prints UTC, so comparing
+the two is the quickest way to notice.
 
 | Entry | When (UTC) | Why then |
 |---|---|---|

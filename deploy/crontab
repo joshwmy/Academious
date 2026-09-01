@@ -7,6 +7,16 @@
 # Prerequisites, once:
 #   mkdir -p /var/log/academious
 #
+# CHECK THE CLOCK BEFORE INSTALLING. cron fires on the host's *local* time, and
+# a VPS ships with its datacentre's zone - netcup's Germany images come up on
+# UTC+2. Every time below is then wrong by that offset, silently: the jobs run,
+# just not when the comments claim. `timedatectl` must say UTC:
+#
+#   timedatectl set-timezone Etc/UTC && systemctl restart cron
+#
+# On UTC+2 the 02:30 entry lands at 00:30 UTC, which is 20:30 US Eastern -
+# outside the off-peak window NCBI enforces with IP bans, by half an hour.
+#
 # Times are in the host timezone, which deployment.md sets to UTC. The nightly
 # entries sit at 02:30 and 03:45 UTC, inside NCBI's requested off-peak window
 # (21:00-05:00 US Eastern = 01:00-09:00 UTC in summer, 02:00-10:00 in winter)
