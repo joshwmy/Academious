@@ -81,3 +81,28 @@ def test_paratext_is_skipped():
     work = load_json("openalex", "work_published_integron.json") | {"is_paratext": True}
     raw = RawRecord("openalex", work["id"], work, datetime(2026, 1, 1, tzinfo=UTC))
     assert normalise(raw) is None
+
+
+def test_incremental_window_uses_the_configured_date_field() -> None:
+    """OpenAlex put `updated_date` behind a paid plan.
+
+    A free-tier request for it comes back 429 with a "Plan upgrade required"
+    body, which every layer above reads as a rate limit and retries five times.
+    The field is configurable so the downgrade is a setting rather than a
+    rewrite, and the sort has to follow the filter: a cursor walking one
+    ordering while the window bounds another can skip records silently.
+    """
+    from datetime import date
+
+    from academious.core.config import Settings
+    from academious.sources.openalex.client import OpenAlexClient
+
+    free = OpenAlexClient(settings=Settings(openalex_incremental_field="publication_date"))
+    params = free._params("primary_topic.domain.id:1", date(2026, 8, 25), "*")
+    assert "from_publication_date:2026-08-25" in params["filter"]
+    assert params["sort"] == "publication_date:asc"
+
+    paid = OpenAlexClient(settings=Settings(openalex_incremental_field="updated_date"))
+    params = paid._params("primary_topic.domain.id:1", date(2026, 8, 25), "*")
+    assert "from_updated_date:2026-08-25" in params["filter"]
+    assert params["sort"] == "updated_date:asc"

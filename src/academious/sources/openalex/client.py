@@ -48,15 +48,18 @@ class OpenAlexClient:
         self._http.close()
 
     def _params(self, filter_expr: str, since: date | None, cursor: str) -> dict[str, Any]:
+        field = self._settings.openalex_incremental_field
         filters = [filter_expr]
         if since is not None:
-            filters.append(f"from_updated_date:{since.isoformat()}")
+            filters.append(f"from_{field}:{since.isoformat()}")
         params: dict[str, Any] = {
             "filter": ",".join(filters),
             "per-page": PER_PAGE,
             "cursor": cursor,
             # Deterministic ordering so a resumed harvest cannot skip records.
-            "sort": "updated_date:asc",
+            # Sorted on the same field the window filters, or the cursor walks
+            # one ordering while the filter bounds another.
+            "sort": f"{field}:asc",
         }
         if self._settings.openalex_api_key:
             params["api_key"] = self._settings.openalex_api_key

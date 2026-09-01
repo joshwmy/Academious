@@ -29,6 +29,17 @@ class Settings(BaseSettings):
 
     openalex_api_key: str = ""
     openalex_filters: str = "primary_topic.domain.id:1|primary_topic.field.id:17"
+    # Which date field drives incremental harvesting. `updated_date` is the one
+    # we want - it catches corrections and late metadata on records we already
+    # hold - but OpenAlex moved it behind a Premium/Institutional/Partner plan
+    # and answers a free-tier request for it with 429 and a "Plan upgrade
+    # required" body, which reads as a rate limit and is not one.
+    #
+    # `publication_date` is available on every tier and is the honest fallback:
+    # new papers still arrive, but an existing record that gains a DOI or an
+    # abstract next week is not re-fetched. Set this back to `updated_date` if
+    # the account is ever on a paid plan.
+    openalex_incremental_field: str = "publication_date"
     arxiv_sets: str = "cs,stat"
     biorxiv_servers: str = "biorxiv,medrxiv"
     # `;`-separated Europe PMC query expressions, each harvested separately

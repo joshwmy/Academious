@@ -104,8 +104,17 @@ class SourceHttpClient:
                 retry_after = _parse_retry_after(response.headers.get("Retry-After"))
                 if response.status_code == 429:
                     self._bucket.penalise(retry_after or 60.0)
+                    # The body is carried into the message because 429 is not
+                    # always a rate limit: OpenAlex answers a request for a
+                    # paid-plan filter with 429 and explains why in the body.
+                    # Without this the log says "429 rate limited" and the
+                    # actual reason - which no amount of backoff will fix - is
+                    # discarded. Every other 4xx branch already quotes the body.
+                    detail = " ".join(response.text.split())[:200]
                     last_error = RateLimitedError(
-                        self.source, "429 rate limited", retry_after=retry_after
+                        self.source,
+                        f"429 rate limited: {detail}" if detail else "429 rate limited",
+                        retry_after=retry_after,
                     )
                 elif response.status_code in _RETRYABLE_STATUS:
                     last_error = TransientSourceError(

@@ -102,6 +102,7 @@ it could be started but deliberately is not.
 | [SRC-004](#src-004) | OpenAlex harvesting into the live corpus | READY | Phase 2 remainder |
 | [SRC-005](#src-005) | Corpus-admission policy for tertiary literature | DONE | — |
 | [SRC-006](#src-006) | Europe PMC harvest is unscheduled and unmeasured at volume | READY | Cron install |
+| [SRC-007](#src-007) | OpenAlex incremental harvesting needs a paid plan | ACCEPTED | If a plan is ever bought |
 | [WEB-001](#web-001) | Visual design is a baseline, not a finished appearance | DEFERRED | Dedicated design pass |
 | [WEB-002](#web-002) | Filter UI over the filters `/papers` supports | DONE | — |
 | [WEB-003](#web-003) | Feed by field | BLOCKED | With DATA-002 |
@@ -843,6 +844,37 @@ that is a job measured in hours, and the ingest rate observed here was
 * **Also unmeasured** — DATA-004 (`halfvec` at scale), DATA-005 (real ingestion
   volumes), RETR-004 (retrieval quality beyond ~2.5k papers) all still want the
   same thing.
+
+### SRC-007
+
+**OpenAlex incremental harvesting needs a paid plan.** — `ACCEPTED`
+
+`from_updated_date` — the filter the connector used to ask for everything
+changed since the last cursor — is now a Premium, Institutional or Partner
+feature. A free-tier request for it is answered **429 with a "Plan upgrade
+required" body**, not 402 or 403.
+
+That status is why this cost an hour to find: every layer above reads 429 as a
+rate limit, so the client backed off and retried five times, the run failed as
+`rate limited`, and the actual explanation was in a response body the HTTP
+layer discarded. A key rotation was tried first, because that is what the
+symptom pointed at.
+
+* **Resolution** — `ACADEMIOUS_OPENALEX_INCREMENTAL_FIELD`, defaulting to
+  `publication_date`, which every tier allows. The sort moves with it: a cursor
+  walking one ordering while the window bounds another can skip records
+  silently.
+* **What is given up** — records that change *after* publication. A paper that
+  gains a DOI, an abstract or an open-access location next week is not
+  re-fetched, so corrections and late metadata are missed until something else
+  brings the record back. For discovery of new work, which is what Phase 2
+  needs, publication date is the right axis anyway.
+* **Also fixed** — the 429 branch in `core/http.py` now carries the response
+  body into the error message. Every other 4xx branch already did; the one
+  status where the server explains itself was the one throwing the explanation
+  away.
+* **Trigger to revisit** — if an OpenAlex plan is ever bought, set the field
+  back to `updated_date` and nothing else changes.
 
 ## 8. Frontend
 
