@@ -48,6 +48,25 @@ SEARCH_TSV_EXPRESSION = (
 )
 
 
+#: What the feed sorts on: the earlier of the date a paper claims and the date
+#: it first reached us. Journals postdate issues, so `published_date` alone puts
+#: work that is not out yet above work that is - see migration 0005.
+#:
+#: `created_at` is cast through an explicit UTC conversion because a bare
+#: `::date` on a timestamptz is only STABLE (it depends on the session
+#: timezone) and a generated column requires IMMUTABLE.
+#:
+#: The CASE is not decoration. **PostgreSQL's LEAST skips NULLs**, unlike
+#: arithmetic - `LEAST(NULL, current_date)` is today, not NULL - so without it
+#: a paper with no publication date would be dated today and lead the feed.
+#: That is precisely the row that must not lead it: the papers whose
+#: implausible dates were cleared would have been promoted for being repaired.
+FEED_DATE_EXPRESSION = (
+    "CASE WHEN published_date IS NULL THEN NULL "
+    "ELSE LEAST(published_date, (created_at AT TIME ZONE 'UTC')::date) END"
+)
+
+
 def create_extensions_sql() -> list[str]:
     return [f"CREATE EXTENSION IF NOT EXISTS {name}" for name in EXTENSIONS]
 

@@ -8,7 +8,7 @@ and a projection that cannot widen when a column is added to `paper`.
 from __future__ import annotations
 
 import uuid
-from datetime import date
+from datetime import UTC, date, datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -53,6 +53,62 @@ def test_papers_are_listed_newest_first(client, session):
 
     titles = [row["title"] for row in client.get("/papers").json()["results"]]
     assert titles == ["Newest", "Middle", "Oldest"]
+
+
+def test_a_postdated_paper_is_treated_as_arriving_today(session):
+    """The feed sorts on availability, not on the date a paper claims.
+
+    Journals postdate issues, so `published_date` alone put work that is not
+    published yet above work that is - on 2026-09-03 the whole first page of the
+    live site was dated 2027. `feed_date` is the earlier of the claimed date and
+    the date the paper reached us.
+    """
+    paper = make_paper(session, "Postdated issue", published_date=date(2099, 1, 1))
+    session.commit()
+    session.refresh(paper)
+
+    assert paper.published_date == date(2099, 1, 1)  # the claim is still recorded
+    # UTC, not local: the column casts through an explicit UTC conversion
+    # because a session-dependent cast cannot be used in a generated column.
+    assert paper.feed_date == datetime.now(UTC).date()  # it ranks as arriving today
+
+
+def test_genuinely_old_papers_stay_old(client, session):
+    # feed_date takes the *earlier* of the two dates, so harvesting a
+    # 19th-century article today must not present it as new.
+    make_paper(session, "Victorian", published_date=date(1817, 3, 1), abstract="Text.")
+    make_paper(session, "Recent", published_date=date.today(), abstract="Text.")
+    session.commit()
+
+    titles = [r["title"] for r in client.get("/papers").json()["results"]]
+
+    assert titles == ["Recent", "Victorian"]
+
+
+def test_a_postdated_paper_does_not_outrank_one_published_today(client, session):
+    make_paper(session, "Postdated issue", published_date=date(2099, 1, 1), abstract="Text.")
+    make_paper(session, "Yesterday", published_date=date.today(), abstract="Text.")
+    make_paper(session, "Last year", published_date=date(2025, 1, 1), abstract="Text.")
+    session.commit()
+
+    titles = [r["title"] for r in client.get("/papers").json()["results"]]
+
+    # The first two share a feed_date of today and tie on id; what must not
+    # happen is the 2099 paper leading the feed for the next 73 years.
+    assert titles[-1] == "Last year"
+    assert set(titles[:2]) == {"Postdated issue", "Yesterday"}
+
+
+def test_a_paper_with_no_date_sorts_last_rather_than_first(client, session):
+    # The rows whose implausible dates were cleared must not be promoted to
+    # "newest" by having been repaired.
+    make_paper(session, "Dated", published_date=date.today(), abstract="Text.")
+    make_paper(session, "No date", abstract="Text.")
+    session.commit()
+
+    titles = [r["title"] for r in client.get("/papers").json()["results"]]
+
+    assert titles == ["Dated", "No date"]
 
 
 def test_ordering_is_total_so_pages_neither_repeat_nor_skip(client, session):

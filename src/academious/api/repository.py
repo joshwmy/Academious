@@ -80,7 +80,11 @@ def list_papers(
     rows = session.execute(
         _summary_select(*SUMMARY_COLUMNS)
         .where(*conditions)
-        .order_by(Paper.published_date.desc().nullslast(), Paper.id.desc())
+        # `feed_date`, not `published_date`: a postdated issue is correct
+        # metadata and the wrong sort key - it would rank work that is not out
+        # yet above work that is. See migration 0005. The id breaks ties, which
+        # is what keeps page two from repeating page one.
+        .order_by(Paper.feed_date.desc().nullslast(), Paper.id.desc())
         .limit(limit)
         .offset(offset)
     ).all()

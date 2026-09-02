@@ -544,6 +544,11 @@ The host must be provisioned first - see "Provisioning the host" above.
    Read it: a large number from a source other than OpenAlex would mean a
    connector is mis-parsing dates rather than a repository holding bad ones.
 
+   Migration `0005` needs no backfill step of its own - `feed_date` is a
+   generated column, so PostgreSQL fills it for every existing row as part of
+   `ALTER TABLE`. On a corpus of ~100k rows that is seconds, but it does hold a
+   lock on `paper` while it runs.
+
 Then confirm the deployment-layer controls actually hold, from the server:
 
 ```bash

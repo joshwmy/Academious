@@ -102,6 +102,7 @@ it could be started but deliberately is not.
 | [DATA-007](#data-007) | 29,728 papers carry no topics — all Europe PMC | DEFERRED | Before more field-coverage work |
 | [DATA-008](#data-008) | Zenodo versions arrive as separate papers | READY | With feed-duplication work |
 | [DATA-009](#data-009) | 607 papers claimed a future publication date | DONE | — |
+| [DATA-010](#data-010) | The feed ranked papers by the date they claimed | DONE | — |
 | [SRC-001](#src-001) | PubMed connector | DEFERRED | Phase 2 remainder |
 | [SRC-002](#src-002) | Europe PMC connector | DONE | — |
 | [SRC-003](#src-003) | Unpaywall fallback | DEFERRED | Phase 2 remainder |
@@ -837,6 +838,30 @@ about the row looked broken.
 * **Applied once in the pipeline**, next to the corpus-admission gate, for the
   same reason: a rule enforced in four connectors is a rule the fifth will not
   have. `scripts/sanitise_dates.py` repairs what was already stored.
+
+### DATA-010
+
+**The feed ranked papers by the date they claimed.** — `DONE` (2026-09-03)
+
+Ordering was `published_date DESC`. Journals postdate issues, so after DATA-009
+cleared the absurd dates the whole first page of the live feed was still dated
+2027 - correct metadata, ranked as though it were news.
+
+* **Closed by** — `fix: rank the feed by when a paper became available`.
+* **What it is now** — `feed_date`, a stored generated column holding
+  `LEAST(published_date, created_at)`. A postdated paper sorts as arriving on
+  the day it reached us; a genuinely old paper keeps its own date; an undated
+  paper sorts last. `published_date` is still reported, it just no longer
+  decides the order.
+* **What the tests caught, which review would not have** — **PostgreSQL's
+  `LEAST` skips NULL arguments.** `LEAST(NULL, current_date)` is today, so the
+  first version of the column stamped every undated paper with its ingestion
+  date and put it at the top of the feed: the exact defect the column exists to
+  prevent, delivered by the fix for it. The expression carries an explicit CASE
+  now.
+* **Not applied to search.** `retrieval/lexical.py` still breaks relevance ties
+  on `published_date`, which is defensible - a tie-break is not a ranking - but
+  it is now inconsistent with the feed and worth revisiting with RETR-001.
 
 ---
 

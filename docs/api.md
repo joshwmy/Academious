@@ -55,7 +55,20 @@ GET /papers?limit=20&offset=0
 
 ### Ordering
 
-`published_date DESC, id DESC`.
+`feed_date DESC NULLS LAST, id DESC`.
+
+`feed_date` is the earlier of the date a paper claims and the date it first
+reached the corpus - `LEAST(published_date, created_at)`, a stored generated
+column. It is not `published_date`, because journals postdate issues: an
+article released in September carries a December issue date, and annual volumes
+carry next year's. That is correct metadata and the wrong sort key. On
+2026-09-03 the entire first page of the live feed was dated 2027, so work not
+yet nominally published outranked work that came out that week.
+
+A postdated paper harvested today therefore sorts as arriving today; a genuine
+1817 article harvested today stays in 1817; a paper with no date at all sorts
+last rather than being treated as new. `published_date` is still what the
+response reports - the claim is recorded, it just does not decide the order.
 
 The date alone is **not** a total order. The corpus holds many papers per day
 and PostgreSQL may return ties in any order it likes, so paging on date alone

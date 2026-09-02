@@ -19,12 +19,13 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    desc,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from academious.db.base import Base, TimestampMixin, uuid_pk
-from academious.db.ddl import SEARCH_TSV_EXPRESSION
+from academious.db.ddl import FEED_DATE_EXPRESSION, SEARCH_TSV_EXPRESSION
 
 
 class RetractionStatus(StrEnum):
@@ -95,6 +96,13 @@ class Paper(Base, TimestampMixin):
         TSVECTOR, Computed(SEARCH_TSV_EXPRESSION, persisted=True), nullable=True
     )
 
+    # What the feed orders by, maintained by PostgreSQL: the earlier of the
+    # published date and the date the paper first reached us. Generated for the
+    # same reason search_tsv is - it cannot drift from its row.
+    feed_date: Mapped[date | None] = mapped_column(
+        Date, Computed(FEED_DATE_EXPRESSION, persisted=True), nullable=True
+    )
+
     citation_count: Mapped[int | None] = mapped_column(Integer)
     citation_count_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
@@ -132,6 +140,7 @@ class Paper(Base, TimestampMixin):
         Index("ix_paper_dedup_block", "first_author_surname", "published_year"),
         Index("ix_paper_search_tsv", "search_tsv", postgresql_using="gin"),
         Index("ix_paper_fields", "fields", postgresql_using="gin"),
+        Index("ix_paper_feed_date", desc("feed_date").nullslast(), desc("id")),
     )
 
     def __repr__(self) -> str:

@@ -24,6 +24,12 @@ proposed; the reasoning is in `phase-0-report.md` section 11.1 and ADR 0003.
 title (weight A), keywords and topic labels (B) and abstract (C). It is
 generated rather than trigger-maintained so it cannot drift from its row.
 
+`feed_date` is generated the same way: `LEAST(published_date, created_at)`,
+guarded by a CASE because PostgreSQL's `LEAST` skips NULL arguments rather than
+propagating them. It is what the feed orders by, so that a postdated issue does
+not outrank work that is actually out; see
+[migration 0005](../migrations/versions/0005_feed_date.py).
+
 It also carries `fields text[]`: the normalised subject fields derived from
 `topics` by `ingest/taxonomy.py`, which maps OpenAlex fields, arXiv archive
 categories and bioRxiv/medRxiv category labels onto one 26-value vocabulary.
@@ -177,6 +183,7 @@ resolve to `retracted`.
 | `ix_job_claim` (`status`, `priority`, `run_after`) | `SKIP LOCKED` claim query |
 | `ix_paper_search_tsv` (GIN) | Lexical retrieval; without it every query is a sequential scan |
 | `ix_paper_embedding_model_paper` (`model_key`, `paper_id`) | The anti-join that finds papers still needing an embedding |
+| `ix_paper_feed_date` (`feed_date DESC NULLS LAST, id DESC`) | The feed's ordering, tiebreak included, so paging is one index scan |
 | `ix_paper_fields` (GIN) | `fields && ARRAY[…]` for the subject-field filter; without it every filtered feed scans the table |
 
 There is deliberately **no ANN index** on `paper_embedding.embedding`. See
