@@ -99,6 +99,8 @@ it could be started but deliberately is not.
 | [DATA-004](#data-004) | `halfvec` quantisation effect not re-checked at scale | DEFERRED | At 10x corpus |
 | [DATA-005](#data-005) | Cost model still rests on estimated ingestion volumes | DEFERRED | After a week of real harvesting |
 | [DATA-006](#data-006) | MeSH-classified papers are reachable by no field | DEFERRED | See trigger |
+| [DATA-007](#data-007) | 29,728 papers carry no topics from any source | READY | Before more field-coverage work |
+| [DATA-008](#data-008) | Zenodo versions arrive as separate papers | READY | With feed-duplication work |
 | [SRC-001](#src-001) | PubMed connector | DEFERRED | Phase 2 remainder |
 | [SRC-002](#src-002) | Europe PMC connector | DONE | — |
 | [SRC-003](#src-003) | Unpaywall fallback | DEFERRED | Phase 2 remainder |
@@ -724,6 +726,14 @@ Europe PMC classifies with MeSH descriptor *terms*, and Europe PMC is roughly
 half the corpus. `ingest/taxonomy.py` does not map them, so those papers carry no
 field and are excluded whenever a reader selects one.
 
+* **Measured on the live corpus (2026-09-03)** — of 104,427 papers, 55,907
+  (53.5%) carry at least one field. Of the 48,520 that do not, **18,792 carry
+  topics that mapped to nothing and 29,728 carry no topics at all** — so MeSH
+  is only two fifths of the gap, and the larger half is papers no source
+  classified. That second number is DATA-007, not this entry.
+* **The mapping is total over everything else.** Every one of the 13,822
+  distinct unmapped values in that run is a MeSH descriptor; no arXiv archive
+  or bioRxiv category went unrecognised at 104k papers.
 * **Why deferred** — Europe PMC supplies the term and not its tree number, so
   mapping means shipping the MeSH descriptor file and a term-to-tree index. And
   the facet it would produce is biomedical-only: nearly every record would land
@@ -737,6 +747,45 @@ field and are excluded whenever a reader selects one.
 * **Trigger to revisit** — when the corpus stops being half Europe PMC, or when
   a biomedical facet is wanted in its own right.
 * **Source** — [ADR 0009](adr/0009-normalised-subject-fields.md).
+
+### DATA-007
+
+**29,728 papers carry no topics from any source.** — `READY`
+
+The field backfill measured it: 28% of the live corpus has an empty `topics`
+array, so nothing classifies those papers — not a mapping gap like DATA-006, an
+absence of input. Their share of the corpus is larger than the MeSH gap.
+
+* **Not yet diagnosed.** Which sources they come from, and whether the topics
+  were absent upstream or dropped in normalisation, is one grouped query away
+  and has not been run.
+* **Risk/impact** — they are unreachable by any field filter, and if the cause
+  is a normalisation defect rather than sparse upstream metadata then the fix is
+  cheap and the loss is ongoing.
+* **Trigger** — before any further work on field coverage; diagnosing this may
+  be worth more than mapping MeSH.
+
+### DATA-008
+
+**Zenodo deposits arrive once per version, and dedup keeps them apart.** —
+`READY`
+
+`/papers?field=neuroscience` returns "Art as an Algorithmic Virus…" twice, under
+`10.5281/zenodo.19407789` and `10.5281/zenodo.19542109`. Zenodo mints a DOI per
+*version* plus a concept DOI for the record; identifier dedup sees two distinct
+DOIs and the title-similarity path does not fold them because their DOIs
+conflict, which [ADR 0004](adr/0004-preprints-linked-not-merged.md) treats as
+decisive evidence of two works.
+
+* **Risk/impact** — visible duplicates in the feed, and one work occupying
+  several slots in a ranked page. It is a discovery-quality defect, not a
+  correctness one.
+* **What would fix it** — Zenodo's `relatedIdentifiers` carries
+  `isVersionOf` pointing at the concept DOI, which is exactly the authoritative
+  link `preprint_of` already models for bioRxiv. It arrives through OpenAlex, so
+  the question is whether OpenAlex preserves it.
+* **Trigger** — when feed duplication is worth a pass, or with any other work on
+  `ingest/relations.py`.
 
 ---
 

@@ -97,8 +97,15 @@ hand-edited link degrades to an unfiltered feed rather than an error page.
 * One filter reaches every source. An arXiv `cs.LG` preprint, an OpenAlex record
   whose field is Computer Science, and a bioRxiv `bioinformatics` preprint are
   each reachable from the field a reader would look under.
-* **Roughly half the corpus is unreachable by any field**, because Europe PMC is
-  47% of it and MeSH is unmapped. The number is published, not implied.
+* **Roughly half the corpus is unreachable by any field.** Measured on the live
+  corpus after deployment (2026-09-03): 55,907 of 104,427 papers carry a field,
+  53.5%. The prediction that MeSH would be the reason was only two fifths right
+  — 18,792 of the 48,520 unclassified papers carry topics that mapped to
+  nothing, while 29,728 carry no topics at all (DATA-007). The number is
+  published on `/fields`, not implied.
+* **The mapping is total over every vocabulary that is not MeSH.** At 104k
+  papers, all 13,822 distinct unmapped values were MeSH descriptors: no arXiv
+  archive and no bioRxiv category went unrecognised.
 * The vocabulary is duplicated in three places — `ingest/taxonomy.py`,
   `web/src/lib/filters.ts`, and this ADR. The frontend copy exists because
   parsing a URL is synchronous and cannot wait for `GET /fields`; the counts it
