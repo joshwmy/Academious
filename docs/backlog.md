@@ -113,6 +113,7 @@ it could be started but deliberately is not.
 | [SRC-006](#src-006) | Europe PMC harvest is scheduled but unmeasured at volume | IN PROGRESS | After a week of runs |
 | [SRC-007](#src-007) | OpenAlex incremental harvesting needs a paid plan | ACCEPTED | If a plan is ever bought |
 | [WEB-001](#web-001) | Visual design is a baseline, not a finished appearance | DEFERRED | Dedicated design pass |
+| [WEB-012](#web-012) | Retraction Watch attribution is owed and not given | READY | Next frontend change |
 | [WEB-002](#web-002) | Filter UI over the filters `/papers` supports | DONE | — |
 | [WEB-003](#web-003) | Feed by field | DONE | — |
 | [WEB-004](#web-004) | SEO and prerendering | DEFERRED | Phase 6 |
@@ -125,6 +126,9 @@ it could be started but deliberately is not.
 | [WEB-011](#web-011) | Europe PMC is not offered in the frontend source filter | DONE | — |
 | [PROD-001](#prod-001) | A generative explanation layer changes the threat model | DEFERRED | Phase 5 |
 | [PROD-002](#prod-002) | Accounts turn query logs and interest profiles into privacy assets | DEFERRED | Phase 3 |
+| [PROD-003](#prod-003) | The code has no licence, so it is all rights reserved | READY | Before contributors or reuse |
+| [PROD-004](#prod-004) | Abstracts stored and re-served with no established basis | DEFERRED | Before any public announcement |
+| [PROD-005](#prod-005) | Frontend dependencies are not licence-inventoried | DEFERRED | With PROD-003 |
 
 ---
 
@@ -1122,6 +1126,26 @@ line of frontend transcription.
   connector broke the test that existed to catch a missing connector. It now
   counts against `SOURCES` and compares the rendered labels.
 
+### WEB-012
+
+**Retraction Watch attribution is owed and not given.** — `READY`
+
+The dataset is CC-BY 4.0: commercial use permitted **with attribution**, which
+is the whole of the consideration. Academious derives `retraction_status` from
+it and shows a retraction badge on cards and detail pages. The frontend never
+names the source - searching the codebase for "Retraction Watch" returns
+nothing.
+
+* **Risk/impact** — an unmet licence condition on a dataset whose output is a
+  visible product feature. Cheap to discharge: a credit naming Retraction Watch
+  and Crossref, with a link, wherever retraction status appears or in a
+  site-wide colophon.
+* **Fold in with it** — the corpus description in `AppShell.tsx` says the corpus
+  is "arXiv, bioRxiv/medRxiv and Europe PMC" and omits OpenAlex, which supplies
+  42% of it. CC0 needs no attribution, so that one is a factual error in
+  user-facing copy rather than a breach.
+* **Source** — [licensing.md §4](licensing.md#4-obligations-we-are-not-currently-meeting).
+
 ### WEB-001
 
 **Visual design is a baseline, not a finished appearance.** — `DEFERRED`
@@ -1291,6 +1315,54 @@ items with open engineering consequences are recorded here.
 Roadmap Phase 5. Gated on SEC-007, which is done *before* the code, not after it.
 Also carries Phase 0 provenance obligations — `basis` is NOT NULL, and never
 full-text framing when only the abstract was seen — and a hard monthly cost cap.
+
+### PROD-003
+
+**The code has no licence, so it is all rights reserved.** — `READY`
+
+No `LICENSE` file, no `license` field in `pyproject.toml`. Absent a licence,
+exclusive copyright applies: nobody may copy, modify or redistribute the code,
+and publishing the repository does not change that.
+
+* **Why it is open** — a decision not taken, not a decision to keep it closed.
+* **Trigger** — before a second contributor, before the repository is offered as
+  something to read and reuse, and before anyone else runs a deployment.
+* **Constraint** — only `psycopg` (LGPL-3.0) is copyleft, and it is used by a
+  network service rather than distributed, so a permissive licence is available.
+  Apache-2.0 grants patent rights that MIT does not.
+* **Source** — [licensing.md §1](licensing.md#1-the-code-undecided-which-means-all-rights-reserved).
+
+### PROD-004
+
+**Abstracts are stored and re-served without an established legal basis.** —
+`DEFERRED`
+
+Publisher abstracts are frequently claimed as copyrighted works. Academious
+stores them and serves them publicly - a preview on `/papers`, the whole text on
+`/papers/{id}`. The policy table in open-access.md asserts "Yes, with
+attribution and a source link" and its Basis column is **empty**.
+
+* **What is defensible today** — the corpus is overwhelmingly preprints and
+  open-access literature whose abstracts the source itself distributes under
+  permissive terms; every abstract carries attribution and a link out.
+* **What is missing** — that every major discovery service does the same is an
+  argument from practice, not a legal basis. No review has been done.
+* **Risk/impact** — grows with the corpus, and grows sharply if paywalled
+  publisher metadata ever enters it through a new connector.
+* **Trigger** — before any public announcement, and immediately if a connector
+  is added whose terms are less permissive than the current four.
+* **Source** — [licensing.md §3](licensing.md#3-content-what-we-store-and-on-what-basis).
+
+### PROD-005
+
+**Frontend dependencies are not licence-inventoried.** — `DEFERRED`
+
+The Python stack is inventoried in licensing.md §5. The frontend's is not, and
+it is the half that actually *distributes*: bundles ship to browsers, which is
+conveyance, so a copyleft package there would carry obligations the backend's
+`psycopg` does not.
+
+* **Trigger** — with PROD-003, since the answer feeds the licence choice.
 
 ### PROD-002
 

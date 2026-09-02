@@ -6,6 +6,10 @@ This project links to legal copies of research. It never bypasses paywalls,
 never re-hosts publisher PDFs, never integrates Sci-Hub, and never scrapes
 publisher pages.
 
+Source terms, the dependency inventory and the obligations that follow from both
+are in [licensing.md](licensing.md). This file is the storage policy and the
+resolution chain.
+
 ## What we may store
 
 | Content | Store? | Basis |

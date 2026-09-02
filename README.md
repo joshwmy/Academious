@@ -206,6 +206,7 @@ Measurements are reproduced by:
 | [docs/cost-model.md](docs/cost-model.md) | Derived unit economics and the processing tiers |
 | [docs/architecture.md](docs/architecture.md) | Modules, pipeline, job queue, deployment |
 | [docs/data-model.md](docs/data-model.md) | Schema, deduplication rules, field precedence |
+| [docs/licensing.md](docs/licensing.md) | Code licence, source terms, what may be stored, dependency inventory |
 | [docs/sources.md](docs/sources.md) | Per-source endpoints, limits, quirks |
 | [docs/ingestion.md](docs/ingestion.md) | Pipeline stages, cursors, idempotency, replay |
 | [docs/open-access.md](docs/open-access.md) | Resolution chain, licence policy, what we may store |
