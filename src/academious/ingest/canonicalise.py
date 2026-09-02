@@ -25,7 +25,13 @@ from academious.core.clock import utcnow
 from academious.core.config import Settings, get_settings
 from academious.core.ids import IdType
 from academious.core.logging import get_logger
-from academious.core.text import jaccard, normalise_title, surname, surname_set
+from academious.core.text import (
+    blocking_weight,
+    jaccard,
+    normalise_title,
+    surname,
+    surname_set,
+)
 from academious.db.models.paper import Paper, PaperIdentifier, PaperMerge
 from academious.sources.base import PaperCandidate
 
@@ -119,8 +125,11 @@ def find_fuzzy(
     binding; it reaches PostgreSQL as the trigram similarity operator `%`.
     """
     title_norm = normalise_title(candidate.title)
-    if len(title_norm) < 12:
+    if blocking_weight(title_norm) < 12:
         # Very short titles ("Errata", "Reply") produce false positives.
+        # Weighted rather than counted: a bare `len()` is a Latin character
+        # count, and it would reject a ten-ideograph Chinese title that names a
+        # paper precisely. See core/text.blocking_weight.
         return None
 
     first_author = candidate.authors[0].name if candidate.authors else None

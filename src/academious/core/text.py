@@ -20,7 +20,22 @@ import unicodedata
 
 _TAG = re.compile(r"<[^>]+>")
 _LATEX_CMD = re.compile(r"\[a-zA-Z]+\s*")
-_NON_ALNUM = re.compile(r"[^a-z0-9]+")
+# `[\W_]+` and not `[^a-z0-9]+`. The ASCII-only class deleted every character
+# outside a-z0-9, which for a Chinese, Japanese, Korean, Cyrillic, Arabic,
+# Hebrew or Greek title means deleting the entire title: it normalised to "".
+# 3,819 papers in the live corpus sat at title_norm = '' on 2026-09-03, all of
+# them Chinese-titled.
+#
+# Nothing was wrongly merged - `find_fuzzy` refuses to match a key shorter than
+# 12 characters - but the mirror failure was silent and permanent: a paper with
+# a non-Latin title could only ever deduplicate by identifier, so two records of
+# it from two sources stayed two papers forever.
+#
+# `\W` is Unicode-aware in Python 3, so this keeps letters and digits in every
+# script and strips punctuation and separators. `_` is added because `\w`
+# counts it as a word character and it is punctuation for this purpose. ASCII
+# titles normalise byte-identically to before.
+_NON_ALNUM = re.compile(r"[\W_]+", re.UNICODE)
 _WS = re.compile(r"\s+")
 
 # Publishers prefix retracted articles in the title itself; it is metadata, not
@@ -55,6 +70,39 @@ def normalise_title(title: str | None) -> str:
     text = text.casefold()
     text = _NON_ALNUM.sub(" ", text)
     return _WS.sub(" ", text).strip()
+
+
+#: Scripts where one character carries roughly what a short word carries in an
+#: alphabetic script: CJK ideographs, kana, and Hangul syllables.
+_DENSE_SCRIPT_RANGES = (
+    (0x3040, 0x30FF),  # hiragana, katakana
+    (0x3400, 0x4DBF),  # CJK extension A
+    (0x4E00, 0x9FFF),  # CJK unified ideographs
+    (0xAC00, 0xD7AF),  # Hangul syllables
+    (0xF900, 0xFAFF),  # CJK compatibility ideographs
+)
+
+
+def is_dense_script(char: str) -> bool:
+    code = ord(char)
+    return any(low <= code <= high for low, high in _DENSE_SCRIPT_RANGES)
+
+
+def blocking_weight(title_norm: str) -> int:
+    """How much a blocking key is worth, in alphabetic-character equivalents.
+
+    Deduplication refuses to fuzzy-match on a key that is too short, because
+    "Errata" and "Reply" match everything. That threshold is a character count,
+    which silently means *a Latin character count*: a Chinese title of ten
+    ideographs is a full, specific title and would fail a limit written for
+    English. `基于量子计算的拓扑优化` is eleven characters and names a paper.
+
+    So a dense-script character counts for three. The multiplier is a judgement,
+    not a measurement - it is roughly the ratio of characters to information
+    between the scripts, and it is deliberately conservative: it lets a real
+    four-ideograph title through while still rejecting one or two characters.
+    """
+    return sum(3 if is_dense_script(char) else 1 for char in title_norm)
 
 
 def clean_display_text(text: str | None) -> str | None:

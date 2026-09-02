@@ -103,6 +103,8 @@ it could be started but deliberately is not.
 | [DATA-008](#data-008) | Zenodo versions arrive as separate papers | READY | With feed-duplication work |
 | [DATA-009](#data-009) | 607 papers claimed a future publication date | DONE | — |
 | [DATA-010](#data-010) | The feed ranked papers by the date they claimed | DONE | — |
+| [DATA-011](#data-011) | Every non-Latin title normalised to the empty string | DONE | — |
+| [DATA-012](#data-012) | Zenodo carries automated deposits the policy has no rule for | READY | Next corpus-quality pass |
 | [SRC-001](#src-001) | PubMed connector | DEFERRED | Phase 2 remainder |
 | [SRC-002](#src-002) | Europe PMC connector | DONE | — |
 | [SRC-003](#src-003) | Unpaywall fallback | DEFERRED | Phase 2 remainder |
@@ -785,7 +787,7 @@ absence of input.
 ### DATA-008
 
 **Zenodo deposits arrive once per version, and dedup keeps them apart.** —
-`READY`
+`SUPERSEDED` by DATA-011 and DATA-012
 
 `/papers?field=neuroscience` returns "Art as an Algorithmic Virus…" twice, under
 `10.5281/zenodo.19407789` and `10.5281/zenodo.19542109`. Zenodo mints a DOI per
@@ -862,6 +864,65 @@ cleared the absurd dates the whole first page of the live feed was still dated
 * **Not applied to search.** `retrieval/lexical.py` still breaks relevance ties
   on `published_date`, which is defensible - a tie-break is not a ranking - but
   it is now inconsistent with the feed and worth revisiting with RETR-001.
+
+### DATA-011
+
+**Every non-Latin title normalised to the empty string.** — `DONE` (2026-09-03)
+
+`normalise_title` folded with `[^a-z0-9]+`, which deletes rather than keeps
+every character outside the ASCII alphabet. For a Chinese, Japanese, Korean,
+Cyrillic, Arabic, Hebrew or Greek title that is the whole title: the dedup
+blocking key came out empty. **3,819 papers in the live corpus held
+`title_norm = ''` on 2026-09-03**, across 1,481 distinct titles.
+
+* **Closed by** — `fix: stop deleting non-Latin titles in the dedup key`.
+* **Nothing was wrongly merged.** `find_fuzzy` refuses a key shorter than 12
+  characters, so an empty key matched nothing rather than everything. The
+  failure was the mirror image and silent: a paper with a non-Latin title could
+  only ever deduplicate by identifier, so a second record of it stayed a second
+  paper permanently.
+* **Two changes, not one.** The character class is now `[\W_]+`, which is
+  Unicode-aware; and the 12-character floor became a *weight*, because a
+  character count is a Latin character count and would still have refused
+  `基于量子计算的拓扑优化` - eleven characters, and a complete title. A
+  dense-script character counts for three.
+* **Side effect, deliberate** — Greek letters and mathematical symbols in
+  otherwise-Latin titles are now kept rather than deleted, so `IL-1β` keys as
+  `il 1β` instead of `il 1`. 33 of 3,070 papers in the development corpus
+  change. More faithful: `TGF-β1` and `TGF-β2` are different papers.
+* **Backfill** — `scripts/backfill_title_norm.py`. It does not merge anything
+  retroactively; deduplication runs at ingestion, so this makes future harvests
+  able to match those papers. Existing duplicates of them remain.
+* **Found while investigating** — DATA-008. The Zenodo duplicate groups turned
+  out to be led by 3,577 papers sharing an empty key, which is what exposed
+  this.
+
+### DATA-012
+
+**Zenodo carries automated deposits the admission policy has no rule for.** —
+`READY`
+
+Sampling the duplicate groups for DATA-008 turned up what they actually are:
+
+| group | papers | what it is |
+|---|---|---|
+| empty title key, one surname | 3,577 | Chinese titles, buzzword recombinations (自适应/量子/拓扑/优化), deposited in a week |
+| `windows archived 2026 08 30` and similar | ~150 across ~12 groups | one depositor's personal technical notes |
+| `jincheng zhang` | 14 | a person's name as the title |
+
+* **Every group is dated within one week of 2026-09-03**, so this arrived
+  through the current OpenAlex harvest, and OpenAlex types the deposits
+  `preprint` - which is why `ingest/scope.py` admits them. The corpus-admission
+  policy classifies by *work type*, and these are the right work type and the
+  wrong content.
+* **Risk/impact** — a single depositor can inject thousands of records into the
+  corpus, and they surface in the feed and in search. This is not a duplication
+  problem, which is what DATA-008 assumed.
+* **Not yet decided** — whether the rule is per-depositor volume, a general
+  repository quality gate (require an abstract? require authors?), or excluding
+  Zenodo. Each has a false-positive cost: Zenodo also hosts real preprints.
+* **Supersedes the version-folding plan.** Folding versions would have merged
+  spam into fewer pieces of spam.
 
 ---
 

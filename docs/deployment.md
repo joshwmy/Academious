@@ -549,6 +549,20 @@ The host must be provisioned first - see "Provisioning the host" above.
    `ALTER TABLE`. On a corpus of ~100k rows that is seconds, but it does hold a
    lock on `paper` while it runs.
 
+10. **Recompute the dedup blocking keys.** Same pattern once more: the rule
+    changed, and stored rows keep the key they were written with.
+
+    ```bash
+    docker compose run --rm worker python scripts/backfill_title_norm.py           # report
+    docker compose run --rm worker python scripts/backfill_title_norm.py --apply
+    ```
+
+    Expect most of the rewrites to be non-Latin titles that previously folded to
+    an empty key, plus a small number of Latin titles containing Greek letters.
+    The report's "key still empty after" line should be near zero; anything
+    large there means titles made only of punctuation, which is a normalisation
+    question rather than a backfill one.
+
 Then confirm the deployment-layer controls actually hold, from the server:
 
 ```bash
