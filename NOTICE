@@ -1,0 +1,35 @@
+Academious
+Copyright 2026 Joshua
+
+Licensed under the Apache License, Version 2.0 (the "License"); see LICENSE.
+
+This product includes and builds upon data from third parties. Their terms are
+recorded in docs/licensing.md; the attributions those terms require are below.
+
+--------------------------------------------------------------------------------
+Retraction Watch Database, distributed by Crossref
+    https://api.labs.crossref.org/data/retractionwatch
+    Licensed under CC-BY 4.0: https://creativecommons.org/licenses/by/4.0/
+
+    Used to determine the retraction status shown against each paper.
+    Attribution is a condition of that licence, and it is also given in the
+    interface itself, where the status is displayed.
+
+--------------------------------------------------------------------------------
+OpenAlex
+    https://openalex.org
+    Metadata dedicated to the public domain under CC0 1.0.
+    No attribution required; recorded here because it supplies the largest
+    single share of the corpus.
+
+--------------------------------------------------------------------------------
+arXiv, bioRxiv, medRxiv, Europe PMC
+
+    Metadata retrieved under each service's terms of use for discovery and
+    search. No full text is stored or re-served: Academious records where a
+    legal copy lives and links to it.
+
+--------------------------------------------------------------------------------
+SPECTER2 (allenai/specter2_base, allenai/specter2, allenai/specter2_adhoc_query)
+    https://huggingface.co/allenai/specter2
+    Licensed under the Apache License, Version 2.0.

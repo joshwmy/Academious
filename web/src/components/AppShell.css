@@ -87,3 +87,12 @@
     padding: var(--space-5) var(--space-4) var(--space-6);
   }
 }
+
+/* The attribution line sits under the corpus note, quieter than it: it is a
+   licence condition rather than something a reader came for, and burying it
+   would be as wrong as shouting it. */
+.app-footer__credit {
+  margin-block-start: var(--space-2);
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+}

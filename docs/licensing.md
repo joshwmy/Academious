@@ -24,31 +24,30 @@ lawyer, it says so rather than guessing.
 
 ---
 
-## 1. The code: undecided, which means "all rights reserved"
+## 1. The code: Apache-2.0
 
-There is no `LICENSE` file in the repository and no `license` field in
-`pyproject.toml`. That is not a neutral default — absent a licence, exclusive
-copyright applies, so nobody may copy, modify or redistribute the code, and a
-public GitHub repository does not change that. GitHub's terms grant other users
-the right to *view and fork* a public repository, and nothing more.
+`LICENSE` carries the Apache License 2.0 verbatim, with `Copyright 2026 Joshua`
+in the appendix, and `pyproject.toml` declares `license = "Apache-2.0"` so the
+metadata and the file cannot disagree.
 
-That is a decision not yet taken rather than a decision to keep it closed. It
-has to be taken before any of these:
+Before 2026-09-03 there was no licence file at all. That is not a neutral
+default: absent a licence, exclusive copyright applies, so nobody could copy,
+modify or redistribute the code, and publishing the repository did not change
+that — GitHub's terms grant other users the right to *view and fork* a public
+repository, and nothing more. Copyright itself needed no registration; it
+existed from the moment the code was written, which is exactly why the file was
+needed. `LICENSE` is the owner granting rights he already held.
 
-| Trigger | Why it forces the decision |
-|---|---|
-| Anyone else contributing | Without a licence there is no inbound grant, and their contribution is separately copyrighted |
-| Publishing the repository as an example or portfolio piece | Readers cannot legally reuse anything they see |
-| Any deployment somebody else runs | They need the right to run and modify it |
+**Apache-2.0 rather than MIT** for the express patent grant in §3. The
+difference is immaterial for a website and material for a retrieval and ranking
+system, a field in which patents exist. The cost is a longer file.
 
-The dependency stack constrains the choice only mildly (§5): everything is
-permissive except `psycopg`, which is LGPL-3.0 and is used as a library by a
-network service rather than statically linked into a distributed binary. A
-permissive licence (MIT, Apache-2.0) is available; Apache-2.0 additionally
-grants patent rights, which matters more for a retrieval system than for a
-website.
+`NOTICE` accompanies it, as Apache-2.0 §4(d) contemplates: it carries the
+third-party attributions this project owes, chiefly Retraction Watch (§4).
 
-**Open — [PROD-003](backlog.md#prod-003).**
+The dependency stack constrained the choice only mildly (§5): everything is
+permissive except `psycopg`, LGPL-3.0, used by a network service rather than
+statically linked into a distributed binary.
 
 ---
 
@@ -64,7 +63,7 @@ deliberate limits exist in the code.
 | **arXiv** | Metadata reusable for discovery | Metadata retrieval, discovery tools, search interfaces, citation graphs. **Prohibits** redistributing e-prints or serving PDFs from our own servers unless licensed | Store metadata, link out. No full text, ever |
 | **bioRxiv / medRxiv** | Per-paper licence code (`cc_by`, `cc_no`, `cc0`, …) | Metadata access; content per the paper's own licence | Store metadata and the licence code, link out |
 | **Europe PMC** | Per-record | *"It is not permissible to use any kind of automated process to bulk download other content from Europe PMC"* — their protocols exist to serve the open-access subset and metadata | `ACADEMIOUS_EUROPEPMC_QUERIES` defaults to `OPEN_ACCESS:Y`, so the default harvest cannot leave the OA subset by accident |
-| **Retraction Watch** (via Crossref) | **CC-BY 4.0** | Commercial use permitted **with attribution** | Download the whole dataset, diff it, set `retraction_status`. **Attribution is not currently given — see §4** |
+| **Retraction Watch** (via Crossref) | **CC-BY 4.0** | Commercial use permitted **with attribution** | Download the whole dataset, diff it, set `retraction_status`. Attributed in the footer and in `NOTICE` — see §4 |
 
 Two of these are enforced in code rather than trusted to discipline:
 
@@ -133,33 +132,38 @@ records as a verified quirk.
 
 ---
 
-## 4. Obligations we are not currently meeting
+## 4. Obligations, and how they were missed
 
-Written plainly, because an unmet obligation nobody has written down is
-indistinguishable from one nobody knows about.
+Both of these were live defects until 2026-09-03. They are recorded rather than
+quietly corrected, because how they went unnoticed matters more than the fix:
+each was invisible to every gate the project has. Tests, types and linting all
+pass on a page that omits a credit, and no reviewer misses what was never
+there.
 
-### Retraction Watch attribution is owed and not given
+### Retraction Watch attribution — given since 2026-09-03
 
 The dataset is CC-BY 4.0. Commercial use is permitted **with attribution**, and
 attribution is the whole of what the licence asks in return. Academious uses it
 to set `retraction_status`, surfaced on paper cards and detail pages as a
 retraction badge — a visible product feature derived directly from the dataset.
 
-Searching the frontend for "Retraction Watch" returns nothing. Neither the site
-footer, the paper detail page, nor the badge names the source. That is a licence
-obligation unmet, and it is cheap to discharge: a credit line naming Retraction
-Watch and Crossref, with a link, wherever retraction status is shown or in a
-site-wide colophon.
+It went unpaid from the day retraction badges shipped until 2026-09-03: the
+frontend contained no occurrence of the words "Retraction Watch" anywhere. The
+footer now credits the database and Crossref, links both, and names CC-BY 4.0.
+`NOTICE` carries the same attribution for anyone redistributing the code.
 
-**Open — [WEB-012](backlog.md#web-012).**
+**Four tests in `AppShell.test.tsx` assert it**, which is the point. Nobody
+removed the credit — it was never added, and no gate noticed for the whole life
+of the feature. A copy edit that drops it now fails a test instead of quietly
+restoring the breach.
 
-### The corpus description omits OpenAlex
+### The corpus description omitted OpenAlex — fixed
 
-`AppShell.tsx` tells readers the corpus is "recent research from arXiv,
+`AppShell.tsx` told readers the corpus was "recent research from arXiv,
 bioRxiv/medRxiv and Europe PMC". OpenAlex supplies 46,012 of 108,886 papers —
 42% of the corpus, and its largest single source. CC0 imposes no attribution
-requirement, so this is not a licence breach; it is a factual error in
-user-facing copy, and it belongs in the same fix.
+requirement, so this was not a licence breach; it was a false sentence, and it
+is now true and asserted alongside the credit.
 
 ---
 

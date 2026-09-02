@@ -113,7 +113,7 @@ it could be started but deliberately is not.
 | [SRC-006](#src-006) | Europe PMC harvest is scheduled but unmeasured at volume | IN PROGRESS | After a week of runs |
 | [SRC-007](#src-007) | OpenAlex incremental harvesting needs a paid plan | ACCEPTED | If a plan is ever bought |
 | [WEB-001](#web-001) | Visual design is a baseline, not a finished appearance | DEFERRED | Dedicated design pass |
-| [WEB-012](#web-012) | Retraction Watch attribution is owed and not given | READY | Next frontend change |
+| [WEB-012](#web-012) | Retraction Watch attribution is owed and not given | DONE | — |
 | [WEB-002](#web-002) | Filter UI over the filters `/papers` supports | DONE | — |
 | [WEB-003](#web-003) | Feed by field | DONE | — |
 | [WEB-004](#web-004) | SEO and prerendering | DEFERRED | Phase 6 |
@@ -126,7 +126,7 @@ it could be started but deliberately is not.
 | [WEB-011](#web-011) | Europe PMC is not offered in the frontend source filter | DONE | — |
 | [PROD-001](#prod-001) | A generative explanation layer changes the threat model | DEFERRED | Phase 5 |
 | [PROD-002](#prod-002) | Accounts turn query logs and interest profiles into privacy assets | DEFERRED | Phase 3 |
-| [PROD-003](#prod-003) | The code has no licence, so it is all rights reserved | READY | Before contributors or reuse |
+| [PROD-003](#prod-003) | The code has no licence, so it is all rights reserved | DONE | — |
 | [PROD-004](#prod-004) | Abstracts stored and re-served with no established basis | DEFERRED | Before any public announcement |
 | [PROD-005](#prod-005) | Frontend dependencies are not licence-inventoried | DEFERRED | With PROD-003 |
 
@@ -1128,7 +1128,7 @@ line of frontend transcription.
 
 ### WEB-012
 
-**Retraction Watch attribution is owed and not given.** — `READY`
+**Retraction Watch attribution is owed and not given.** — `DONE` (2026-09-03)
 
 The dataset is CC-BY 4.0: commercial use permitted **with attribution**, which
 is the whole of the consideration. Academious derives `retraction_status` from
@@ -1136,14 +1136,15 @@ it and shows a retraction badge on cards and detail pages. The frontend never
 names the source - searching the codebase for "Retraction Watch" returns
 nothing.
 
-* **Risk/impact** — an unmet licence condition on a dataset whose output is a
-  visible product feature. Cheap to discharge: a credit naming Retraction Watch
-  and Crossref, with a link, wherever retraction status appears or in a
-  site-wide colophon.
-* **Fold in with it** — the corpus description in `AppShell.tsx` says the corpus
-  is "arXiv, bioRxiv/medRxiv and Europe PMC" and omits OpenAlex, which supplies
-  42% of it. CC0 needs no attribution, so that one is a factual error in
-  user-facing copy rather than a breach.
+* **Closed by** — `feat: license the project, and pay the attribution we owe`.
+* **Resolution** — the footer credits the Retraction Watch database and
+  Crossref, links both, and names CC-BY 4.0. `NOTICE` carries the same for
+  anyone redistributing the code.
+* **Asserted, not merely written** — four tests in `AppShell.test.tsx`. Nobody
+  removed this credit; it was never added, and nothing failed for the whole life
+  of the feature. A test is what turns "we remembered" into "we cannot forget".
+* **Fixed with it** — the corpus description omitted OpenAlex, 42% of the
+  papers. Not a breach, since CC0 asks nothing; it was simply untrue.
 * **Source** — [licensing.md §4](licensing.md#4-obligations-we-are-not-currently-meeting).
 
 ### WEB-001
@@ -1318,18 +1319,20 @@ full-text framing when only the abstract was seen — and a hard monthly cost ca
 
 ### PROD-003
 
-**The code has no licence, so it is all rights reserved.** — `READY`
+**The code has no licence, so it is all rights reserved.** — `DONE` (2026-09-03)
 
 No `LICENSE` file, no `license` field in `pyproject.toml`. Absent a licence,
 exclusive copyright applies: nobody may copy, modify or redistribute the code,
 and publishing the repository does not change that.
 
-* **Why it is open** — a decision not taken, not a decision to keep it closed.
-* **Trigger** — before a second contributor, before the repository is offered as
-  something to read and reuse, and before anyone else runs a deployment.
-* **Constraint** — only `psycopg` (LGPL-3.0) is copyleft, and it is used by a
-  network service rather than distributed, so a permissive licence is available.
-  Apache-2.0 grants patent rights that MIT does not.
+* **Closed by** — `feat: license the project, and pay the attribution we owe`.
+* **Resolution** — Apache-2.0, verbatim in `LICENSE`, `Copyright 2026 Joshua`,
+  declared in `pyproject.toml` so the metadata and the file cannot drift apart.
+  Chosen over MIT for the express patent grant, which matters for a retrieval
+  and ranking system.
+* **Worth stating once** — copyright needed no registration; it existed from the
+  moment the code was written. The missing file was never a missing right, it
+  was the absence of a grant of rights already held.
 * **Source** — [licensing.md §1](licensing.md#1-the-code-undecided-which-means-all-rights-reserved).
 
 ### PROD-004
