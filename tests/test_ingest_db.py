@@ -71,6 +71,90 @@ def test_ingests_a_paper_from_one_source(session):
     assert paper.first_author_surname == "loot"
 
 
+def _zenodo_work(title: str, doi: str = "10.5281/zenodo.19407789") -> dict:
+    """An OpenAlex work that is a Zenodo deposit, shaped like the real ones.
+
+    Well formed on purpose: abstract, authors, DOI. 98.4% of the live Zenodo
+    slice looks exactly like this, which is why the rule is about the venue.
+    """
+    return {
+        "id": f"https://openalex.org/W{abs(hash(doi)) % 10**8}",
+        "doi": f"https://doi.org/{doi}",
+        "title": title,
+        "display_name": title,
+        "type": "preprint",
+        "publication_date": "2026-08-30",
+        "language": "en",
+        "authorships": [
+            {"author": {"display_name": "Wei Zhang"}, "author_position": "first"}
+        ],
+        "primary_location": {
+            "source": {
+                "display_name": "Zenodo (CERN European Organization for Nuclear Research)",
+                "type": "repository",
+            },
+            "landing_page_url": f"https://zenodo.org/records/{doi.rsplit('.', 1)[-1]}",
+        },
+        "open_access": {"oa_status": "green"},
+        "abstract_inverted_index": {"An": [0], "abstract": [1], "here": [2]},
+    }
+
+
+def test_a_repository_deposit_alone_does_not_create_a_paper(session):
+    """A venue that accepts anything vouches for nothing.
+
+    The corpus took 25,399 Zenodo papers this way, 3,577 of them auto-deposited
+    under one surname in a week. A content gate does not separate those from
+    real work - measured - so corroboration does.
+    """
+    connector = StubConnector(
+        "openalex",
+        [[raw("openalex", "W-zenodo-1", _zenodo_work("Quantum Feed-Forward Diverter Loop"))]],
+        normalise_openalex,
+    )
+
+    run = run_pipeline(session, connector)
+
+    assert run.papers_created == 0
+    assert count(session, Paper) == 0
+    # The payload is still kept, so a later pass can readmit it under a better
+    # rule without re-harvesting.
+    assert count(session, SourceRecord) == 1
+
+
+def test_a_repository_deposit_enriches_a_paper_the_corpus_already_has(session):
+    """The other half of the rule, and the reason it is not simply exclusion."""
+    run_pipeline(
+        session,
+        StubConnector(
+            "openalex", [[openalex_raw("work_published_integron")]], normalise_openalex
+        ),
+    )
+    paper = session.execute(select(Paper)).scalars().one()
+    title = paper.title
+
+    deposit = _zenodo_work(title, doi="10.5281/zenodo.55555")
+    deposit["doi"] = f"https://doi.org/{paper.canonical_doi}"  # the same work
+    run = run_pipeline(
+        session,
+        StubConnector("openalex", [[raw("openalex", "W-zenodo-2", deposit)]], normalise_openalex),
+    )
+
+    assert run.papers_created == 0
+    assert count(session, Paper) == 1
+
+
+def test_an_ordinary_venue_still_founds_a_paper(session):
+    # The rule must not quietly become "only corroborated records are admitted".
+    connector = StubConnector(
+        "openalex", [[openalex_raw("work_published_integron")]], normalise_openalex
+    )
+
+    run = run_pipeline(session, connector)
+
+    assert run.papers_created == 1
+
+
 def test_rerunning_the_same_harvest_is_idempotent(session):
     records = [[openalex_raw("work_published_integron")]]
     first = run_pipeline(session, StubConnector("openalex", records, normalise_openalex))

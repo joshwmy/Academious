@@ -563,6 +563,26 @@ The host must be provisioned first - see "Provisioning the host" above.
     large there means titles made only of punctuation, which is a normalisation
     question rather than a backfill one.
 
+11. **Remove papers founded only on a repository deposit.** The ingest rule
+    stops new ones; this clears what is already stored.
+
+    ```bash
+    docker compose run --rm worker python scripts/prune_uncorroborated.py           # report
+    docker compose run --rm worker python scripts/prune_uncorroborated.py --apply
+    ```
+
+    **Read the dry run's "by venue" table before applying.** Zenodo should
+    dominate it. A venue that is not a general-purpose repository appearing
+    there means the rule is matching something it should not, and the run should
+    be stopped rather than applied - that is exactly how a moderated arXiv
+    submission with an author-registered Zenodo DOI was caught during
+    development.
+
+    This deletes papers. Raw payloads survive (`source_record.paper_id` is set
+    NULL), so the decision is reversible in principle by a later readmission
+    pass, but the paper rows and their embeddings are not coming back without
+    one.
+
 Then confirm the deployment-layer controls actually hold, from the server:
 
 ```bash

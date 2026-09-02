@@ -131,6 +131,19 @@ are separate OpenAlex works **with different titles**. No title matching would
 ever link them, and no identifier is shared. Only the bioRxiv publication map
 connects them.
 
+## Corpus admission
+
+Two independent gates, both applied once in the pipeline rather than per
+connector:
+
+* **Work type** - `ingest/scope.py`. Research literature is admitted; reference
+  works and non-substantive records are not.
+* **Venue** - `ingest/repositories.py`. A deposit in a general-purpose
+  repository (Zenodo, figshare, OSF) may enrich a paper the corpus already
+  holds, but may not found one. Sources that vouch for their own contents -
+  arXiv, bioRxiv, Europe PMC, PubMed - are exempt whatever DOI a record
+  carries.
+
 ## Work types
 
 `paper.work_type` holds a value from `ingest.scope.WorkType`, a controlled

@@ -237,9 +237,19 @@ def _new_paper(candidate: PaperCandidate) -> Paper:
 
 
 def resolve(
-    session: Session, candidate: PaperCandidate, settings: Settings | None = None
-) -> MatchResult:
-    """Find or create the canonical Paper for a candidate."""
+    session: Session,
+    candidate: PaperCandidate,
+    settings: Settings | None = None,
+    *,
+    create: bool = True,
+) -> MatchResult | None:
+    """Find, and unless `create` is False, create the canonical Paper.
+
+    `create=False` asks a narrower question: *is this work already known?* A
+    deposit in a general-purpose repository may enrich a paper the corpus holds
+    but may not found one on its own, so the pipeline asks that way and gets
+    None when nothing matches. See ingest/repositories.py.
+    """
     settings = settings or get_settings()
     matches = find_by_identifiers(session, candidate)
     merged_ids: list[uuid.UUID] = []
@@ -280,6 +290,9 @@ def resolve(
             source=candidate.source_key,
         )
         return MatchResult(paper, False, "fuzzy_title_author", confidence, merged_ids)
+
+    if not create:
+        return None
 
     paper = _new_paper(candidate)
     session.add(paper)

@@ -104,7 +104,7 @@ it could be started but deliberately is not.
 | [DATA-009](#data-009) | 607 papers claimed a future publication date | DONE | — |
 | [DATA-010](#data-010) | The feed ranked papers by the date they claimed | DONE | — |
 | [DATA-011](#data-011) | Every non-Latin title normalised to the empty string | DONE | — |
-| [DATA-012](#data-012) | Zenodo carries automated deposits the policy has no rule for | READY | Next corpus-quality pass |
+| [DATA-012](#data-012) | Zenodo carries automated deposits the policy has no rule for | DONE | — |
 | [SRC-001](#src-001) | PubMed connector | DEFERRED | Phase 2 remainder |
 | [SRC-002](#src-002) | Europe PMC connector | DONE | — |
 | [SRC-003](#src-003) | Unpaywall fallback | DEFERRED | Phase 2 remainder |
@@ -904,7 +904,7 @@ blocking key came out empty. **3,819 papers in the live corpus held
 ### DATA-012
 
 **Zenodo carries automated deposits the admission policy has no rule for.** —
-`READY`
+`DONE` (2026-09-03)
 
 Sampling the duplicate groups for DATA-008 turned up what they actually are:
 
@@ -922,11 +922,34 @@ Sampling the duplicate groups for DATA-008 turned up what they actually are:
 * **Risk/impact** — a single depositor can inject thousands of records into the
   corpus, and they surface in the feed and in search. This is not a duplication
   problem, which is what DATA-008 assumed.
-* **Not yet decided** — whether the rule is per-depositor volume, a general
-  repository quality gate (require an abstract? require authors?), or excluding
-  Zenodo. Each has a false-positive cost: Zenodo also hosts real preprints.
-* **Supersedes the version-folding plan.** Folding versions would have merged
-  spam into fewer pieces of spam.
+* **Closed by** — `feat: require corroboration for repository deposits`.
+* **The quality gate was the plan, and it measured wrong.** Sampling 900 live
+  papers: the Zenodo slice had abstracts on 98.4% and authors on 100%, while
+  31.9% of legitimate non-Zenodo OpenAlex records had no abstract at all.
+  Requiring an abstract would have rejected 1.6% of the spam and a third of the
+  real corpus. The spam is well formed; completeness is not evidence.
+
+  | slice | no abstract | no authors |
+  |---|---|---|
+  | openalex / Zenodo | 1.6% | 0% |
+  | openalex / elsewhere | 31.9% | 0% |
+  | europepmc | 2.0% | 0.5% |
+
+* **What shipped instead** — corroboration. A deposit in a repository that
+  accepts anything may *enrich* a paper the corpus already holds but may not
+  *found* one. Automated deposits exist nowhere else by construction, so they
+  never pass; a Zenodo copy of a real paper merges into it.
+* **Found by the dry run, before it removed anything** — testing the DOI prefix
+  alone marked a moderated arXiv submission for deletion, because its author had
+  registered a Zenodo DOI for it. A prefix says where the *identifier* was
+  minted, not where the work was published. Sources that vouch for their own
+  contents - arXiv, bioRxiv, Europe PMC, PubMed - are now exempt, and the dry
+  run went from one false positive to zero.
+* **What it deliberately costs** — a real paper deposited only to Zenodo and
+  indexed nowhere else is excluded. Recoverable: payloads are kept, so a later
+  rule can readmit them without re-harvesting.
+* **Supersedes the version-folding plan (DATA-008).** Folding versions would
+  have merged spam into fewer pieces of spam.
 
 ---
 

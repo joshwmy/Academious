@@ -25,7 +25,7 @@ from academious.core.logging import get_logger
 from academious.db.models.ops import IngestionRun, RunStatus, SourceCursor
 from academious.db.models.paper import Paper, PaperIdentifier
 from academious.db.models.support import SourceRecord, Venue
-from academious.ingest import canonicalise, dates, oa, relations, scope
+from academious.ingest import canonicalise, dates, oa, relations, repositories, scope
 from academious.ingest.merge import apply_candidate
 from academious.sources.base import PaperCandidate, RawRecord, SourceConnector
 
@@ -164,7 +164,35 @@ class IngestPipeline:
                 )
             return
 
-        match = canonicalise.resolve(session, candidate, self._settings)
+        # A deposit in a repository that accepts anything may enrich a paper
+        # the corpus already holds, but may not found one: automated deposits
+        # are uncorroborated by construction, and a content-quality gate was
+        # measured and does not separate them. See ingest/repositories.py.
+        needs_corroboration = repositories.is_general_repository(candidate)
+        match = canonicalise.resolve(
+            session, candidate, self._settings, create=not needs_corroboration
+        )
+        if match is None:
+            log.info(
+                "ingest.uncorroborated_deposit",
+                source=raw.source_key,
+                source_id=raw.source_id,
+                doi=candidate.primary_doi,
+                reason=repositories.describe(candidate),
+            )
+            counters.records_skipped += 1
+            if stored is None:
+                session.add(
+                    SourceRecord(
+                        source_key=raw.source_key,
+                        source_id=raw.source_id,
+                        payload=raw.payload,
+                        content_hash=digest,
+                        fetched_at=raw.fetched_at,
+                    )
+                )
+            return
+
         counters.papers_merged += len(match.merged_paper_ids)
         if match.created:
             counters.papers_created += 1
