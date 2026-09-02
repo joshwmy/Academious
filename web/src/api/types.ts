@@ -49,6 +49,12 @@ export interface PaperSummary {
   open_access_status: string;
   retraction_status: string;
   topics: Topic[];
+  /**
+   * Normalised subject field slugs, e.g. `["computer-science"]`. Empty when no
+   * source classified the paper in a vocabulary the backend maps - a Europe PMC
+   * paper carrying only MeSH descriptors has none.
+   */
+  fields: string[];
   citation_count: number | null;
 }
 
@@ -109,6 +115,23 @@ export interface PaperFilterParams {
   preprints?: PreprintPolicy | undefined;
   peer_reviewed?: boolean | undefined;
   open_access?: boolean | undefined;
+  field?: string[] | undefined;
+}
+
+/** One subject field, as `GET /fields` reports it. */
+export interface FieldSummary {
+  slug: string;
+  label: string;
+  paper_count: number;
+}
+
+export interface FieldsResponse {
+  fields: FieldSummary[];
+  /**
+   * Papers no field filter can reach. Selecting any field excludes them, which
+   * is why the number is shown rather than left to be inferred.
+   */
+  papers_without_field: number;
 }
 
 export interface PaperListParams extends PaperFilterParams {

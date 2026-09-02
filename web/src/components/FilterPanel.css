@@ -134,3 +134,43 @@
     margin-bottom: 0;
   }
 }
+
+/* Twenty-six fields will not wrap into a row the way four sources do. They get
+   a bounded, scrollable block instead: the group stays roughly the height of
+   its neighbours, so the feed does not move down the page as the vocabulary
+   grows, and the list is reachable rather than truncated. */
+.filters__group--fields {
+  display: block;
+}
+
+.filters__scroll {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: var(--space-1) var(--space-4);
+  max-block-size: 11rem;
+  overflow-y: auto;
+  /* Room for the scrollbar so a checked label is never under it. */
+  padding-inline-end: var(--space-2);
+}
+
+/* The count is information, not a label. It sits after the name, quieter than
+   it, and never pushes the name out of alignment with the row above. */
+.filters__count {
+  margin-inline-start: auto;
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.filters__note {
+  margin-block-start: var(--space-2);
+  font-size: var(--text-2xs);
+  color: var(--text-muted);
+}
+
+@media (max-width: 46rem) {
+  .filters__scroll {
+    grid-template-columns: 1fr;
+    max-block-size: 13rem;
+  }
+}

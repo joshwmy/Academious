@@ -13,6 +13,7 @@ from typing import Any
 
 from academious.core.text import normalise_title, surname
 from academious.db.models.paper import FullTextStatus, Paper
+from academious.ingest.taxonomy import fields_for
 from academious.sources.base import PaperCandidate
 
 # Higher number wins. Sources absent from a list never supply that field.
@@ -153,6 +154,16 @@ def apply_candidate(paper: Paper, candidate: PaperCandidate) -> bool:
         if merged_topics != paper.topics:
             paper.topics = merged_topics
             changed = True
+
+    # Fields are derived, so they are recomputed from the topics as they now
+    # stand rather than only when the topics changed. That way a mapping change
+    # reaches a paper on its next ingestion pass, and a row whose fields were
+    # never derived - every row that predates migration 0004 - is repaired by
+    # ordinary traffic as well as by the backfill.
+    derived_fields = list(fields_for(paper.topics or []))
+    if derived_fields != list(paper.fields or []):
+        paper.fields = derived_fields
+        changed = True
 
 
     if candidate.keywords:

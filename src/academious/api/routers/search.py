@@ -37,7 +37,7 @@ from academious.api import repository, schemas
 from academious.api.concurrency import search_gate
 from academious.api.dependencies import get_retrieval_service, get_session
 from academious.api.limits import limiter, search_limit
-from academious.api.routers.papers import _summary
+from academious.api.routers.papers import _summary, validated_fields
 from academious.core.config import get_settings
 from academious.core.logging import get_logger
 from academious.retrieval.filters import PreprintPolicy, SearchFilters
@@ -116,6 +116,10 @@ def search(
     open_access: Annotated[
         bool, Query(description="Only papers with a known open-access copy")
     ] = False,
+    field: Annotated[
+        list[str] | None,
+        Query(description="Restrict to these subject fields, e.g. computer-science"),
+    ] = None,
 ) -> schemas.SearchResponse:
     query = normalise_query(q)
     if not query:
@@ -136,6 +140,7 @@ def search(
         preprints=preprints,
         peer_reviewed_only=peer_reviewed,
         open_access_only=open_access,
+        fields=validated_fields(field),
     )
 
     active = get_settings()

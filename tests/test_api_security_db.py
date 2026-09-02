@@ -337,6 +337,7 @@ def test_the_public_schema_is_an_allowlist_not_the_orm_row(client, session):
         "open_access_status",
         "retraction_status",
         "topics",
+        "fields",
         "citation_count",
     }
 
@@ -603,4 +604,4 @@ def test_operational_endpoints_are_tagged_so_a_proxy_can_find_them():
         for operation in methods.values()
         if set(operation.get("tags", [])) & {"papers", "search"}
     }
-    assert public_paths == {"/papers", "/papers/{paper_id}", "/search"}
+    assert public_paths == {"/papers", "/papers/{paper_id}", "/search", "/fields"}

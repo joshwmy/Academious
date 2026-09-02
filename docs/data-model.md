@@ -24,6 +24,17 @@ proposed; the reasoning is in `phase-0-report.md` section 11.1 and ADR 0003.
 title (weight A), keywords and topic labels (B) and abstract (C). It is
 generated rather than trigger-maintained so it cannot drift from its row.
 
+It also carries `fields text[]`: the normalised subject fields derived from
+`topics` by `ingest/taxonomy.py`, which maps OpenAlex fields, arXiv archive
+categories and bioRxiv/medRxiv category labels onto one 26-value vocabulary.
+Unlike `search_tsv` it is maintained in Python rather than generated, because
+the mapping tables are Python — the merge recomputes it whenever a source
+describes a paper, and `scripts/backfill_fields.py` re-derives the whole corpus
+after a mapping change. It is derived data: `topics` remains the record of what
+each source said, and `fields` can be dropped and rebuilt.
+[ADR 0009](adr/0009-normalised-subject-fields.md) has the reasoning, including
+why MeSH descriptors are deliberately unmapped.
+
 Absent by design: `Recommendation`, `Author`, `PaperAuthor`, `ResearchField`,
 `PaperField`, `Source`, `PaperSource`, `PaperVersion`, `CitationRelationship`.
 
@@ -139,6 +150,7 @@ Declared as data in `ingest/merge.py`, not as branches:
 | `is_preprint` | Cleared once a peer-reviewed version is known |
 | `oa_status` | Only improves: `unknown < closed < bronze < green < hybrid < gold < diamond` |
 | Topics, keywords | Union, keyed by `(scheme, id)`, so arXiv categories and OpenAlex topics coexist |
+| `fields` | Derived from the merged topics on every pass, never merged directly |
 
 ## Retraction status
 
@@ -164,6 +176,7 @@ resolve to `retracted`.
 | `ix_job_claim` (`status`, `priority`, `run_after`) | `SKIP LOCKED` claim query |
 | `ix_paper_search_tsv` (GIN) | Lexical retrieval; without it every query is a sequential scan |
 | `ix_paper_embedding_model_paper` (`model_key`, `paper_id`) | The anti-join that finds papers still needing an embedding |
+| `ix_paper_fields` (GIN) | `fields && ARRAY[…]` for the subject-field filter; without it every filtered feed scans the table |
 
 There is deliberately **no ANN index** on `paper_embedding.embedding`. See
 [ADR 0007](adr/0007-halfvec-and-exact-search-first.md).

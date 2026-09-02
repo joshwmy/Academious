@@ -1,8 +1,34 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { NO_FILTERS, SOURCES, type PaperFilters } from "../lib/filters";
+import { FIELDS, NO_FILTERS, SOURCES, type PaperFilters } from "../lib/filters";
 import { FilterPanel } from "./FilterPanel";
+
+/**
+ * The panel asks `/fields` for the paper counts. Stubbing it is not the point
+ * of most tests here, so the default stub answers with counts of zero and the
+ * tests that care about numbers pass their own.
+ */
+function stubFields(counts: Record<string, number> = {}, papersWithoutField = 0) {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            fields: FIELDS.map((field) => ({
+              slug: field.slug,
+              label: field.label,
+              paper_count: counts[field.slug] ?? 0,
+            })),
+            papers_without_field: papersWithoutField,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        ),
+      ),
+    ),
+  );
+}
 
 function renderPanel(filters: PaperFilters = NO_FILTERS) {
   const onChange = vi.fn();
@@ -21,12 +47,14 @@ describe("FilterPanel", () => {
   it("reflects the filters it is given rather than holding its own state", () => {
     renderPanel({
       sources: ["arxiv"],
+      fields: ["chemistry"],
       preprints: "exclude_preprints",
       peerReviewed: true,
       openAccess: false,
     });
 
     expect(screen.getByRole("checkbox", { name: /arxiv/i })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /^chemistry/i })).toBeChecked();
     expect(screen.getByRole("radio", { name: /exclude preprints/i })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: /peer-reviewed/i })).toBeChecked();
     expect(screen.getByRole("checkbox", { name: /open access/i })).not.toBeChecked();
@@ -87,6 +115,7 @@ describe("FilterPanel", () => {
     const user = userEvent.setup();
     const onChange = renderPanel({
       sources: ["arxiv"],
+      fields: ["chemistry"],
       preprints: "only_preprints",
       peerReviewed: true,
       openAccess: true,
@@ -129,5 +158,63 @@ describe("FilterPanel", () => {
     expect(sources.map((el) => el.closest("label")?.textContent?.trim())).toEqual(
       SOURCES.map((source) => source.label),
     );
+  });
+});
+
+describe("FilterPanel, subject fields", () => {
+  it("offers every field the backend accepts", () => {
+    stubFields();
+    renderPanel();
+
+    const group = screen.getByRole("group", { name: /field/i });
+    expect(within(group).getAllByRole("checkbox")).toHaveLength(FIELDS.length);
+  });
+
+  it("reports a field being selected", async () => {
+    const user = userEvent.setup();
+    stubFields();
+    const onChange = renderPanel();
+
+    await user.click(screen.getByRole("checkbox", { name: /^neuroscience/i }));
+
+    expect(onChange).toHaveBeenCalledWith({ ...NO_FILTERS, fields: ["neuroscience"] });
+  });
+
+  it("orders selected fields canonically rather than by the order they were clicked", async () => {
+    const user = userEvent.setup();
+    stubFields();
+    const onChange = renderPanel({ ...NO_FILTERS, fields: ["neuroscience"] });
+
+    await user.click(screen.getByRole("checkbox", { name: /^chemistry/i }));
+
+    expect(onChange).toHaveBeenCalledWith({
+      ...NO_FILTERS,
+      fields: ["chemistry", "neuroscience"],
+    });
+  });
+
+  it("shows how many papers are in each field", async () => {
+    stubFields({ neuroscience: 1234 });
+    renderPanel();
+
+    expect(await screen.findByText("1,234")).toBeInTheDocument();
+  });
+
+  it("says how many papers no field can reach, because selecting one hides them", async () => {
+    stubFields({}, 57_000);
+    renderPanel();
+
+    expect(await screen.findByText(/57,000 papers carry no field/i)).toBeInTheDocument();
+  });
+
+  it("still offers the fields when the counts cannot be fetched", async () => {
+    // The vocabulary is a constant and the counts are a nicety. A failed
+    // request must cost the numbers, never the filter.
+    vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new Error("offline"))));
+    renderPanel();
+
+    const group = screen.getByRole("group", { name: /field/i });
+    expect(within(group).getAllByRole("checkbox")).toHaveLength(FIELDS.length);
+    expect(screen.queryByText(/carry no field/i)).not.toBeInTheDocument();
   });
 });

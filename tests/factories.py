@@ -63,6 +63,7 @@ def make_paper(
     """Insert one Paper. Only the fields retrieval actually reads are exposed."""
     from academious.core.text import normalise_title
     from academious.db.models.paper import Paper
+    from academious.ingest.taxonomy import fields_for
 
     paper = Paper(
         title=title,
@@ -72,6 +73,9 @@ def make_paper(
         authors=[],
         keywords=list(keywords),
         topics=[dict(topic) for topic in topics],
+        # Derived exactly as ingestion derives it, so a test paper is classified
+        # by the same mapping the corpus is.
+        fields=list(fields_for([dict(topic) for topic in topics])),
         published_date=published_date,
         published_year=published_date.year if published_date else None,
         is_preprint=is_preprint,

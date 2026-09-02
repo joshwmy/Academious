@@ -51,6 +51,7 @@ GET /papers?limit=20&offset=0
 | `preprints` | enum | `any` | `any`, `only_preprints`, `exclude_preprints` |
 | `peer_reviewed` | bool | false | |
 | `open_access` | bool | false | |
+| `field` | string, repeatable | — | a slug from [`GET /fields`](#5-get-fields) |
 
 ### Ordering
 
@@ -70,12 +71,18 @@ Retracted papers are excluded by default at that layer. Corrected papers and
 those under an expression of concern are returned with `retraction_status` set,
 because those papers still stand - with a caveat the reader is entitled to see.
 
-**Not implemented: `field`.** The roadmap's "feed by field" needs a normalised
-subject taxonomy. `SearchFilters.fields` matches `topics[].field`, which is an
-OpenAlex concept, and the current corpus is arXiv and bioRxiv only - its topics
-carry `{id, label, scheme}` and no `field` key at all. A field filter would
-therefore match nothing on every request. It arrives with OpenAlex ingestion,
-not before.
+**`field` is a union, not an intersection.** `?field=chemistry&field=medicine`
+returns papers in either, matching how `source` already behaves. A slug that is
+not in the vocabulary is a **422** rather than an ignored parameter or an empty
+page: ignoring it would answer a filtered request with an unfiltered one, and an
+empty page would make a typo indistinguishable from a field nothing is published
+in.
+
+Fields are normalised across every source - see
+[`GET /fields`](#5-get-fields) and [ADR 0009](adr/0009-normalised-subject-fields.md).
+A paper no source classified in a mapped vocabulary carries no field and is
+excluded whenever any field is selected; `GET /fields` publishes how many papers
+that is.
 
 ### Response
 
@@ -97,6 +104,7 @@ not before.
       "open_access_status": "green",
       "retraction_status": "none",
       "topics": [{"id": "bioinformatics", "label": "bioinformatics", "scheme": "biorxiv"}],
+      "fields": ["biochemistry-genetics-and-molecular-biology"],
       "citation_count": null
     }
   ]
@@ -148,10 +156,11 @@ GET /search?q=graph+neural+networks&limit=20&preprints=exclude_preprints
 | `preprints` | enum | `any` | `any`, `only_preprints`, `exclude_preprints` |
 | `peer_reviewed` | bool | `false` | |
 | `open_access` | bool | `false` | |
+| `field` | string, repeatable | none | a slug from [`GET /fields`](#5-get-fields) |
 
 ### Filtering
 
-The four filters are the same ones `/papers` accepts, spelled the same way, and
+The five filters are the same ones `/papers` accepts, spelled the same way, and
 they reach the same `retrieval/filters.py` conditions. A filter therefore means
 one thing across the API rather than two things that happen to share a name.
 
@@ -223,7 +232,60 @@ artefact of the method rather than a property of the paper.
 
 ---
 
-## 5. Errors
+## 5. `GET /fields`
+
+The subject-field vocabulary the `field` filter accepts, with the size of each
+field in the corpus.
+
+```http
+GET /fields
+```
+
+```json
+{
+  "fields": [
+    {"slug": "agricultural-and-biological-sciences",
+     "label": "Agricultural and Biological Sciences", "paper_count": 3120},
+    {"slug": "computer-science", "label": "Computer Science", "paper_count": 11804}
+  ],
+  "papers_without_field": 57310
+}
+```
+
+All 26 fields are always returned, including those with `paper_count: 0` - a
+vocabulary that shrinks with the corpus makes a filter a reader used yesterday
+disappear today. Counts are taken under the same defaults the feed applies, so a
+facet never promises results that browsing to it would not show; retracted
+papers are outside both.
+
+### Where a field comes from
+
+Each source classifies papers in its own vocabulary and no two agree. One
+mapping, in [`ingest/taxonomy.py`](../src/academious/ingest/taxonomy.py), brings
+them together onto OpenAlex's 26 fields:
+
+| Source | Carries | Mapped by |
+|---|---|---|
+| OpenAlex | `topics[].field` | passed through |
+| arXiv | `cs.LG`, `hep-th`, `q-bio.NC` | archive prefix, with subject overrides |
+| bioRxiv / medRxiv | `neuroscience`, `health policy` | category label |
+| Europe PMC | MeSH descriptors | **not mapped** |
+
+The result is stored on `paper.fields` and filtered as an indexed array overlap.
+Reasoning, including why MeSH is left out, is
+[ADR 0009](adr/0009-normalised-subject-fields.md).
+
+### `papers_without_field` is the honest half
+
+Europe PMC is roughly half the corpus and MeSH is unmapped, so a large minority
+of papers are reachable by no field at all. Selecting any field excludes every
+one of them. The number is published rather than left to be inferred from
+arithmetic across the facet counts, and the frontend says it in words next to
+the control.
+
+---
+
+## 6. Errors
 
 Every error is `{"detail": "…"}`.
 
@@ -239,7 +301,7 @@ Malformed requests are never answered `200` with an error object.
 
 ---
 
-## 6. Limits
+## 7. Limits
 
 | Limit | Default | Setting |
 |---|---|---|
@@ -259,7 +321,7 @@ Rationale for the numbers is in [security.md](security.md).
 
 ---
 
-## 7. Performance
+## 8. Performance
 
 A page of any size is two queries: one for the rows, one for the total. Search
 is one retrieval call plus one query that fetches summaries for the ranked ids.
@@ -275,13 +337,13 @@ successor when it stops being.
 
 ---
 
-## 8. Known limitations
+## 9. Known limitations
 
 Tracked in [backlog.md](backlog.md); the IDs below are where the current status
 of each lives.
 
-* No `field` filter on either endpoint until an OpenAlex-style taxonomy is
-  ingested (§2) - [DATA-002](backlog.md#data-002).
+* **Roughly half the corpus carries no field**, because Europe PMC classifies in
+  MeSH and MeSH is not mapped (§5) - [DATA-002](backlog.md#data-002).
 * No date-range filter is exposed, though `SearchFilters` supports one. Nothing
   in the interface needs it yet.
 * No cursor pagination; offset only, capped.

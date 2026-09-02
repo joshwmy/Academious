@@ -16,11 +16,15 @@ describe("parseFilters", () => {
 
   it("reads every supported filter", () => {
     const filters = parseFilters(
-      query("source=arxiv&preprints=exclude_preprints&peer_reviewed=true&open_access=true"),
+      query(
+        "source=arxiv&field=computer-science&preprints=exclude_preprints" +
+          "&peer_reviewed=true&open_access=true",
+      ),
     );
 
     expect(filters).toEqual({
       sources: ["arxiv"],
+      fields: ["computer-science"],
       preprints: "exclude_preprints",
       peerReviewed: true,
       openAccess: true,
@@ -31,6 +35,20 @@ describe("parseFilters", () => {
     // A hand-edited URL must not become a 422: the backend rejects unknown
     // enum values, and an unrecognised source is not a filter we can honour.
     expect(parseFilters(query("source=arxiv&source=nonsense")).sources).toEqual(["arxiv"]);
+  });
+
+  it("drops unknown field slugs rather than forwarding them to the API", () => {
+    // Sharper than the source case: the backend answers an unknown field with a
+    // 422, so a typo in a shared link would render an error page.
+    expect(parseFilters(query("field=computer-science&field=comptuer-science")).fields).toEqual([
+      "computer-science",
+    ]);
+  });
+
+  it("orders fields canonically and de-duplicates them", () => {
+    expect(
+      parseFilters(query("field=neuroscience&field=chemistry&field=neuroscience")).fields,
+    ).toEqual(["chemistry", "neuroscience"]);
   });
 
   it("de-duplicates repeated sources", () => {
@@ -86,15 +104,18 @@ describe("filtersToSearchParams", () => {
   it("round-trips every filter", () => {
     const filters = {
       sources: ["arxiv", "biorxiv"] as const,
+      fields: ["chemistry", "computer-science"] as const,
       preprints: "only_preprints" as const,
       peerReviewed: true,
       openAccess: true,
     };
-
-    expect(parseFilters(filtersToSearchParams({ ...filters, sources: [...filters.sources] }))).toEqual({
+    const spread = {
       ...filters,
       sources: [...filters.sources],
-    });
+      fields: [...filters.fields],
+    };
+
+    expect(parseFilters(filtersToSearchParams(spread))).toEqual(spread);
   });
 });
 
@@ -107,12 +128,14 @@ describe("filtersToParams", () => {
     expect(
       filtersToParams({
         sources: ["biorxiv"],
+        fields: ["neuroscience"],
         preprints: "only_preprints",
         peerReviewed: true,
         openAccess: true,
       }),
     ).toEqual({
       source: ["biorxiv"],
+      field: ["neuroscience"],
       preprints: "only_preprints",
       peer_reviewed: true,
       open_access: true,
@@ -127,6 +150,12 @@ describe("countActiveFilters", () => {
 
   it("counts a source selection once per source", () => {
     expect(countActiveFilters({ ...NO_FILTERS, sources: ["arxiv", "biorxiv"] })).toBe(2);
+  });
+
+  it("counts a field selection once per field", () => {
+    expect(
+      countActiveFilters({ ...NO_FILTERS, fields: ["chemistry", "neuroscience"] }),
+    ).toBe(2);
   });
 
   it("counts a non-default preprint policy", () => {

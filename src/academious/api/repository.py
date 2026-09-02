@@ -43,6 +43,7 @@ SUMMARY_COLUMNS = (
     Paper.oa_status,
     Paper.retraction_status,
     Paper.topics,
+    Paper.fields,
     Paper.citation_count,
     Venue.name.label("venue_name"),
 )
@@ -88,6 +89,35 @@ def list_papers(
         select(func.count()).select_from(Paper).where(*conditions)
     ).scalar_one()
     return list(rows), int(total)
+
+
+def field_counts(session: Session) -> tuple[dict[str, int], int]:
+    """Papers per subject field, and how many carry no field at all.
+
+    Counted under the same default filters the feed applies, so a facet never
+    promises results that browsing to it would not show - retracted papers are
+    outside both. The second number is the honest half: a paper classified only
+    in a vocabulary Academious does not map (MeSH), or not classified at all, is
+    unreachable by any field, and the size of that gap is published rather than
+    left to be inferred from arithmetic.
+    """
+    conditions = retrieval_filters.build_conditions(SearchFilters())
+    slug = func.unnest(Paper.fields).label("slug")
+
+    rows = session.execute(
+        select(slug, func.count().label("papers"))
+        .select_from(Paper)
+        .where(*conditions)
+        .group_by(slug)
+    ).all()
+
+    without = session.execute(
+        select(func.count())
+        .select_from(Paper)
+        .where(*conditions, func.cardinality(Paper.fields) == 0)
+    ).scalar_one()
+
+    return {str(row.slug): int(row.papers) for row in rows}, int(without)
 
 
 def get_paper(session: Session, paper_id: uuid.UUID) -> Row[Any] | None:

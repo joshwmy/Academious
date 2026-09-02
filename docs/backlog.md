@@ -94,10 +94,11 @@ it could be started but deliberately is not.
 | [RETR-005](#retr-005) | ONNX int8 inference unimplemented | DEFERRED | When a backfill is scheduled |
 | [RETR-006](#retr-006) | No re-ranking, learning-to-rank or personalisation | DEFERRED | Phase 3 / Phase 8 |
 | [DATA-001](#data-001) | `specter2-benchmark@v1` ablation vectors remain in the database | DEFERRED | Storage or maintenance pressure |
-| [DATA-002](#data-002) | No normalised subject taxonomy | BLOCKED | With SRC-004 |
+| [DATA-002](#data-002) | No normalised subject taxonomy | DONE | — |
 | [DATA-003](#data-003) | Title-only embedding path unexercised at volume | BLOCKED | With SRC-004 |
 | [DATA-004](#data-004) | `halfvec` quantisation effect not re-checked at scale | DEFERRED | At 10x corpus |
 | [DATA-005](#data-005) | Cost model still rests on estimated ingestion volumes | DEFERRED | After a week of real harvesting |
+| [DATA-006](#data-006) | MeSH-classified papers are reachable by no field | DEFERRED | See trigger |
 | [SRC-001](#src-001) | PubMed connector | DEFERRED | Phase 2 remainder |
 | [SRC-002](#src-002) | Europe PMC connector | DONE | — |
 | [SRC-003](#src-003) | Unpaywall fallback | DEFERRED | Phase 2 remainder |
@@ -107,14 +108,14 @@ it could be started but deliberately is not.
 | [SRC-007](#src-007) | OpenAlex incremental harvesting needs a paid plan | ACCEPTED | If a plan is ever bought |
 | [WEB-001](#web-001) | Visual design is a baseline, not a finished appearance | DEFERRED | Dedicated design pass |
 | [WEB-002](#web-002) | Filter UI over the filters `/papers` supports | DONE | — |
-| [WEB-003](#web-003) | Feed by field | BLOCKED | With DATA-002 |
+| [WEB-003](#web-003) | Feed by field | DONE | — |
 | [WEB-004](#web-004) | SEO and prerendering | DEFERRED | Phase 6 |
 | [WEB-005](#web-005) | Offset pagination only | DEFERRED | When deep offsets hurt |
 | [WEB-006](#web-006) | Search result count fixed at 20 | DEFERRED | With the design pass |
 | [WEB-007](#web-007) | Colour contrast verified by hand, not in a browser | DEFERRED | With the design pass |
 | [WEB-008](#web-008) | No analytics | WONTFIX | — |
 | [WEB-009](#web-009) | No accounts, saved papers or recommendations | DEFERRED | Phase 3 |
-| [WEB-010](#web-010) | `/search` accepts no filters, so filtering stops at the feed | DEFERRED | Phase 3 |
+| [WEB-010](#web-010) | `/search` accepts no filters, so filtering stops at the feed | DONE | — |
 | [WEB-011](#web-011) | Europe PMC is not offered in the frontend source filter | DONE | — |
 | [PROD-001](#prod-001) | A generative explanation layer changes the threat model | DEFERRED | Phase 5 |
 | [PROD-002](#prod-002) | Accounts turn query logs and interest profiles into privacy assets | DEFERRED | Phase 3 |
@@ -648,21 +649,25 @@ source version indefinitely.
 
 ### DATA-002
 
-**No normalised subject taxonomy.** — `BLOCKED`
+**No normalised subject taxonomy.** — `DONE` (2026-09-02)
 
 `SearchFilters.fields` matches `topics[].field`, an OpenAlex concept. The live
 corpus is arXiv and bioRxiv only, whose topics carry `{id, label, scheme}` and no
 `field` key at all — so a field filter would match nothing on every request,
 which is why it is not exposed.
 
-* **Risk/impact** — blocks WEB-003 (feed by field), a named Phase 2 deliverable.
-* **Two unblocking paths now, not one.** OpenAlex topics carry `field` and
-  `domain` (SRC-004). Europe PMC (SRC-002) carries MeSH descriptors under scheme
-  `mesh`, which is a real taxonomy but a biomedical one with no `field` key
-  either — so whichever arrives first, `SearchFilters.fields` still needs a
-  mapping layer rather than a passthrough, and that decision is the work here.
-* **Depends on** — a live harvest of SRC-004 or SRC-002.
-* **Source** — [api.md §2](api.md#filtering).
+* **Resolution** — `ingest/taxonomy.py` maps all four source vocabularies onto
+  OpenAlex's 26 fields; `paper.fields` (migration 0004, GIN-indexed) stores the
+  derived result and `SearchFilters.fields` matches it as an array overlap. The
+  mapping-layer question this entry named is answered in
+  [ADR 0009](adr/0009-normalised-subject-fields.md).
+* **What it cost to be sure the mapping is total** — the bioRxiv table was built
+  from the 70 category labels actually present in the deployed corpus rather
+  than from the servers' published lists, and `unmapped_topics()` reports
+  anything new instead of silently classifying it as nothing.
+* **What it did not solve** — MeSH, which is DATA-006.
+* **Unblocked** — WEB-003, closed the same day.
+* **Source** — [api.md §5](api.md#5-get-fields).
 
 ### DATA-003
 
@@ -710,6 +715,28 @@ assumption is soft.
   from `ingestion_run` counters rather than from estimates.
 * **Depends on** — DEPLOY-001; continuous harvesting needs a host that stays up.
 * **Source** — [phase-0-report.md §17](phase-0-report.md#17-corrections-from-phase-1-measurements).
+
+### DATA-006
+
+**MeSH-classified papers are reachable by no field.** — `DEFERRED`
+
+Europe PMC classifies with MeSH descriptor *terms*, and Europe PMC is roughly
+half the corpus. `ingest/taxonomy.py` does not map them, so those papers carry no
+field and are excluded whenever a reader selects one.
+
+* **Why deferred** — Europe PMC supplies the term and not its tree number, so
+  mapping means shipping the MeSH descriptor file and a term-to-tree index. And
+  the facet it would produce is biomedical-only: nearly every record would land
+  in Medicine, which makes the field mean "came from Europe PMC".
+* **Risk/impact** — a field filter that silently halves the corpus. Mitigated
+  rather than hidden: `GET /fields` returns `papers_without_field` and the filter
+  UI says the number in words.
+* **Cheaper alternative worth measuring first** — how many Europe PMC papers
+  already carry OpenAlex topics through deduplication. If the overlap is large,
+  the gap closes by harvesting rather than by mapping.
+* **Trigger to revisit** — when the corpus stops being half Europe PMC, or when
+  a biomedical facet is wanted in its own right.
+* **Source** — [ADR 0009](adr/0009-normalised-subject-fields.md).
 
 ---
 
@@ -941,12 +968,25 @@ query string so a filtered feed is linkable.
 
 ### WEB-003
 
-**Feed by field.** — `BLOCKED`
+**Feed by field.** — `DONE` (2026-09-02)
 
-A named Phase 2 deliverable. There is nothing to filter by until the corpus
-carries a normalised subject taxonomy.
+`GET /papers` and `GET /search` take a repeatable `field` parameter, `GET
+/fields` publishes the vocabulary with per-field paper counts, and the shared
+`FilterPanel` carries the control on both surfaces.
 
-* **Depends on** — DATA-002, and through it SRC-004.
+* **Closed by** — `feat: browse and search by subject field`.
+* **What unblocked it** — the live OpenAlex harvest (SRC-004), which put 44,777
+  papers carrying `topics[].field` into the corpus and made DATA-002 answerable.
+* **The decision it needed** — not "expose the filter" but "which vocabulary".
+  OpenAlex's field is on 43% of papers; passing it through would have shipped a
+  filter whose recall depends on which connector found a paper. The mapping onto
+  one vocabulary, and why MeSH is left out of it, is
+  [ADR 0009](adr/0009-normalised-subject-fields.md).
+* **What is still not reachable** — papers classified only in MeSH, which is
+  most of the Europe PMC half of the corpus. That is DATA-006, and the number is
+  published on `/fields` rather than left to be inferred.
+* **Source** — [`ingest/taxonomy.py`](../src/academious/ingest/taxonomy.py),
+  [api.md §5](api.md#5-get-fields), [frontend.md §6](frontend.md#6-filtering).
 
 ### WEB-004
 
