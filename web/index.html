@@ -36,8 +36,15 @@
     <meta property="og:image:alt" content="Academious" />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <!-- No third-party scripts, fonts, analytics or trackers are loaded.
-         Everything the page needs is served from this origin. -->
+    <!-- No third-party fonts and no advertising or cross-site trackers are
+         loaded; the typefaces are the reader's own system faces.
+
+         Vercel Web Analytics is the one exception to "nothing but this origin".
+         It is served from /_vercel/insights on this domain rather than from a
+         third-party CDN, records page views without cookies, and does not build
+         a cross-site profile of the reader - but it is still measurement the
+         reader did not ask for, so it is named here rather than left to be
+         discovered in the network tab. -->
   </head>
   <body>
     <div id="root"></div>
