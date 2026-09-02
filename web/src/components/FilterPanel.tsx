@@ -113,7 +113,10 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
       </div>
 
       {active > 0 ? (
-        <p className="filters__summary" role="status">
+        // The checkboxes already show what is set and the clear button only
+        // appears when something is. This exists to announce the change to a
+        // screen reader, which has no equivalent of glancing at the controls.
+        <p className="sr-only" role="status">
           {active} {active === 1 ? "filter" : "filters"} active.
         </p>
       ) : null}

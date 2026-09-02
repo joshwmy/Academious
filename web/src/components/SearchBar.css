@@ -1,31 +1,71 @@
+/*
+ * One field, not a field plus a button. The submit control lives inside the
+ * same bordered box so the pair reads as a single object, and the box - not the
+ * input - carries the focus treatment, which is what keeps a two-element
+ * control from looking like two controls.
+ */
+
 .search-bar {
   display: flex;
-  gap: var(--space-2);
   align-items: center;
-  flex-wrap: wrap;
+  gap: var(--space-1);
   width: 100%;
-}
-
-.search-bar__input {
-  flex: 1 1 12rem;
-  min-width: 0;
-  padding: var(--space-2) var(--space-3);
+  padding-right: var(--space-1);
   background: var(--surface);
   border: var(--border-width) solid var(--border-strong);
   border-radius: var(--radius-md);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.search-bar:hover {
+  border-color: var(--text-muted);
+}
+
+.search-bar:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.search-bar__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: 0;
   font-size: var(--text-base);
+  /* The box owns the focus ring; a second one inside it reads as a bug. */
+  outline: none;
 }
 
 .search-bar__input::placeholder {
   color: var(--text-muted);
 }
 
+/* Cancel the WebKit clear affordance, which sits at a different optical weight
+   from everything else in the bar. */
+.search-bar__input::-webkit-search-decoration,
+.search-bar__input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
 .search-bar__submit {
   flex: 0 0 auto;
+  min-height: 2rem;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
 }
 
 .search-bar__hint {
   flex: 1 0 100%;
+  padding: 0 var(--space-3) var(--space-2);
   font-size: var(--text-xs);
   color: var(--danger);
+}
+
+/* The hint needs its own row, which a nowrap flex row will not give it. */
+.search-bar:has(.search-bar__hint) {
+  flex-wrap: wrap;
+  border-color: var(--danger-border);
 }

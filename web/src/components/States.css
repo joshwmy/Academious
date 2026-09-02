@@ -1,7 +1,11 @@
+/* The skeleton is the list it replaces: same panel, same dividers, same row
+   padding. A placeholder at different spacing hands the reader a layout that
+   jumps the moment the data lands. */
 .skeleton-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
 .skeleton-card {
@@ -9,9 +13,10 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-5);
-  background: var(--surface);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-lg);
+}
+
+.skeleton-card + .skeleton-card {
+  border-top: var(--border-width) solid var(--border);
 }
 
 .skeleton-line {
@@ -21,7 +26,7 @@
 }
 
 .skeleton-line--title {
-  height: 1.15rem;
+  height: 1.3rem;
   width: 70%;
 }
 
@@ -67,12 +72,14 @@
 }
 
 .state-panel__title {
-  font-size: var(--text-lg);
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-normal);
 }
 
 .state-panel__body {
   color: var(--text-secondary);
-  max-width: 46ch;
+  max-width: var(--measure-lead);
 }
 
 .state-panel__actions {
@@ -82,38 +89,9 @@
   margin-top: var(--space-1);
 }
 
-.button {
-  display: inline-flex;
-  align-items: center;
-  padding: var(--space-2) var(--space-4);
-  background: var(--accent);
-  color: #fff;
-  border: var(--border-width) solid transparent;
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-medium);
-  text-decoration: none;
-  cursor: pointer;
-  transition: background var(--transition-fast);
-}
-
-.button:hover {
-  background: var(--accent-hover);
-  color: #fff;
-}
-
-.button--quiet {
-  background: transparent;
-  color: var(--accent);
-  border-color: var(--border-strong);
-}
-
-.button--quiet:hover {
-  background: var(--surface-subtle);
-  color: var(--accent-hover);
-}
-
-.button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+@media (max-width: 46rem) {
+  .skeleton-card,
+  .state-panel {
+    padding: var(--space-4);
+  }
 }

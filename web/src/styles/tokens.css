@@ -1,41 +1,70 @@
 /*
  * Design tokens.
  *
- * Every value a component might otherwise hard-code lives here, so a later
- * visual pass can restyle the product by editing this file rather than by
- * hunting one-off pixel values through page components. Components reference
- * tokens; they do not invent scales.
+ * Every value a component might otherwise hard-code lives here, so a visual
+ * pass restyles the product by editing this file rather than by hunting one-off
+ * pixel values through page components. Components reference tokens; they do not
+ * invent scales.
  *
- * The palette is deliberately restrained. This is a research-discovery tool:
- * legibility of long titles, author lists and abstracts matters far more than
- * decoration, and a page of academic metadata reads badly under high chroma.
+ * The direction is scientific-editorial. A page of research metadata is read,
+ * not glanced at, so the surface behaves like paper: warm neutrals, ink-dark
+ * text, one accent that means "interactive" and nothing else. Polish comes from
+ * hierarchy and spacing rather than from gradients, glows or heavy shadows -
+ * decoration on a page of long titles and author lists reads as noise.
+ *
+ * Nothing here loads a webfont. The application ships no third-party requests at
+ * all (see index.html), and a discovery tool that phones a font CDN on every
+ * paper view is not the trade this product wants to make. The editorial voice
+ * comes from a system serif used deliberately, not from a download.
  */
 
 :root {
-  /* --- Typography ------------------------------------------------------ */
+  /* --- Typeface roles --------------------------------------------------
+   * Two roles, one job each. The serif carries anything that is *the
+   * literature* - paper titles, abstracts, the wordmark. The sans carries
+   * anything that is *the application* - navigation, controls, metadata,
+   * labels. A reader can tell content from chrome without reading either.
+   */
   --font-sans:
     ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
     sans-serif;
-  --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+  --font-serif:
+    ui-serif, Charter, "Bitstream Charter", "Iowan Old Style", "Source Serif Pro", Georgia,
+    Cambria, "Times New Roman", serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
+  /* --- Type scale ------------------------------------------------------
+   * Eight steps, and every one of them is used. `2xs` exists for uppercase
+   * section labels, where the letterspacing buys back the lost size.
+   */
+  --text-2xs: 0.6875rem;
   --text-xs: 0.75rem;
   --text-sm: 0.8125rem;
   --text-base: 0.9375rem;
   --text-md: 1rem;
   --text-lg: 1.125rem;
-  --text-xl: 1.375rem;
-  --text-2xl: 1.75rem;
+  --text-xl: 1.3125rem;
+  --text-2xl: 1.625rem;
+  --text-3xl: 2.125rem;
 
-  --leading-tight: 1.25;
-  --leading-snug: 1.4;
-  --leading-normal: 1.6;
+  --leading-tight: 1.2;
+  --leading-snug: 1.35;
+  --leading-normal: 1.55;
   /* Abstracts are long-form prose and get a looser measure. */
   --leading-relaxed: 1.7;
 
   --weight-normal: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Uppercase labels need the space back that capitals take away. */
+  --tracking-tight: -0.015em;
+  --tracking-wide: 0.06em;
+
+  /* Measures. Prose is unreadable at full container width. */
+  --measure-prose: 68ch;
+  --measure-lead: 56ch;
 
   /* --- Spacing: a 4px scale ------------------------------------------- */
   --space-1: 0.25rem;
@@ -48,6 +77,7 @@
   --space-8: 4rem;
 
   /* --- Radii and borders ----------------------------------------------- */
+  --radius-xs: 2px;
   --radius-sm: 3px;
   --radius-md: 6px;
   --radius-lg: 10px;
@@ -55,29 +85,33 @@
   --border-width: 1px;
 
   /* --- Colour ----------------------------------------------------------
-   * Neutrals carry the interface; one accent carries interaction. Contrast
-   * ratios against --surface are kept at or above WCAG AA for body text.
+   * Warm paper neutrals under ink-dark text. Body text sits at or above
+   * WCAG AA against every surface it can land on, including hover fills.
    */
-  --canvas: #f7f7f6;
+  --canvas: #f6f5f2;
   --surface: #ffffff;
-  --surface-subtle: #f2f2f0;
-  --surface-inset: #ebebe8;
+  --surface-subtle: #f1f0ec;
+  --surface-inset: #e8e6e0;
+  --surface-raised: #ffffff;
 
-  --border: #dcdcd7;
-  --border-strong: #c3c3bc;
+  --border: #dedbd3;
+  --border-strong: #c0bcb1;
 
-  --text: #1a1a19;
-  --text-secondary: #55554f;
-  --text-muted: #6e6e67;
+  --text: #1a1917;
+  --text-secondary: #4c4941;
+  --text-muted: #6a665d;
 
-  --accent: #1f5f8b;
-  --accent-hover: #17475f;
-  --accent-soft: #e8f0f6;
+  /* One accent. It means "you can interact with this" and is never used to
+     decorate something inert. */
+  --accent: #0f4c81;
+  --accent-hover: #0a3a64;
+  --accent-soft: #e7eef6;
+  --accent-contrast: #ffffff;
 
-  --focus-ring: #1f5f8b;
+  --focus-ring: #0f4c81;
 
   /* Status. Retraction is the one place this product raises its voice: a
-   * withdrawn paper must not read as ordinary metadata. */
+     withdrawn paper must not read as ordinary metadata. */
   --danger: #8c2f22;
   --danger-surface: #fbecea;
   --danger-border: #e3b7b0;
@@ -88,39 +122,54 @@
   --success-surface: #e8f2ec;
   --success-border: #b7d5c4;
 
-  /* --- Elevation -------------------------------------------------------- */
-  --shadow-sm: 0 1px 2px rgb(0 0 0 / 6%);
-  --shadow-md: 0 2px 8px rgb(0 0 0 / 8%);
+  /* Provenance. Where a record came from is the second dimension this product
+     encodes, after status: a preprint server and a peer-reviewed journal are
+     not the same kind of claim. Deliberately outside the status range, so it
+     can never be mistaken for a warning. */
+  --repository: #4a4192;
+  --repository-surface: #eeecf8;
+  --repository-border: #d2ceec;
+
+  /* --- Elevation --------------------------------------------------------
+   * Two steps, both barely there. Elevation separates a sticky header from
+   * the page beneath it; it is not a decorative effect.
+   */
+  --shadow-sm: 0 1px 2px rgb(26 25 23 / 6%);
+  --shadow-md: 0 4px 16px -4px rgb(26 25 23 / 10%);
 
   /* --- Layout ----------------------------------------------------------- */
-  --content-width: 56rem;
+  --content-width: 60rem;
   --content-width-narrow: 44rem;
-  --header-height: 3.5rem;
+  --header-height: 3.75rem;
 
-  /* --- Motion ----------------------------------------------------------- */
+  /* --- Motion -----------------------------------------------------------
+   * Short enough to feel like response rather than animation.
+   */
   --transition-fast: 100ms ease;
   --transition-base: 160ms ease;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --canvas: #17181a;
-    --surface: #1e2023;
+    --canvas: #16171a;
+    --surface: #1d1f22;
     --surface-subtle: #24262a;
     --surface-inset: #2b2e33;
+    --surface-raised: #212328;
 
-    --border: #34373d;
-    --border-strong: #464a52;
+    --border: #33363c;
+    --border-strong: #474b53;
 
     --text: #eceded;
-    --text-secondary: #b6b9bd;
-    --text-muted: #91959b;
+    --text-secondary: #b8bbbf;
+    --text-muted: #94989e;
 
-    --accent: #7fb4d8;
-    --accent-hover: #a3ccea;
-    --accent-soft: #1d2a34;
+    --accent: #7cb4dd;
+    --accent-hover: #a2cdec;
+    --accent-soft: #1b2935;
+    --accent-contrast: #10222f;
 
-    --focus-ring: #7fb4d8;
+    --focus-ring: #7cb4dd;
 
     --danger: #f0a79b;
     --danger-surface: #341f1c;
@@ -132,8 +181,12 @@
     --success-surface: #1b2a22;
     --success-border: #2e4738;
 
+    --repository: #b7b0e8;
+    --repository-surface: #22213a;
+    --repository-border: #37345a;
+
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
-    --shadow-md: 0 2px 8px rgb(0 0 0 / 45%);
+    --shadow-md: 0 4px 16px -4px rgb(0 0 0 / 50%);
   }
 }
 

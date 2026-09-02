@@ -1,3 +1,9 @@
+/*
+ * The shell is a thin frame, not a chrome-heavy application bar. It carries the
+ * identity and one control, sits on the page rather than above it, and gets out
+ * of the way of the literature.
+ */
+
 .app-header {
   position: sticky;
   top: 0;
@@ -9,64 +15,75 @@
 .app-header__inner {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-5);
   max-width: var(--content-width);
   margin: 0 auto;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-5);
   min-height: var(--header-height);
 }
 
 .app-header__brand {
-  font-size: var(--text-lg);
-  font-weight: var(--weight-semibold);
-  color: var(--text);
-  text-decoration: none;
-  letter-spacing: -0.01em;
   flex: 0 0 auto;
+  text-decoration: none;
+  border-radius: var(--radius-sm);
 }
 
-.app-header__brand:hover {
+.app-header__brand:hover .logo__word {
   color: var(--accent);
 }
 
+.app-header__brand:hover .logo-mark {
+  color: var(--accent-hover);
+}
+
+/* Fixed and modest. Search supports discovery here; it does not lead it. */
 .app-header__search {
-  flex: 1 1 auto;
+  flex: 0 1 22rem;
   min-width: 0;
-  max-width: 34rem;
 }
 
 .app-main {
   max-width: var(--content-width);
   margin: 0 auto;
-  padding: var(--space-6) var(--space-4) var(--space-8);
+  padding: var(--space-6) var(--space-5) var(--space-8);
 }
 
 .app-footer {
+  border-top: var(--border-width) solid var(--border);
+  margin-top: var(--space-6);
+}
+
+.app-footer__inner {
   max-width: var(--content-width);
   margin: 0 auto;
-  padding: var(--space-5) var(--space-4) var(--space-7);
-  border-top: var(--border-width) solid var(--border);
-  font-size: var(--text-xs);
+  padding: var(--space-5) var(--space-5) var(--space-7);
+}
+
+.app-footer__note {
+  max-width: var(--measure-lead);
+  font-size: var(--text-sm);
   color: var(--text-muted);
 }
 
-.app-footer p {
-  max-width: 60ch;
-}
-
-@media (max-width: 40rem) {
+@media (max-width: 46rem) {
   .app-header__inner {
     flex-wrap: wrap;
     gap: var(--space-3);
-    padding: var(--space-3);
+    padding: var(--space-3) var(--space-4);
   }
 
+  /* Below this width the field cannot be both usable and secondary, so it
+     takes its own row rather than squeezing the wordmark. */
   .app-header__search {
     flex: 1 0 100%;
-    max-width: none;
   }
 
   .app-main {
-    padding: var(--space-5) var(--space-3) var(--space-7);
+    padding: var(--space-5) var(--space-4) var(--space-7);
+  }
+
+  .app-footer__inner {
+    padding: var(--space-5) var(--space-4) var(--space-6);
   }
 }

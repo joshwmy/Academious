@@ -1,5 +1,11 @@
 /**
- * One paper in full.
+ * One paper in full: a reading surface, not a record view.
+ *
+ * The page is set to a narrow measure and the abstract is set in the serif at
+ * reading size, because the thing a reader came here to do is read a paragraph
+ * of dense prose. Everything else - identifiers, licence, counts - is filed
+ * below it in a definition list, where it can be looked up without competing
+ * with the abstract for attention.
  *
  * Integrity comes first. A retracted paper carries a banner above its own title,
  * because a reader who scans the title and abstract and leaves must not be able
@@ -12,9 +18,17 @@ import { Link, useParams } from "react-router-dom";
 import { getPaper } from "../api/client";
 import { Badge } from "../components/Badge";
 import { ExternalLink } from "../components/ExternalLink";
+import { Provenance } from "../components/Provenance";
 import { ErrorState, LoadingRegion } from "../components/States";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { useRequest } from "../hooks/useRequest";
-import { formatAuthors, formatPublished, integrityNotice, publishedDateTime } from "../lib/format";
+import {
+  formatAuthors,
+  formatPublished,
+  integrityNotice,
+  paperProvenance,
+  publishedDateTime,
+} from "../lib/format";
 import { doiUrl, safeExternalUrl } from "../lib/url";
 import "./PaperPage.css";
 
@@ -24,6 +38,10 @@ export function PaperPage() {
 
   const run = useCallback((signal: AbortSignal) => getPaper(id, signal), [id]);
   const { state, retry } = useRequest(run, id !== "");
+
+  // Null until there is a real title. The shell title is a better placeholder
+  // than the word "Loading" sitting in a tab strip and in browser history.
+  useDocumentTitle(state.status === "success" ? state.data.title : null);
 
   if (state.status === "loading") {
     return (
@@ -47,6 +65,7 @@ export function PaperPage() {
   const authors = formatAuthors(paper.authors, Number.MAX_SAFE_INTEGER);
   const published = formatPublished(paper);
   const publishedValue = publishedDateTime(paper);
+  const provenance = paperProvenance(paper);
   const integrity = integrityNotice(paper.retraction_status);
   const doiHref = doiUrl(paper.doi);
   const oaUrl = safeExternalUrl(paper.open_access?.url);
@@ -56,7 +75,7 @@ export function PaperPage() {
   return (
     <article className="paper-detail">
       <p className="paper-detail__back">
-        <Link to="/">← Recent papers</Link>
+        <Link to="/">← Back to new research</Link>
       </p>
 
       {integrity ? (
@@ -81,15 +100,14 @@ export function PaperPage() {
         <h1 className="paper-detail__title">{paper.title}</h1>
         <p className="paper-detail__authors">{authors.text}</p>
         <ul className="paper-detail__meta">
+          {provenance ? (
+            <li>
+              <Provenance value={provenance} />
+            </li>
+          ) : null}
           {published ? (
             <li>
               <time dateTime={publishedValue ?? undefined}>{published}</time>
-            </li>
-          ) : null}
-          {paper.venue ? <li>{paper.venue}</li> : null}
-          {paper.is_preprint ? (
-            <li>
-              <Badge>Preprint</Badge>
             </li>
           ) : null}
           {paper.is_peer_reviewed ? (
@@ -122,7 +140,7 @@ export function PaperPage() {
 
       {paper.abstract ? (
         <section className="paper-detail__section" aria-labelledby="abstract-heading">
-          <h2 className="paper-detail__section-title" id="abstract-heading">
+          <h2 className="eyebrow" id="abstract-heading">
             Abstract
           </h2>
           <p className="paper-detail__abstract">{paper.abstract}</p>
@@ -130,7 +148,7 @@ export function PaperPage() {
       ) : null}
 
       <section className="paper-detail__section" aria-labelledby="details-heading">
-        <h2 className="paper-detail__section-title" id="details-heading">
+        <h2 className="eyebrow" id="details-heading">
           Publication details
         </h2>
         <dl className="detail-grid">
@@ -138,11 +156,7 @@ export function PaperPage() {
             <div className="detail-grid__row">
               <dt>DOI</dt>
               <dd>
-                {doiHref ? (
-                  <ExternalLink href={doiHref}>{paper.doi}</ExternalLink>
-                ) : (
-                  paper.doi
-                )}
+                {doiHref ? <ExternalLink href={doiHref}>{paper.doi}</ExternalLink> : paper.doi}
               </dd>
             </div>
           ) : null}
@@ -155,6 +169,13 @@ export function PaperPage() {
                 <dd>{value}</dd>
               </div>
             ))}
+
+          {paper.venue ? (
+            <div className="detail-grid__row">
+              <dt>Venue</dt>
+              <dd>{paper.venue}</dd>
+            </div>
+          ) : null}
 
           {paper.work_type ? (
             <div className="detail-grid__row">
@@ -191,7 +212,7 @@ export function PaperPage() {
 
       {paper.topics.length > 0 ? (
         <section className="paper-detail__section" aria-labelledby="topics-heading">
-          <h2 className="paper-detail__section-title" id="topics-heading">
+          <h2 className="eyebrow" id="topics-heading">
             Topics
           </h2>
           <ul className="paper-detail__topics">

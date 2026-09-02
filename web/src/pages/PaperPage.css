@@ -1,3 +1,12 @@
+/*
+ * The reading surface.
+ *
+ * Narrow measure, generous leading, and no panel around any of it. A record
+ * this long does not need a card to tell a reader where it starts; the width
+ * does that, and the width is chosen so a line of abstract lands near 68
+ * characters, which is where dense prose stops being tiring to read.
+ */
+
 .paper-detail {
   display: flex;
   flex-direction: column;
@@ -15,9 +24,11 @@
 
 .paper-detail__back a {
   text-decoration: none;
+  color: var(--text-secondary);
 }
 
 .paper-detail__back a:hover {
+  color: var(--accent);
   text-decoration: underline;
 }
 
@@ -27,13 +38,18 @@
   gap: var(--space-3);
 }
 
+/* The title is the loudest thing on the page and is set in the reading face,
+   so the page opens in the same voice the abstract continues in. */
 .paper-detail__title {
-  font-size: var(--text-2xl);
+  font-family: var(--font-serif);
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-normal);
   line-height: var(--leading-tight);
-  letter-spacing: -0.015em;
+  letter-spacing: var(--tracking-tight);
 }
 
 .paper-detail__authors {
+  font-size: var(--text-md);
   color: var(--text-secondary);
   line-height: var(--leading-snug);
 }
@@ -42,9 +58,9 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2) var(--space-3);
+  gap: var(--space-2) var(--space-4);
   font-size: var(--text-sm);
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .paper-detail__actions {
@@ -57,24 +73,17 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding-top: var(--space-4);
+  padding-top: var(--space-5);
   border-top: var(--border-width) solid var(--border);
 }
 
-.paper-detail__section-title {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-}
-
 .paper-detail__abstract {
-  font-size: var(--text-md);
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
   line-height: var(--leading-relaxed);
   color: var(--text);
   /* Abstracts read as prose, so they get a measure rather than the full width. */
-  max-width: 68ch;
+  max-width: var(--measure-prose);
   white-space: pre-wrap;
 }
 
@@ -87,15 +96,22 @@
 .detail-grid {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 0;
   margin: 0;
 }
 
+/* Rows rather than a table: hairline separators give a long list of
+   identifiers a rhythm to scan down without drawing a grid around it. */
 .detail-grid__row {
   display: grid;
   grid-template-columns: 8rem 1fr;
   gap: var(--space-3);
   align-items: baseline;
+  padding: var(--space-2) 0;
+}
+
+.detail-grid__row + .detail-grid__row {
+  border-top: var(--border-width) solid var(--border);
 }
 
 .detail-grid dt {
@@ -106,6 +122,7 @@
 
 .detail-grid dd {
   margin: 0;
+  font-size: var(--text-sm);
   overflow-wrap: anywhere;
 }
 
@@ -135,18 +152,22 @@
 .integrity__label {
   font-weight: var(--weight-semibold);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--tracking-wide);
   font-size: var(--text-xs);
 }
 
 .integrity__description {
   color: var(--text);
-  max-width: 60ch;
+  max-width: var(--measure-lead);
 }
 
-@media (max-width: 40rem) {
+@media (max-width: 46rem) {
   .paper-detail__title {
-    font-size: var(--text-xl);
+    font-size: var(--text-2xl);
+  }
+
+  .paper-detail__abstract {
+    font-size: var(--text-md);
   }
 
   .detail-grid__row {

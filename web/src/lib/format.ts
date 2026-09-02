@@ -3,7 +3,7 @@
  * belong to the backend, and nothing here recomputes any of them.
  */
 
-import type { Author, PaperSummary } from "../api/types";
+import type { Author, PaperSummary, Topic } from "../api/types";
 
 /** How many authors a card shows before collapsing to "and N others". */
 const AUTHORS_SHOWN = 6;
@@ -92,9 +92,58 @@ export function integrityNotice(status: string): IntegrityNotice | null {
   }
 }
 
-/** Human label for the venue line, or null when nothing is known. */
-export function formatVenue(paper: Pick<PaperSummary, "venue" | "is_preprint">): string | null {
-  if (paper.venue && paper.venue.trim() !== "") return paper.venue;
-  if (paper.is_preprint) return "Preprint";
+/**
+ * Where a record came from, and what kind of record it is.
+ *
+ * `venue` carries a repository name for preprints ("arXiv", "bioRxiv") and a
+ * journal name for published work, so one field answers both questions once the
+ * preprint flag says which reading applies. This is the closest thing the
+ * summary payload has to provenance: the source keys a paper was harvested
+ * under live on `source_record` and are filterable but never returned, so the
+ * card cannot claim more than the venue knows.
+ *
+ * The distinction is worth surfacing rather than printing as one more grey
+ * metadata item. A preprint and a peer-reviewed paper are different kinds of
+ * claim, and in a feed that is the judgement a reader makes before any other.
+ */
+export interface Provenance {
+  /** `repository` for preprint servers, `journal` for published venues. */
+  kind: "repository" | "journal";
+  label: string;
+}
+
+export function paperProvenance(
+  paper: Pick<PaperSummary, "venue" | "is_preprint">,
+): Provenance | null {
+  const venue = paper.venue?.trim();
+  if (paper.is_preprint) {
+    // A preprint with no named server is still a preprint, and saying so is
+    // more use than saying nothing.
+    return { kind: "repository", label: venue || "Preprint" };
+  }
+  if (venue) return { kind: "journal", label: venue };
   return null;
+}
+
+/**
+ * The labelled topics worth showing, capped.
+ *
+ * Topics arrive from the upstream classifier and are uneven: some carry only an
+ * identifier, some repeat, and a paper can be tagged with a dozen. A card shows
+ * a few labelled ones or none - a row of eight chips stops being a signal and
+ * becomes texture, and an unlabelled identifier tells a reader nothing at all.
+ */
+export function topicLabels(topics: Topic[], limit = 3): string[] {
+  const seen = new Set<string>();
+  const labels: string[] = [];
+  for (const topic of topics) {
+    const label = topic.label?.trim();
+    if (!label) continue;
+    const key = label.toLocaleLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    labels.push(label);
+    if (labels.length === limit) break;
+  }
+  return labels;
 }

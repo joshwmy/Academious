@@ -20,6 +20,7 @@ body {
   font-size: var(--text-base);
   line-height: var(--leading-normal);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 h1,
@@ -68,8 +69,12 @@ textarea {
   color: inherit;
 }
 
-img {
+img,
+svg {
   max-width: 100%;
+}
+
+img {
   display: block;
 }
 
@@ -109,4 +114,96 @@ img {
 
 .skip-link:focus-visible {
   transform: translateY(0);
+}
+
+/*
+ * Section labels: uppercase, tracked, small. Used for the eyebrow above a
+ * group of controls or a section of a paper record. The letterspacing is what
+ * makes the reduced size legible rather than merely small.
+ */
+.eyebrow {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/*
+ * Buttons. Three weights: accent for the one action a surface is asking for,
+ * quiet for everything alongside it, plain for a control that must not look
+ * like a call to action at all.
+ */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  /* 44px of touch target at the default font size, without a fixed height that
+     would clip a wrapped label. */
+  min-height: 2.5rem;
+  padding: var(--space-2) var(--space-4);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.button:hover {
+  background: var(--accent-hover);
+  color: var(--accent-contrast);
+}
+
+.button--quiet {
+  background: var(--surface);
+  color: var(--accent);
+  border-color: var(--border-strong);
+}
+
+.button--quiet:hover {
+  background: var(--surface-subtle);
+  color: var(--accent-hover);
+}
+
+.button--plain {
+  min-height: 0;
+  padding: var(--space-1) var(--space-2);
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: transparent;
+}
+
+.button--plain:hover {
+  background: var(--surface-subtle);
+  color: var(--text);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* A disabled control keeps its own colours and simply stops responding.
+   Swapping its fill on hover reads as a different button, not a dead one. */
+.button:disabled:hover {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.button--quiet:disabled:hover {
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.button--plain:disabled:hover {
+  background: transparent;
+  color: var(--text-secondary);
 }

@@ -23,6 +23,7 @@ import { MAX_QUERY_LENGTH, searchPapers } from "../api/client";
 import { FilterPanel } from "../components/FilterPanel";
 import { PaperCard } from "../components/PaperCard";
 import { EmptyState, ErrorState, LoadingRegion, PaperListSkeleton } from "../components/States";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { useRequest } from "../hooks/useRequest";
 import {
   NO_FILTERS,
@@ -41,6 +42,8 @@ export function SearchPage() {
   const rawQuery = searchParams.get("q") ?? "";
   const query = rawQuery.trim();
   const isSearchable = query !== "" && query.length <= MAX_QUERY_LENGTH;
+
+  useDocumentTitle(query === "" ? "Search" : `${query} — search`);
 
   // Memoised on the query *string*, not on the params object: `useRequest`
   // treats the identity of `run` as the identity of the request, so a filter

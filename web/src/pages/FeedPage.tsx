@@ -76,9 +76,19 @@ export function FeedPage() {
   return (
     <div className="page">
       <header className="page__header">
-        <h1 className="page__title">Recent papers</h1>
+        <h1 className="page__title">New research</h1>
+        {/* The lead is built from the response, not written into the markup: it
+            says how much literature is actually here, which is a fact about the
+            corpus rather than a description of the page. */}
         <p className="page__lead">
-          The most recently published work in the Academious corpus.
+          {state.status === "success" && state.data.page.total > 0 ? (
+            <>
+              <span className="page__count">{state.data.page.total.toLocaleString()}</span> papers
+              from arXiv, bioRxiv/medRxiv and Europe PMC, newest first.
+            </>
+          ) : (
+            <>Recent work from arXiv, bioRxiv/medRxiv and Europe PMC, newest first.</>
+          )}
         </p>
       </header>
 

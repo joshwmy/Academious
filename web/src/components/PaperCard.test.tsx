@@ -88,6 +88,54 @@ describe("PaperCard", () => {
     expect(screen.queryByText("Corrected")).not.toBeInTheDocument();
   });
 
+  it("names the repository a preprint came from, and marks it as one", () => {
+    const { container } = renderCard(makeSummary({ venue: "bioRxiv", is_preprint: true }));
+    const provenance = container.querySelector(".provenance");
+    expect(provenance).toHaveTextContent("bioRxiv");
+    expect(provenance).toHaveClass("provenance--repository");
+  });
+
+  it("still says Preprint when a preprint names no repository", () => {
+    renderCard(makeSummary({ venue: null, is_preprint: true }));
+    expect(screen.getByText("Preprint")).toBeInTheDocument();
+  });
+
+  it("treats a published venue as a journal rather than a repository", () => {
+    // The distinction is the whole point of the treatment: a reader must not
+    // have to read the label to know whether the work has been reviewed.
+    const { container } = renderCard(
+      makeSummary({ venue: "Nature Methods", is_preprint: false }),
+    );
+    const provenance = container.querySelector(".provenance");
+    expect(provenance).toHaveTextContent("Nature Methods");
+    expect(provenance).toHaveClass("provenance--journal");
+  });
+
+  it("omits provenance entirely when neither a venue nor a preprint flag is known", () => {
+    const { container } = renderCard(makeSummary({ venue: null, is_preprint: false }));
+    expect(container.querySelector(".provenance")).toBeNull();
+  });
+
+  it("keeps the hidden author count outside the truncated names", () => {
+    // The names ellipsis on a narrow row; "and N others" is the part that must
+    // survive, so it cannot live inside the element that clips.
+    const { container } = renderCard(
+      makeSummary({
+        authors: Array.from({ length: 40 }, (_, index) => ({
+          name: `Author ${index}`,
+          position: index,
+          orcid: null,
+          affiliations: [],
+        })),
+      }),
+    );
+    const names = container.querySelector(".paper-card__authors-names");
+    expect(names).not.toHaveTextContent("others");
+    expect(container.querySelector(".paper-card__authors-more")).toHaveTextContent(
+      "and 34 others",
+    );
+  });
+
   it("omits the date element entirely when no date is known", () => {
     const { container } = renderCard(
       makeSummary({ published_date: null, published_year: null }),

@@ -5,6 +5,11 @@
  * always navigates to `/search?q=…` - the URL is the query, which is what makes
  * a result page shareable, bookmarkable and correct under the back button.
  *
+ * It is deliberately the quieter half of the header. This product's first job is
+ * discovery: the reader who already knows what to search for is the reader who
+ * needed Academious least, so the field sits to one side of the brand at a fixed
+ * modest width rather than spanning the bar like a search engine's.
+ *
  * Whatever filters the current URL carries travel with the query. Both surfaces
  * accept the same filters, so a reader who narrows the feed to arXiv preprints
  * and then searches gets a search over arXiv preprints; dropping the filters at
@@ -15,6 +20,7 @@
 
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { filtersToSearchParams, parseFilters } from "../lib/filters";
+import { Logo } from "./Logo";
 import { SearchBar } from "./SearchBar";
 import "./AppShell.css";
 
@@ -32,8 +38,8 @@ export function AppShell() {
 
       <header className="app-header">
         <div className="app-header__inner">
-          <Link className="app-header__brand" to="/">
-            Academious
+          <Link className="app-header__brand" to="/" aria-label="Academious, home">
+            <Logo />
           </Link>
           <div className="app-header__search">
             <SearchBar
@@ -56,10 +62,12 @@ export function AppShell() {
       </main>
 
       <footer className="app-footer">
-        <p>
-          Academious searches its own curated corpus of recent research from arXiv,
-          bioRxiv/medRxiv and Europe PMC. It is not a search over all published science.
-        </p>
+        <div className="app-footer__inner">
+          <p className="app-footer__note">
+            Academious searches its own curated corpus of recent research from arXiv,
+            bioRxiv/medRxiv and Europe PMC. It is not a search over all published science.
+          </p>
+        </div>
       </footer>
     </>
   );

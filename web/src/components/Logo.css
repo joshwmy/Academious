@@ -1,0 +1,22 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The mark is the one place the accent appears at rest rather than on
+   interaction, which is what makes it read as identity instead of as a
+   control. */
+.logo-mark {
+  flex: none;
+  color: var(--accent);
+}
+
+.logo__word {
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-normal);
+  letter-spacing: var(--tracking-tight);
+  line-height: 1;
+  color: var(--text);
+}
