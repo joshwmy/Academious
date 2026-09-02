@@ -6,6 +6,12 @@
  * point - a hand-made fixture proves the frontend agrees with my idea of the
  * contract, while this proves it agrees with the contract.
  *
+ * One qualification, on purpose. The `fields` values - and the `/fields`
+ * payload - were derived on 2026-09-02 by running the captured `topics` through
+ * `ingest/taxonomy.py`, because the deployed API did not yet serve them. They
+ * are the mapping's real output over real captured topics, not invented values,
+ * and the file is due a straight re-capture once the field work is deployed.
+ *
  * No browser and no SPECTER2. The backend keeps its own model integration test;
  * making this one load 440 MB of weights would buy nothing it does not already
  * cover.
@@ -26,7 +32,9 @@ function stubRealBackend() {
         ? contract.papers
         : url.pathname === "/search"
           ? contract.search
-          : contract.detail;
+          : url.pathname === "/fields"
+            ? contract.fields
+            : contract.detail;
     return Promise.resolve(
       new Response(JSON.stringify(body), {
         status: 200,

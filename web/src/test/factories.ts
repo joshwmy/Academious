@@ -1,3 +1,4 @@
+import { FIELDS } from "../lib/filters";
 import type { PaperDetail, PaperSummary } from "../api/types";
 
 export function makeSummary(overrides: Partial<PaperSummary> = {}): PaperSummary {
@@ -14,7 +15,8 @@ export function makeSummary(overrides: Partial<PaperSummary> = {}): PaperSummary
     is_peer_reviewed: false,
     open_access_status: "green",
     retraction_status: "none",
-    topics: [{ id: "ml", label: "Machine learning", scheme: "arxiv" }],
+    topics: [{ id: "cs.LG", label: "cs.LG", scheme: "arxiv" }],
+    fields: ["computer-science"],
     citation_count: null,
     ...overrides,
   };
@@ -47,6 +49,21 @@ export function makePage(results: PaperSummary[], overrides: Partial<{ offset: n
   return {
     page: { limit, offset, total, returned: results.length, has_more: offset + results.length < total },
     results,
+  };
+}
+
+/** A `/fields` response. Counts are arbitrary; only the shape is contractual. */
+export function makeFields(
+  counts: Record<string, number> = {},
+  papersWithoutField = 0,
+): { fields: { slug: string; label: string; paper_count: number }[]; papers_without_field: number } {
+  return {
+    fields: FIELDS.map((field) => ({
+      slug: field.slug,
+      label: field.label,
+      paper_count: counts[field.slug] ?? 0,
+    })),
+    papers_without_field: papersWithoutField,
   };
 }
 

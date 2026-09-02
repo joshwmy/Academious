@@ -153,18 +153,41 @@ frontend is built not to spend it accidentally:
 
 ## 6. Filtering
 
-`GET /papers` and `GET /search` accept the same four filters - source, preprint
-policy, peer-review and open-access - and both apply them in SQL, before paging
-and before ranking respectively. The feed and the search page therefore share
+`GET /papers` and `GET /search` accept the same five filters - source, subject
+field, preprint policy, peer-review and open-access - and both apply them in
+SQL, before paging and before ranking respectively. The feed and the search page therefore share
 one `FilterPanel` and one `lib/filters.ts`, so the two surfaces cannot drift
 into meaning different things by the same name.
 
 | Control | Query parameter | Values |
 |---|---|---|
-| Source | `source`, repeatable | `arxiv`, `biorxiv` (which covers medRxiv), `openalex` |
+| Source | `source`, repeatable | `arxiv`, `biorxiv` (which covers medRxiv), `europepmc`, `openalex` |
+| Field | `field`, repeatable | 26 subject slugs, e.g. `computer-science` |
 | Type | `preprints` | `any`, `only_preprints`, `exclude_preprints` |
 | Peer-reviewed only | `peer_reviewed` | `true` |
 | Open access only | `open_access` | `true` |
+
+### The field control says what it hides
+
+The 26 fields are a constant in `lib/filters.ts`, transcribed from
+`ingest/taxonomy.py` for the same reason `SOURCES` is: parsing a URL is
+synchronous and cannot wait for a request. The **counts** beside them are not a
+constant - they come from `GET /fields` on mount, so a number on the screen is
+always the corpus's rather than a value that was true when the file was written.
+A failed or slow request costs the counts and never the control: the fields
+render either way.
+
+Under the list sits a sentence nobody has to compute for themselves - *"57,310
+papers carry no field and are hidden while one is selected."* Roughly half the
+corpus reaches us from Europe PMC, which classifies in MeSH, and MeSH is not
+mapped onto these fields ([ADR 0009](adr/0009-normalised-subject-fields.md)).
+Selecting any field excludes all of them, and a facet that quietly halves the
+corpus without saying so is the kind of thing a reader discovers as "the site is
+missing papers".
+
+Fields with a count of zero stay in the list, greyed by the number rather than
+removed. A list whose length changes with the corpus makes a filter someone used
+yesterday vanish today.
 
 ### The URL is the state
 
@@ -188,8 +211,10 @@ the one the feed made before filters existed.
 Everything in the query string is untrusted input. The backend validates its
 enums strictly, so `?source=nonsense` would be a 422 - a broken page for what is
 really a typo. `parseFilters` drops what it does not recognise instead of
-forwarding it: unknown source keys, unknown preprint policies, and any value
-other than `true` for the two booleans. Sources are also de-duplicated and
+forwarding it: unknown source keys, unknown field slugs, unknown preprint
+policies, and any value other than `true` for the two booleans. The field case
+is the sharpest - the backend answers an unknown slug with a 422 by design, so a
+typo in a shared link would render an error page rather than a feed. Sources are also de-duplicated and
 ordered canonically, so two URLs that mean the same thing produce the same
 request.
 
@@ -312,9 +337,6 @@ the reason it is deferred and what would trigger picking it up.
   The Phase 0 decision (section 11.7, option a) was to prerender later; the API
   already returns everything a full page render needs -
   [WEB-004](backlog.md#web-004).
-* **No "feed by field".** The corpus carries no normalised subject taxonomy, so
-  there is nothing to filter by - see [api.md](api.md),
-  [WEB-003](backlog.md#web-003).
 * **Offset pagination only**, capped by the backend at 10,000 -
   [WEB-005](backlog.md#web-005).
 * **No result-count control.** Search returns 20; the backend permits up to 50 -

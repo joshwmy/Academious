@@ -81,6 +81,13 @@ class Paper(Base, TimestampMixin):
     topics: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
     keywords: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
 
+    # Normalised subject fields, derived from `topics` by ingest.taxonomy so that
+    # one filter reaches papers classified by four disagreeing source
+    # vocabularies. Derived rather than authoritative: it is recomputed whenever
+    # topics change, and re-derivable for the whole corpus by
+    # scripts/backfill_fields.py after a mapping change.
+    fields: Mapped[list[str]] = mapped_column(ARRAY(Text), nullable=False, default=list)
+
     # Lexical retrieval index, maintained by PostgreSQL itself so it can never
     # drift from the row it describes. Field weights and the reason keywords
     # need a helper function are in academious/db/ddl.py.
@@ -124,6 +131,7 @@ class Paper(Base, TimestampMixin):
               postgresql_ops={"title_norm": "gin_trgm_ops"}),
         Index("ix_paper_dedup_block", "first_author_surname", "published_year"),
         Index("ix_paper_search_tsv", "search_tsv", postgresql_using="gin"),
+        Index("ix_paper_fields", "fields", postgresql_using="gin"),
     )
 
     def __repr__(self) -> str:

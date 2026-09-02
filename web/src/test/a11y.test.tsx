@@ -12,10 +12,24 @@ import axe from "axe-core";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "../App";
-import { jsonOk, makeDetail, makePage, makeSummary } from "./factories";
+import { jsonOk, makeDetail, makeFields, makePage, makeSummary } from "./factories";
 
+/**
+ * The filter panel asks `/fields` for its counts, so a stub that answered every
+ * path with a page of papers would render a panel built from the wrong shape.
+ * Routing by path keeps each request answered with what it asked for.
+ */
 function stub(response: () => Response) {
-  vi.stubGlobal("fetch", vi.fn(() => Promise.resolve(response())));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((input: string) =>
+      Promise.resolve(
+        new URL(input, "http://api.test").pathname === "/fields"
+          ? jsonOk(makeFields({ "computer-science": 12 }, 34))
+          : response(),
+      ),
+    ),
+  );
 }
 
 async function audit(container: HTMLElement) {

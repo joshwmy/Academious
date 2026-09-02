@@ -243,12 +243,18 @@ filter is, which is the bug that makes date-filtered search feel broken.
 | `preprints` | `any` / `only_preprints` / `exclude_preprints` |
 | `peer_reviewed_only` | `paper.is_peer_reviewed` |
 | `open_access_only` | `paper.oa_status` in gold, green, hybrid, bronze, diamond |
-| `fields` | JSONB containment on `topics[].field` |
+| `fields` | Array overlap on `paper.fields` (GIN, `ix_paper_fields`) |
 | `languages` | `paper.language` |
 | `retraction` | see below |
 
 `sources` is an `EXISTS` over `source_record` rather than a column on `paper`,
 because one canonical paper is routinely assembled from several sources.
+
+`fields` takes normalised slugs - `computer-science`, not OpenAlex's
+`Computer Science`. It used to be JSONB containment on `topics[].field`, which
+only OpenAlex records carry, so it reached 43% of the corpus while looking
+complete. `paper.fields` is derived from every source's vocabulary by
+`ingest/taxonomy.py`; see [ADR 0009](adr/0009-normalised-subject-fields.md).
 
 `open_access_only` is an allowlist, not `!= 'closed'`: `unknown` means we do not
 know of a legal copy, which is not the same as knowing one exists.

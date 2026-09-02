@@ -15,15 +15,19 @@
  * is the opposite case and stays submit-driven; see SearchBar.
  */
 
-import { useId } from "react";
+import { useCallback, useId } from "react";
+import { listFields } from "../api/client";
 import {
+  FIELDS,
   NO_FILTERS,
   PREPRINT_POLICIES,
   SOURCES,
   countActiveFilters,
+  type FieldSlug,
   type PaperFilters,
   type SourceKey,
 } from "../lib/filters";
+import { useRequest } from "../hooks/useRequest";
 import "./FilterPanel.css";
 
 interface FilterPanelProps {
@@ -33,10 +37,28 @@ interface FilterPanelProps {
 
 export function FilterPanel({ filters, onChange }: FilterPanelProps) {
   const headingId = useId();
+  // The vocabulary itself is a constant; only the counts come from the network.
+  // A failed or pending request therefore costs the numbers, never the filter:
+  // the fields render either way. One request per mount, cancelled on unmount.
+  const runFields = useCallback((signal: AbortSignal) => listFields(signal), []);
+  const { state: fieldState } = useRequest(runFields);
+  const counts = fieldState.data
+    ? new Map(fieldState.data.fields.map((entry) => [entry.slug, entry.paper_count]))
+    : null;
+  const withoutField = fieldState.data?.papers_without_field ?? null;
   // Radio groups are scoped by name, so the name must be unique to this
   // instance or a second panel on the page would share one selection.
   const preprintGroup = useId();
   const active = countActiveFilters(filters);
+
+  const toggleField = (slug: FieldSlug, checked: boolean) => {
+    const fields = checked
+      ? FIELDS.map((field) => field.slug).filter(
+          (candidate) => candidate === slug || filters.fields.includes(candidate),
+        )
+      : filters.fields.filter((candidate) => candidate !== slug);
+    onChange({ ...filters, fields });
+  };
 
   const toggleSource = (key: SourceKey, checked: boolean) => {
     const sources = checked
@@ -73,6 +95,40 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
               <span>{source.label}</span>
             </label>
           ))}
+        </fieldset>
+
+        <fieldset className="filters__group filters__group--fields">
+          <legend className="filters__legend">Field</legend>
+          <div className="filters__scroll">
+            {FIELDS.map((field) => {
+              const count = counts?.get(field.slug);
+              // A field with nothing in it is still shown, greyed by its count
+              // rather than removed: a list whose length changes with the
+              // corpus makes a filter people used yesterday vanish today.
+              return (
+                <label className="filters__option" key={field.slug}>
+                  <input
+                    type="checkbox"
+                    checked={filters.fields.includes(field.slug)}
+                    onChange={(event) => toggleField(field.slug, event.target.checked)}
+                  />
+                  <span>{field.label}</span>
+                  {count === undefined ? null : (
+                    <span className="filters__count">{count.toLocaleString()}</span>
+                  )}
+                </label>
+              );
+            })}
+          </div>
+          {withoutField !== null && withoutField > 0 ? (
+            // Said plainly rather than discovered: most of the corpus reaches us
+            // from sources that classify papers in a vocabulary nothing maps
+            // onto these fields, and choosing any field hides all of them.
+            <p className="filters__note">
+              {withoutField.toLocaleString()} papers carry no field and are hidden while one is
+              selected.
+            </p>
+          ) : null}
         </fieldset>
 
         <fieldset className="filters__group">

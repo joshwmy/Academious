@@ -81,6 +81,9 @@ def build_parser() -> argparse.ArgumentParser:
     search.add_argument("--from", dest="published_from", type=_parse_date, default=None)
     search.add_argument("--to", dest="published_to", type=_parse_date, default=None)
     search.add_argument("--source", action="append", default=[], dest="sources")
+    # Normalised slugs from ingest.taxonomy - "computer-science", not
+    # "Computer Science". The same value reaches an arXiv or bioRxiv paper,
+    # which carry no OpenAlex field of their own.
     search.add_argument("--field", action="append", default=[], dest="fields")
     search.add_argument(
         "--preprints", default="any", choices=("any", "only_preprints", "exclude_preprints")

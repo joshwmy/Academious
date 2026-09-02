@@ -12,7 +12,14 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "../App";
-import { jsonError, jsonOk, makeDetail, makePage, makeSummary } from "../test/factories";
+import {
+  jsonError,
+  jsonOk,
+  makeDetail,
+  makeFields,
+  makePage,
+  makeSummary,
+} from "../test/factories";
 
 function renderApp(path = "/") {
   return render(
@@ -22,16 +29,30 @@ function renderApp(path = "/") {
   );
 }
 
-/** Routes each request by pathname so a test can describe a whole backend. */
+/**
+ * Routes each request by pathname so a test can describe a whole backend.
+ *
+ * `/fields` is answered by default: the filter panel asks for it on every page
+ * that renders filters, and a test about paging should not have to know that.
+ */
 function stubApi(handlers: Record<string, (url: URL) => Response>) {
   const mock = vi.fn((input: string) => {
     const url = new URL(input, "http://api.test");
-    const handler = handlers[url.pathname] ?? handlers["*"];
+    const handler =
+      handlers[url.pathname] ??
+      (url.pathname === "/fields" ? () => jsonOk(makeFields()) : handlers["*"]);
     if (!handler) return Promise.reject(new Error("unhandled path in test stub"));
     return Promise.resolve(handler(url));
   });
   vi.stubGlobal("fetch", mock);
   return mock;
+}
+
+/** The requests a mock received for one path, in order. */
+function callsTo(mock: ReturnType<typeof stubApi>, pathname: string) {
+  return mock.mock.calls
+    .map(([input]) => new URL(String(input), "http://api.test"))
+    .filter((url) => url.pathname === pathname);
 }
 
 function searchCalls(mock: ReturnType<typeof stubApi>) {
@@ -124,8 +145,7 @@ describe("feed", () => {
     });
     renderApp("/?offset=40");
     await screen.findByRole("link", { name: /neural message passing/i });
-    const url = new URL(mock.mock.calls[0]![0] as string, "http://api.test");
-    expect(url.searchParams.get("offset")).toBe("40");
+    expect(callsTo(mock, "/papers")[0]!.searchParams.get("offset")).toBe("40");
   });
 
   it("offers a retry when the API is unreachable", async () => {
@@ -133,7 +153,12 @@ describe("feed", () => {
     let attempts = 0;
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => {
+      // Counted per path: the filter panel's own request to /fields must not
+      // consume the one failure this test is about.
+      vi.fn((input: string) => {
+        if (new URL(input, "http://api.test").pathname === "/fields") {
+          return Promise.resolve(jsonOk(makeFields()));
+        }
         attempts += 1;
         if (attempts === 1) return Promise.reject(new TypeError("Failed to fetch"));
         return Promise.resolve(jsonOk(makePage([makeSummary({ title: "Recovered" })])));
@@ -155,6 +180,7 @@ describe("feed filters", () => {
     const url = new URL(mock.mock.calls.at(-1)![0] as string, "http://api.test");
     return {
       source: url.searchParams.getAll("source"),
+      field: url.searchParams.getAll("field"),
       preprints: url.searchParams.get("preprints"),
       peer_reviewed: url.searchParams.get("peer_reviewed"),
       open_access: url.searchParams.get("open_access"),
@@ -188,6 +214,36 @@ describe("feed filters", () => {
       open_access: "true",
     });
     expect(screen.getByRole("checkbox", { name: /arxiv/i })).toBeChecked();
+  });
+
+  it("applies a field filter from the URL", async () => {
+    const mock = stubApi({ "/papers": onePage });
+    renderApp("/?field=computer-science");
+
+    await screen.findByRole("link", { name: "A paper" });
+    expect(lastFilterParams(mock).field).toEqual(["computer-science"]);
+    expect(screen.getByRole("checkbox", { name: /^computer science/i })).toBeChecked();
+  });
+
+  it("drops a field slug the backend does not know rather than sending a 422", async () => {
+    // The backend refuses an unknown field by design, so forwarding a typo
+    // from a shared link would render an error page instead of a feed.
+    const mock = stubApi({ "/papers": onePage });
+    renderApp("/?field=computer-science&field=comptuer-science");
+
+    await screen.findByRole("link", { name: "A paper" });
+    expect(lastFilterParams(mock).field).toEqual(["computer-science"]);
+  });
+
+  it("requests again when a field is selected", async () => {
+    const user = userEvent.setup();
+    const mock = stubApi({ "/papers": onePage });
+    renderApp();
+
+    await screen.findByRole("link", { name: "A paper" });
+    await user.click(screen.getByRole("checkbox", { name: /^neuroscience/i }));
+
+    await waitFor(() => expect(lastFilterParams(mock).field).toEqual(["neuroscience"]));
   });
 
   it("drops a source the backend does not know rather than sending a 422", async () => {
@@ -406,7 +462,10 @@ describe("search", () => {
     let attempts = 0;
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => {
+      vi.fn((input: string) => {
+        if (new URL(input, "http://api.test").pathname === "/fields") {
+          return Promise.resolve(jsonOk(makeFields()));
+        }
         attempts += 1;
         if (attempts === 1) {
           return Promise.resolve(jsonError(503, "Search is temporarily at capacity.", "5"));

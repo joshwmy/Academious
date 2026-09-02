@@ -20,6 +20,7 @@
 
 import { ApiError } from "./errors";
 import type {
+  FieldsResponse,
   PaperDetail,
   PaperListParams,
   PaperPage,
@@ -141,6 +142,10 @@ export function listPapers(
   signal?: AbortSignal,
 ): Promise<PaperPage> {
   return request<PaperPage>(buildUrl("/papers", { ...params }), signal);
+}
+
+export function listFields(signal?: AbortSignal): Promise<FieldsResponse> {
+  return request<FieldsResponse>(buildUrl("/fields"), signal);
 }
 
 export function getPaper(id: string, signal?: AbortSignal): Promise<PaperDetail> {

@@ -20,8 +20,7 @@ from datetime import date
 from enum import StrEnum
 from typing import Any
 
-from sqlalchemy import ColumnElement, and_, exists, or_, select
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import ColumnElement, and_, exists, select
 
 from academious.db.models.paper import Paper, RetractionStatus
 from academious.db.models.support import SourceRecord
@@ -55,7 +54,9 @@ class SearchFilters:
     preprints: PreprintPolicy = PreprintPolicy.ANY
     peer_reviewed_only: bool = False
     open_access_only: bool = False
-    #: OpenAlex topic field names, matched against topics[].field.
+    #: Normalised subject field slugs from ingest.taxonomy, e.g.
+    #: "computer-science". Matched against the derived `paper.fields` column,
+    #: so one filter reaches papers classified by any source's vocabulary.
     fields: tuple[str, ...] = ()
     languages: tuple[str, ...] = ()
     retraction: RetractionPolicy = RetractionPolicy.EXCLUDE_RETRACTED
@@ -122,18 +123,12 @@ def build_conditions(filters: SearchFilters) -> list[ColumnElement[bool]]:
         )
 
     if filters.fields:
-        # JSONB containment: topics is an array of objects, and @> asks whether
-        # any element matches. GIN-indexable, unlike an unnested comparison.
-        conditions.append(
-            or_(
-                *[
-                    Paper.topics.op("@>")(
-                        _jsonb([{"field": field_name}]),
-                    )
-                    for field_name in filters.fields
-                ]
-            )
-        )
+        # Array overlap against the derived column, not JSONB containment
+        # against topics[].field. Only OpenAlex records carry a field on the
+        # topic, so containment filtered 43% of the corpus and silently hid the
+        # rest; `paper.fields` is normalised across all four source
+        # vocabularies by ingest.taxonomy. GIN-indexed as ix_paper_fields.
+        conditions.append(Paper.fields.op("&&")(_text_array(list(filters.fields))))
 
     match filters.retraction:
         case RetractionPolicy.EXCLUDE_RETRACTED:
@@ -146,10 +141,11 @@ def build_conditions(filters: SearchFilters) -> list[ColumnElement[bool]]:
     return conditions
 
 
-def _jsonb(value: Any) -> Any:
-    from sqlalchemy import cast, literal
+def _text_array(value: list[str]) -> Any:
+    from sqlalchemy import Text, cast, literal
+    from sqlalchemy.dialects.postgresql import ARRAY
 
-    return cast(literal(value, JSONB), JSONB)
+    return cast(literal(value, ARRAY(Text)), ARRAY(Text))
 
 
 def combined(filters: SearchFilters) -> ColumnElement[bool] | None:

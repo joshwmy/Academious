@@ -62,7 +62,7 @@ def corpus(session):
             "Genome-wide association study of late-onset Alzheimer disease",
             abstract="We identify novel risk loci for late-onset Alzheimer disease.",
             keywords=["genetics"],
-            topics=[{"label": "Neurodegeneration", "field": "Medicine"}],
+            topics=[{"scheme": "openalex", "label": "Neurodegeneration", "field": "Medicine"}],
             published_date=date(2023, 1, 15),
             oa_status="closed",
         ),
@@ -87,7 +87,7 @@ def corpus(session):
             "Graph neural networks for molecular property prediction",
             abstract="Message passing over molecular graphs predicts chemical properties.",
             keywords=["graphs"],
-            topics=[{"label": "Graph Learning", "field": "Computer Science"}],
+            topics=[{"scheme": "openalex", "label": "Graph Learning", "field": "Computer Science"}],
             published_date=date(2025, 1, 10),
             oa_status="gold",
         ),
@@ -95,7 +95,7 @@ def corpus(session):
             session,
             "Efficient transformer inference on commodity hardware",
             published_date=date(2025, 6, 1),
-            topics=[{"label": "Systems", "field": "Computer Science"}],
+            topics=[{"scheme": "openalex", "label": "Systems", "field": "Computer Science"}],
             oa_status="closed",
         ),
         "unrelated": make_paper(
@@ -321,11 +321,14 @@ def test_open_access_only_drops_closed_papers(session, corpus):
 
 
 def test_filtering_by_research_field(session, corpus):
+    # The filter takes the normalised slug, not OpenAlex's display name: the
+    # same value reaches an arXiv or bioRxiv paper, which carry no `field` key
+    # at all. See ingest/taxonomy.py and ADR 0009.
     result = lexical.search(
         session,
         "prediction",
         limit=10,
-        search_filters=SearchFilters(fields=("Computer Science",)),
+        search_filters=SearchFilters(fields=("computer-science",)),
     )
     assert corpus["graphnn"].id in ids(result)
     assert corpus["cancer"].id not in ids(result)

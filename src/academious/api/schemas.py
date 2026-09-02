@@ -76,6 +76,13 @@ class PaperSummary(BaseModel):
         default="none", description="none, corrected, concern or retracted"
     )
     topics: list[Topic] = Field(default_factory=list)
+    fields: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Normalised subject field slugs, e.g. computer-science. Empty when no source "
+            "classified the paper in a vocabulary Academious maps; see GET /fields"
+        ),
+    )
     citation_count: int | None = None
 
 
@@ -90,6 +97,28 @@ class PaperDetail(PaperSummary):
     )
     open_access: OpenAccess | None = None
     retraction_notice_url: str | None = None
+
+
+class FieldSummary(BaseModel):
+    """One subject field, with how much of the corpus is in it."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    slug: str = Field(description="Value to send as the `field` filter")
+    label: str = Field(description="Human-readable name")
+    paper_count: int = Field(description="Papers currently in this field")
+
+
+class FieldsResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    fields: list[FieldSummary]
+    papers_without_field: int = Field(
+        description=(
+            "Papers no field filter can reach, because no source classified them in a "
+            "vocabulary Academious maps. Selecting any field excludes them"
+        )
+    )
 
 
 class PageInfo(BaseModel):

@@ -496,6 +496,27 @@ The host must be provisioned first - see "Provisioning the host" above.
    detached - `docker compose run -d --rm worker ...` - rather than from a
    session that ends when the laptop sleeps.
 
+8. **Derive the subject fields.** Migration `0004` adds `paper.fields` empty,
+   because the mapping it holds lives in Python and a data migration would
+   freeze one version of it into history. Until the backfill runs, every field
+   filter matches nothing and `GET /fields` reports every field at zero - which
+   looks like an empty corpus rather than a missing step.
+
+   ```bash
+   docker compose run --rm worker python scripts/backfill_fields.py           # report
+   docker compose run --rm worker python scripts/backfill_fields.py --apply   # write
+   ```
+
+   It is a pure re-derivation from stored topics: no network, no model, and
+   idempotent, so a second run writes nothing. Run it again after any change to
+   `ingest/taxonomy.py` - ordinary ingestion repairs a paper only when a source
+   next describes it, and nothing describes an old paper on a schedule.
+
+   The dry run's summary is the thing to read, not just its exit code: it
+   reports the share of papers carrying no field, and lists category labels that
+   mapped to nothing. A label appearing there is a connector emitting vocabulary
+   the mapping has not met.
+
 Then confirm the deployment-layer controls actually hold, from the server:
 
 ```bash

@@ -12,6 +12,7 @@ from academious.api import repository, schemas
 from academious.api.dependencies import get_session
 from academious.api.limits import limiter, read_limit
 from academious.core.config import get_settings
+from academious.ingest import taxonomy
 from academious.retrieval.filters import (
     OPEN_ACCESS_STATUSES,
     PreprintPolicy,
@@ -23,6 +24,28 @@ router = APIRouter(tags=["papers"])
 settings = get_settings()
 
 NOT_FOUND = "Paper not found"
+
+
+def validated_fields(field: list[str] | None) -> tuple[str, ...]:
+    """Reject a field slug that is not in the vocabulary.
+
+    An unknown slug is refused rather than ignored. Ignoring it would answer a
+    filtered request with an unfiltered page, and answering it with an empty
+    page would make a typo indistinguishable from a field nothing is published
+    in - a caller cannot tell those apart, so the server says which it is.
+    """
+    unknown = sorted({slug for slug in field or () if not taxonomy.is_field(slug)})
+    if unknown:
+        raise HTTPException(
+            # The number, not `status.HTTP_422_*`: Starlette renamed that
+            # constant and both spellings warn on one version or the other.
+            status_code=422,
+            detail=(
+                f"field: unknown value(s) {', '.join(unknown)}. "
+                "GET /fields lists the vocabulary"
+            ),
+        )
+    return tuple(dict.fromkeys(field or ()))
 
 
 def _summary(row: object) -> schemas.PaperSummary:
@@ -40,7 +63,41 @@ def _summary(row: object) -> schemas.PaperSummary:
         open_access_status=row.oa_status,  # type: ignore[attr-defined]
         retraction_status=row.retraction_status,  # type: ignore[attr-defined]
         topics=schemas.topics_from_json(row.topics),  # type: ignore[attr-defined]
+        fields=list(row.fields or []),  # type: ignore[attr-defined]
         citation_count=row.citation_count,  # type: ignore[attr-defined]
+    )
+
+
+@router.get(
+    "/fields",
+    summary="List subject fields",
+    response_model=schemas.FieldsResponse,
+    responses={429: {"model": schemas.ErrorResponse, "description": "Rate limit exceeded"}},
+    description=(
+        "The subject-field vocabulary the `field` filter accepts, with the number of papers "
+        "in each. Fields are normalised across every source: OpenAlex supplies them directly, "
+        "arXiv archives and bioRxiv/medRxiv categories are mapped onto the same vocabulary, "
+        "and papers classified only in MeSH carry no field. `papers_without_field` is how "
+        "many papers no field filter can reach."
+    ),
+)
+@limiter.limit(read_limit)
+def list_fields(
+    request: Request,
+    response: Response,
+    session: Annotated[Session, Depends(get_session)],
+) -> schemas.FieldsResponse:
+    counts, without_field = repository.field_counts(session)
+    return schemas.FieldsResponse(
+        fields=[
+            schemas.FieldSummary(
+                slug=entry["slug"],
+                label=entry["label"],
+                paper_count=counts.get(entry["slug"], 0),
+            )
+            for entry in taxonomy.describe()
+        ],
+        papers_without_field=without_field,
     )
 
 
@@ -80,12 +137,17 @@ def list_papers(
     open_access: Annotated[
         bool, Query(description="Only papers with a known open-access copy")
     ] = False,
+    field: Annotated[
+        list[str] | None,
+        Query(description="Restrict to these subject fields, e.g. computer-science"),
+    ] = None,
 ) -> schemas.PaperPage:
     search_filters = SearchFilters(
         sources=tuple(source or ()),
         preprints=preprints,
         peer_reviewed_only=peer_reviewed,
         open_access_only=open_access,
+        fields=validated_fields(field),
     )
     rows, total = repository.list_papers(
         session, limit=limit, offset=offset, search_filters=search_filters
