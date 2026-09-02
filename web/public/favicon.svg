@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-labelledby="academious-favicon-title">
+  <title id="academious-favicon-title">Academious</title>
+  <style>
+    /* The tab strip is the one surface this product does not control the
+       background of, so the mark tracks the browser's own theme instead of
+       assuming a light one. */
+    .mark { stroke: #0f4c81; }
+    @media (prefers-color-scheme: dark) {
+      .mark { stroke: #7cb4dd; }
+    }
+  </style>
+  <g class="mark" fill="none" stroke-width="3.6" stroke-linejoin="miter">
+    <path d="M7 26 16 6.5 25 26" />
+    <path d="M1.5 26 H30.5" />
+  </g>
+</svg>

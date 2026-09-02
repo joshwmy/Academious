@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-labelledby="academious-mark-title">
+  <title id="academious-mark-title">Academious</title>
+  <!--
+    The A of Academious reduced to its structure: a peak standing on a rule that
+    runs past it on both sides. The rule is the record - the continuous body of
+    literature - and the mark rests on it rather than floating free.
+
+    Two strokes at one weight. No counters, no fills and no detail to lose, so
+    the mark survives a 16px favicon unchanged rather than needing a simplified
+    variant. Uses currentColor, so a caller sets the colour by setting `color`.
+  -->
+  <g fill="none" stroke="currentColor" stroke-width="3.6" stroke-linejoin="miter">
+    <path d="M7 26 16 6.5 25 26" />
+    <path d="M1.5 26 H30.5" />
+  </g>
+</svg>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 184 32" role="img" aria-labelledby="academious-logo-title">
+  <title id="academious-logo-title">Academious</title>
+  <!--
+    The horizontal lockup: mark, one mark-width of clear space, wordmark.
+
+    The wordmark is set in the same serif stack the product uses for paper
+    titles, so the logo and the literature it presents share a voice. That makes
+    this file font-dependent: it renders correctly in a browser, and anywhere a
+    system serif exists, but it is not a press-ready outlined asset. Converting
+    the wordmark to paths needs a licensed face and is the one brand deliverable
+    still outstanding.
+  -->
+  <g fill="none" stroke="#0f4c81" stroke-width="3.6" stroke-linejoin="miter">
+    <path d="M7 26 16 6.5 25 26" />
+    <path d="M1.5 26 H30.5" />
+  </g>
+  <text
+    x="46" y="25"
+    font-family="ui-serif, Charter, 'Bitstream Charter', 'Iowan Old Style', Georgia, Cambria, 'Times New Roman', serif"
+    font-size="26"
+    letter-spacing="-0.4"
+    fill="#1a1917"
+  >Academious</text>
+</svg>
