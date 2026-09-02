@@ -133,9 +133,11 @@ def backfill(session: Session, *, apply: bool, batch_size: int) -> Report:
         if apply and changed:
             session.commit()
         else:
-            # Detach the batch either way: holding every paper in the identity
-            # map turns a 100k-row corpus into a memory problem.
-            session.expunge_all()
+            # Detach this batch: holding every paper in the identity map turns
+            # a 100k-row corpus into a memory problem. Only the batch, though -
+            # expunge_all() would also detach objects the caller holds.
+            for paper in batch:
+                session.expunge(paper)
 
     return report
 

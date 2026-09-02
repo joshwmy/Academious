@@ -25,7 +25,7 @@ from academious.core.logging import get_logger
 from academious.db.models.ops import IngestionRun, RunStatus, SourceCursor
 from academious.db.models.paper import Paper, PaperIdentifier
 from academious.db.models.support import SourceRecord, Venue
-from academious.ingest import canonicalise, oa, relations, scope
+from academious.ingest import canonicalise, dates, oa, relations, scope
 from academious.ingest.merge import apply_candidate
 from academious.sources.base import PaperCandidate, RawRecord, SourceConnector
 
@@ -145,6 +145,11 @@ class IngestPipeline:
                 reason=scope.describe(candidate.work_type),
             )
             candidate = None
+        # A publication date the feed cannot believe is cleared here, for the
+        # same reason admission is decided here: one rule, every source. See
+        # ingest/dates.py - the ordering makes a wrong date a front-page claim.
+        if candidate is not None:
+            candidate = dates.sanitise(candidate)
         if candidate is None:
             counters.records_skipped += 1
             if stored is None:

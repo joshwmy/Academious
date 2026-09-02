@@ -146,6 +146,7 @@ Declared as data in `ingest/merge.py`, not as branches:
 | Topics | OpenAlex > PubMed = Europe PMC > bioRxiv > arXiv |
 | Citation count | OpenAlex only - it is the only source that computes them globally |
 | `first_seen_online` | Earliest across all sources |
+| Dates | Cleared before merge if more than a year ahead of ingestion (`ingest/dates.py`) |
 | `is_peer_reviewed` | Sticky: true once **any** source reports it |
 | `is_preprint` | Cleared once a peer-reviewed version is known |
 | `oa_status` | Only improves: `unknown < closed < bronze < green < hybrid < gold < diamond` |

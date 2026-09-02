@@ -529,6 +529,21 @@ The host must be provisioned first - see "Provisioning the host" above.
    mapped to nothing. A label appearing there is a connector emitting vocabulary
    the mapping has not met.
 
+9. **Clear implausible publication dates.** Same shape as the step above and
+   the same reason: the rule applies to what arrives from now on, not to what
+   is already stored, and a stored future date is not a passive error — the
+   feed is ordered by date, so it holds the front page until the year it
+   claims.
+
+   ```bash
+   docker compose run --rm worker python scripts/sanitise_dates.py           # report
+   docker compose run --rm worker python scripts/sanitise_dates.py --apply   # clear
+   ```
+
+   The dry run prints the count by source and a sample of the worst offenders.
+   Read it: a large number from a source other than OpenAlex would mean a
+   connector is mis-parsing dates rather than a repository holding bad ones.
+
 Then confirm the deployment-layer controls actually hold, from the server:
 
 ```bash

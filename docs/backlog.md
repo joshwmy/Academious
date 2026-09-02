@@ -99,8 +99,9 @@ it could be started but deliberately is not.
 | [DATA-004](#data-004) | `halfvec` quantisation effect not re-checked at scale | DEFERRED | At 10x corpus |
 | [DATA-005](#data-005) | Cost model still rests on estimated ingestion volumes | DEFERRED | After a week of real harvesting |
 | [DATA-006](#data-006) | MeSH-classified papers are reachable by no field | DEFERRED | See trigger |
-| [DATA-007](#data-007) | 29,728 papers carry no topics from any source | READY | Before more field-coverage work |
+| [DATA-007](#data-007) | 29,728 papers carry no topics — all Europe PMC | DEFERRED | Before more field-coverage work |
 | [DATA-008](#data-008) | Zenodo versions arrive as separate papers | READY | With feed-duplication work |
+| [DATA-009](#data-009) | 607 papers claimed a future publication date | DONE | — |
 | [SRC-001](#src-001) | PubMed connector | DEFERRED | Phase 2 remainder |
 | [SRC-002](#src-002) | Europe PMC connector | DONE | — |
 | [SRC-003](#src-003) | Unpaywall fallback | DEFERRED | Phase 2 remainder |
@@ -750,20 +751,35 @@ field and are excluded whenever a reader selects one.
 
 ### DATA-007
 
-**29,728 papers carry no topics from any source.** — `READY`
+**29,728 papers carry no topics from any source.** — `DEFERRED`
 
 The field backfill measured it: 28% of the live corpus has an empty `topics`
 array, so nothing classifies those papers — not a mapping gap like DATA-006, an
-absence of input. Their share of the corpus is larger than the MeSH gap.
+absence of input.
 
-* **Not yet diagnosed.** Which sources they come from, and whether the topics
-  were absent upstream or dropped in normalisation, is one grouped query away
-  and has not been run.
-* **Risk/impact** — they are unreachable by any field filter, and if the cause
-  is a normalisation defect rather than sparse upstream metadata then the fix is
-  cheap and the loss is ongoing.
-* **Trigger** — before any further work on field coverage; diagnosing this may
-  be worth more than mapping MeSH.
+* **Diagnosed (2026-09-03)** — **every one of them is a Europe PMC paper**, and
+  the other three sources have none at all:
+
+  | source | papers | no topics |
+  |---|---|---|
+  | europepmc | 48,564 | **29,728** |
+  | openalex | 46,012 | 0 |
+  | arxiv | 10,131 | 0 |
+  | biorxiv | 2,108 | 0 |
+
+  Not a normalisation defect. Europe PMC carries MeSH only once MEDLINE has
+  indexed a record, which happens months after publication — the connector
+  already recorded this (SRC-002: 1 of 100 records carried MeSH in a fresh
+  window). So the paper arrives before its classification does.
+* **This collapses DATA-006 and DATA-007 into one problem.** 48,520 papers
+  carry no field; 48,564 papers come from Europe PMC. Both halves of the
+  field-coverage gap — MeSH-only and topicless — are that one source, and
+  mapping MeSH would fix at most two fifths of it.
+* **The lever is therefore enrichment, not mapping.** 91% of the Europe PMC
+  slice carries a DOI, and an OpenAlex lookup by DOI returns topics with
+  `field` already on them. That is the same work DATA-003 wants and it would
+  close the field gap, not narrow it.
+* **Trigger** — before any further work on field coverage.
 
 ### DATA-008
 
@@ -777,6 +793,16 @@ DOIs and the title-similarity path does not fold them because their DOIs
 conflict, which [ADR 0004](adr/0004-preprints-linked-not-merged.md) treats as
 decisive evidence of two works.
 
+* **Sized on the live corpus (2026-09-03)** — Zenodo is **25,399 papers, 24% of
+  the corpus, across 11,442 distinct titles**: 2.2 records per deposit. One
+  title appears 26 times. It is 24,586 of the 40,206 papers involved in a
+  duplicate title group, and 325 of the 607 future-dated papers. 19,676 are
+  typed `preprint`, so the admission policy has no grounds to exclude them —
+  they are research literature, deposited repeatedly.
+* **Not all title duplication is this.** The next venues down the list are
+  19th-century archives — *Edinburgh medical journal*, *The Hospital* — whose
+  repeated titles are genuinely different articles called "Notes and news".
+  Any fix must not fold those.
 * **Risk/impact** — visible duplicates in the feed, and one work occupying
   several slots in a ranked page. It is a discovery-quality defect, not a
   correctness one.
@@ -786,6 +812,31 @@ decisive evidence of two works.
   the question is whether OpenAlex preserves it.
 * **Trigger** — when feed duplication is worth a pass, or with any other work on
   `ingest/relations.py`.
+
+### DATA-009
+
+**607 papers claimed a publication date in the future.** — `DONE` (2026-09-03)
+
+The feed orders by `published_date DESC`, so a record dated 2050-02-21 held the
+first position on the site and would have held it for twenty-four years. Nothing
+about the row looked broken.
+
+* **Closed by** — `fix: stop believing publication dates from the far future`.
+* **Measured before the fix** — 607 future-dated papers, **all from OpenAlex**;
+  414 inside 2026, 95 in 2027, then a thin tail of 98 running out to 2050. 325
+  of them were Zenodo deposits.
+* **The distribution is the design.** The first group is not an error — journals
+  postdate issues routinely, and a September article carrying a December issue
+  date is correct metadata. So `ingest/dates.py` applies a *horizon* rather than
+  a ban: a date more than a year ahead of ingestion is treated as unknown, and
+  the paper falls to the end of a `NULLS LAST` ordering instead of the top.
+* **Cleared, not clamped.** A fabricated date moved to the horizon is still
+  fabricated and would still outrank everything published today. The raw payload
+  is untouched, so the original survives in `source_record` and the rule can be
+  replayed.
+* **Applied once in the pipeline**, next to the corpus-admission gate, for the
+  same reason: a rule enforced in four connectors is a rule the fifth will not
+  have. `scripts/sanitise_dates.py` repairs what was already stored.
 
 ---
 
