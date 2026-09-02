@@ -20,5 +20,11 @@ RUN pip install --no-cache-dir -e ".[embed]"
 
 COPY alembic.ini ./
 COPY migrations ./migrations
+# Operational scripts, not application code: one-off re-derivations that a
+# deploy has to be able to run. `backfill_fields.py` is the reason this line
+# exists - migration 0004 adds `paper.fields` empty on purpose, so a release
+# that ships the migration and not the script leaves every field filter
+# matching nothing, which reads as an empty corpus rather than a missing step.
+COPY scripts ./scripts
 
 CMD ["uvicorn", "academious.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

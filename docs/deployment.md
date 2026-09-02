@@ -507,6 +507,18 @@ The host must be provisioned first - see "Provisioning the host" above.
    docker compose run --rm worker python scripts/backfill_fields.py --apply   # write
    ```
 
+   The script is in the image because the `Dockerfile` copies `scripts/`. It
+   was not, on the release that first shipped this migration, and the failure
+   is worth knowing: `alembic upgrade head` succeeded, the API came up serving
+   a field filter, and the backfill died on `can't open file`. Between those
+   two moments every field matched nothing while `/fields` reported the whole
+   vocabulary at zero - a live filter over a column no code had populated. If
+   an image ever lacks it again, mount it rather than rebuilding:
+
+   ```bash
+   docker compose run --rm -v /srv/academious/scripts:/app/scripts worker      python scripts/backfill_fields.py --apply
+   ```
+
    It is a pure re-derivation from stored topics: no network, no model, and
    idempotent, so a second run writes nothing. Run it again after any change to
    `ingest/taxonomy.py` - ordinary ingestion repairs a paper only when a source
