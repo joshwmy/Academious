@@ -140,3 +140,48 @@ def test_an_aggregators_view_of_a_deposit_is_still_a_deposit():
     )
 
     assert is_general_repository(via_openalex)
+
+
+# ------------------------------------------------ the venue decides, not the DOI
+
+
+def _via_openalex(**venue_kwargs) -> PaperCandidate:
+    return PaperCandidate(
+        source_key="openalex",
+        source_id="W1",
+        title="A paper",
+        identifiers=[CandidateIdentifier(IdType.DOI, "10.5281/zenodo.1")],
+        venue=CandidateVenue(**venue_kwargs) if venue_kwargs else None,
+    )
+
+
+@pytest.mark.parametrize("venue_type", ["journal", "conference", "book series", "Journal"])
+def test_a_vouching_venue_survives_a_repository_doi(venue_type):
+    """Small journals mint DOIs through Zenodo. The prefix is not the venue.
+
+    Measured on the live corpus: 458 papers in Open MIND, 24 in the World
+    Journal of Pharmacy, 20 on arXiv, all carrying Zenodo-registered DOIs and
+    all flagged for removal by a prefix test that ran before the venue test.
+    """
+    assert not is_general_repository(_via_openalex(name="Open MIND", venue_type=venue_type))
+
+
+def test_a_repository_venue_with_a_repository_doi_is_a_deposit():
+    assert is_general_repository(_via_openalex(name="Zenodo", venue_type="repository"))
+
+
+def test_a_repository_doi_with_no_venue_at_all_is_a_deposit():
+    # Nothing vouched, so the prefix is the only evidence there is.
+    assert is_general_repository(_via_openalex())
+
+
+def test_a_repository_venue_is_caught_even_without_a_repository_doi():
+    named_only = PaperCandidate(
+        source_key="openalex",
+        source_id="W2",
+        title="A paper",
+        identifiers=[CandidateIdentifier(IdType.DOI, "10.1234/journal.1")],
+        venue=CandidateVenue(name="figshare", venue_type="repository"),
+    )
+
+    assert is_general_repository(named_only)

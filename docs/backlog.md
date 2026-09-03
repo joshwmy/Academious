@@ -948,6 +948,25 @@ Sampling the duplicate groups for DATA-008 turned up what they actually are:
 * **What it deliberately costs** — a real paper deposited only to Zenodo and
   indexed nowhere else is excluded. Recoverable: payloads are kept, so a later
   rule can readmit them without re-harvesting.
+* **And the same mistake again, one layer up.** The first live dry run, over
+  116,390 papers, flagged 29,457 for removal - and its venue table held 458
+  papers in *Open MIND*, 24 in the World Journal of Pharmacy, 20 on arXiv and
+  a few hundred more. Small journals routinely mint DOIs through Zenodo, so the
+  prefix was condemning work that was *published in a journal*. Exempting
+  self-vouching sources had fixed half the lesson; venues vouch too. The rule
+  now asks the venue first (`primary_location.source.type` of journal,
+  conference, book series or ebook platform) and the prefix speaks only when
+  the venue said nothing useful.
+* **The dry run is what caught it, twice.** Neither error was visible in the
+  code or in a test written from the same assumption as the code. Both showed
+  up in a table of what the rule was about to delete, which is the argument for
+  every prune in this project defaulting to a report.
+* **Recovery** — `scripts/readmit_orphaned.py`, and it had to be written: a
+  re-harvest would never have restored those papers. `process_record` skips a
+  payload whose content hash is unchanged, and an orphaned record is
+  byte-identical to what is stored, so it would have been skipped forever. The
+  replay passes `force=True` to say that the rule changed rather than the
+  record.
 * **Supersedes the version-folding plan (DATA-008).** Folding versions would
   have merged spam into fewer pieces of spam.
 

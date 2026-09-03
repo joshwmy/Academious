@@ -73,6 +73,21 @@ GENERAL_REPOSITORY_DOI_PREFIXES: tuple[str, ...] = (
     "10.31219/",  # OSF Preprints
 )
 
+#: Venue types, as OpenAlex reports them in `primary_location.source.type`,
+#: that vouch for what they carry. A journal has editors; a conference has a
+#: programme committee; a book publisher has an acquisitions process. None of
+#: them is a place anyone can upload to.
+#:
+#: This is the second half of the lesson the arXiv DOI taught. Small journals
+#: routinely mint their DOIs through Zenodo, so the prefix condemns work that
+#: was published in a journal: a live dry run over 116,390 papers flagged 458
+#: papers in *Open MIND*, 24 in the World Journal of Pharmacy and 20 on arXiv,
+#: all for having Zenodo-registered identifiers. The venue decides; the prefix
+#: only speaks when the venue does not.
+VOUCHING_VENUE_TYPES: frozenset[str] = frozenset(
+    {"journal", "conference", "book series", "ebook platform"}
+)
+
 #: Venue-name fallback, for records that reach us without a DOI. Matched as a
 #: case-folded substring, which is why the entries are distinctive words rather
 #: than full names: Zenodo arrives as "Zenodo (CERN European Organization for
@@ -92,17 +107,24 @@ def is_general_repository(candidate: PaperCandidate) -> bool:
     corroboration before it can found a paper.
 
     A record from a source that vouches for its own contents is never one of
-    these, whatever DOI it carries.
+    these, whatever DOI it carries, and neither is one published in a venue
+    that vouches for its own contents.
     """
     if candidate.source_key in SELF_VOUCHING_SOURCES:
         return False
 
-    doi = (candidate.primary_doi or "").lower()
-    if doi.startswith(GENERAL_REPOSITORY_DOI_PREFIXES):
-        return True
+    venue_type = (candidate.venue.venue_type or "").casefold() if candidate.venue else ""
+    if venue_type in VOUCHING_VENUE_TYPES:
+        return False
 
     venue_name = (candidate.venue.name if candidate.venue else "").casefold()
-    return any(term in venue_name for term in GENERAL_REPOSITORY_VENUE_TERMS)
+    if any(term in venue_name for term in GENERAL_REPOSITORY_VENUE_TERMS):
+        return True
+
+    # The DOI prefix speaks last, and only about records whose venue said
+    # nothing useful: a repository, or no venue at all.
+    doi = (candidate.primary_doi or "").lower()
+    return doi.startswith(GENERAL_REPOSITORY_DOI_PREFIXES)
 
 
 def describe(candidate: PaperCandidate) -> str:

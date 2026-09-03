@@ -579,9 +579,20 @@ The host must be provisioned first - see "Provisioning the host" above.
     development.
 
     This deletes papers. Raw payloads survive (`source_record.paper_id` is set
-    NULL), so the decision is reversible in principle by a later readmission
-    pass, but the paper rows and their embeddings are not coming back without
-    one.
+    NULL), so the decision is reversible - by
+    `scripts/readmit_orphaned.py`, which replays orphaned payloads through the
+    current rules:
+
+    ```bash
+    docker compose run --rm worker python scripts/readmit_orphaned.py           # report
+    docker compose run --rm worker python scripts/readmit_orphaned.py --apply
+    ```
+
+    **A re-harvest will not do this.** Harvesting skips a payload whose content
+    hash is unchanged, which is what makes it cheap, and an orphaned record is
+    byte-identical to the one stored - so it would be skipped on every future
+    run. The readmission passes `force=True` because what changed is the rule,
+    not the record.
 
 Then confirm the deployment-layer controls actually hold, from the server:
 

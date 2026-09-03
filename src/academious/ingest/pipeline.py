@@ -118,8 +118,22 @@ class IngestPipeline:
         self._settings = settings or get_settings()
 
     def process_record(
-        self, session: Session, connector: SourceConnector, raw: RawRecord, counters: RunCounters
+        self,
+        session: Session,
+        connector: SourceConnector,
+        raw: RawRecord,
+        counters: RunCounters,
+        *,
+        force: bool = False,
     ) -> None:
+        """Ingest one record.
+
+        `force` skips the unchanged-payload shortcut. Harvesting must keep that
+        shortcut - it is what makes a re-run cheap - but replaying a *stored*
+        payload against changed admission rules must not be skipped for being
+        unchanged: the payload is the same, and what changed is the rule. See
+        scripts/readmit_orphaned.py.
+        """
         digest = content_hash(raw.payload)
         stored = session.execute(
             select(SourceRecord).where(
@@ -128,7 +142,7 @@ class IngestPipeline:
             )
         ).scalars().first()
 
-        if stored is not None and stored.content_hash == digest:
+        if not force and stored is not None and stored.content_hash == digest:
             counters.records_skipped += 1
             return
 
