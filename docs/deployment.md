@@ -588,6 +588,12 @@ The host must be provisioned first - see "Provisioning the host" above.
     docker compose run --rm worker python scripts/readmit_orphaned.py --apply
     ```
 
+    The replay walks every orphaned record, and most of them are deposits that
+    were removed correctly and are rejected again. Those decisions are logged at
+    INFO, which on a corpus holding tens of thousands of them buries the summary
+    entirely - so the script quiets its own logging to WARNING unless `--verbose`
+    is passed. The numbers you want are the last four lines.
+
     **A re-harvest will not do this.** Harvesting skips a payload whose content
     hash is unchanged, which is what makes it cheap, and an orphaned record is
     byte-identical to the one stored - so it would be skipped on every future

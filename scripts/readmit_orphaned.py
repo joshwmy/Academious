@@ -31,8 +31,10 @@ from __future__ import annotations
 
 import argparse
 import collections
+import logging
 import sys
 
+import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -126,11 +128,21 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--batch-size", type=int, default=200, help="records per commit")
     parser.add_argument("--limit", type=int, default=None, help="stop after this many records")
+    parser.add_argument(
+        "--verbose", action="store_true", help="log every record the pipeline decides on"
+    )
     args = parser.parse_args(argv)
 
     sources = args.sources or list(registry.CONNECTOR_FACTORIES)
 
     configure_logging()
+    if not args.verbose:
+        # The replay walks every orphaned record, and the great majority are
+        # the deposits that were correctly removed - each one logging a line
+        # as the pipeline rejects it again. On a corpus with 29,000 of them
+        # that buries the summary this script exists to print. WARNING and
+        # above still comes through, so a real failure is not hidden.
+        structlog.configure(wrapper_class=structlog.make_filtering_bound_logger(logging.WARNING))
     with session_scope() as session:
         readmit(
             session,
