@@ -99,7 +99,7 @@ it could be started but deliberately is not.
 | [DATA-004](#data-004) | `halfvec` quantisation effect not re-checked at scale | DEFERRED | At 10x corpus |
 | [DATA-005](#data-005) | Cost model still rests on estimated ingestion volumes | DEFERRED | After a week of real harvesting |
 | [DATA-006](#data-006) | MeSH-classified papers are reachable by no field | WONTFIX | Measured: 12 papers |
-| [DATA-007](#data-007) | 29,728 papers carry no topics — all Europe PMC | IN PROGRESS | Look up by PMCID |
+| [DATA-007](#data-007) | 29,728 papers carry no topics — all Europe PMC | CLOSED | Ceiling: 73.8% coverage |
 | [DATA-008](#data-008) | Zenodo versions arrive as separate papers | READY | With feed-duplication work |
 | [DATA-009](#data-009) | 607 papers claimed a future publication date | DONE | — |
 | [DATA-010](#data-010) | The feed ranked papers by the date they claimed | DONE | — |
@@ -780,7 +780,7 @@ field and are excluded whenever a reader selects one.
 
 ### DATA-007
 
-**29,728 papers carry no topics from any source.** — `IN PROGRESS` (2026-09-05)
+**29,728 papers carry no topics from any source.** — `CLOSED` (2026-09-05)
 
 The field backfill measured it: 28% of the live corpus has an empty `topics`
 array, so nothing classifies those papers — not a mapping gap like DATA-006, an
@@ -832,16 +832,34 @@ absence of input.
   neither MeSH nor, often, a publisher DOI. They are spread evenly across
   2009-2026 at 350-540 a year, so this is a structural slice and not an
   indexing lag. None has ever been asked of OpenAlex.
-* **Still open, because the join was too narrow rather than exhausted.** Every
-  one of those 25,480 papers carries a PMCID, and OpenAlex filters on
-  `ids.pmcid` with the same OR syntax as `doi`. Extending the lookup is a
-  change of filter key, not of design: batching, the incremental exclusion, the
-  pipeline merge and the advisory lock all already work. That would put
-  coverage near 99% for roughly the same credit spend.
-* **Trigger** — extend `client.fetch_by_doi` to identifiers generally, sample
-  500 by PMCID, and close this entry on what OpenAlex actually holds for the
-  PMC subset. If its coverage there is poor, the entry closes at 73.8% with the
-  ceiling recorded and named.
+* **A PMCID lookup looked like the answer and is not. Do not build it.**
+  Every one of the 25,480 carries a PMCID, and `ids.pmcid` is a valid OpenAlex
+  filter — it parses, returns HTTP 200, and matches nothing. Probed against the
+  API on 2026-09-05: over 50 open-access works, the `ids` block carried
+  `openalex` (50), `doi` (50), `mag` (48) and `pmid` (33). **`pmcid` appeared
+  zero times.** OpenAlex does not populate it, so the filter is a well-formed
+  query against an empty field. A pass built on it would be correct code
+  returning nothing for all 25,480 papers.
+* **PMID does not rescue it.** OpenAlex does index `ids.pmid`, but only 215 of
+  the 25,480 carry a PMID — 0.8%. These records are PMC-subset precisely
+  because MEDLINE has not indexed them, and a PMID is what MEDLINE indexing
+  issues.
+* **Part of the residue is not a classification gap at all.** Europe PMC
+  records matching `SRC:PMC AND NOT DOI:*` sample as *"Quiz Corner"* and
+  *"Answers to Quiz Corner"* — journal front matter. Our own slice mixes that
+  with genuine articles, so the share is unmeasured, but some fraction of the
+  25,480 is material that should never have been admitted rather than material
+  we failed to classify. That is a scope question for `ingest/scope.py`, not a
+  taxonomy one, and it wants its own entry.
+* **Closed at the ceiling** — field coverage 73.8%, and the remaining 26.2% is
+  not reachable by any identifier lookup available to us. Title search is the
+  only remaining join: no OR batching, so ~25,000 calls at ~250,000 credits
+  against a 100,000/day quota, and fuzzy matching on title alone against the
+  project's own rule that a false merge is worse than a miss
+  ([core/ids.py](../src/academious/core/ids.py)). Not worth it.
+* **Trigger to reopen** — OpenAlex populating `ids.pmcid`, which would make the
+  original plan work unchanged; or a scope pass establishing how much of the
+  25,480 is front matter, which may shrink the gap without classifying anything.
 
 ### DATA-008
 
