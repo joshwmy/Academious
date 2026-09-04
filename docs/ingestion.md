@@ -83,6 +83,53 @@ the paper is still the record of what was claimed.
 articles with no abstract; requiring one would silently discard a large fraction
 of the biomedical corpus. Abstract coverage is instead a metric to watch.
 
+## Enrichment: asking a second source about a paper we already hold
+
+Harvesting answers *what is new*. It cannot answer *what did the source that
+found this paper leave out*, because the paper is already here and no window
+reaches backwards to it.
+
+The gap that forced the distinction: **48,520 papers - 46% of the corpus - had
+no subject field on 2026-09-03, and every one came from Europe PMC.** Europe PMC
+classifies in MeSH, and MEDLINE assigns MeSH months after publication, so the
+paper reliably arrives before its classification does. That is not a mapping
+defect, so [`taxonomy.py`](../src/academious/ingest/taxonomy.py) cannot fix it,
+and `scripts/backfill_fields.py` re-derives fields from *stored* topics, so it
+cannot either. What fixes it is a source that classifies on publication.
+
+[`ingest/enrich.py`](../src/academious/ingest/enrich.py) looks those papers up
+in OpenAlex by DOI - 91% of the Europe PMC slice carries one - and feeds the
+answer through `process_record`, the same pipeline a harvest uses. Nothing about
+the merge is special-cased, which is the point: the paper is deduplicated,
+scope-checked and merged under the same field precedence, and the enrichment
+therefore brings citation counts, OA locations and a venue along with the
+topics. A separate, weaker copy of `merge.apply_candidate` would be the
+alternative.
+
+Three properties it is built for:
+
+* **Batched, because credits are the binding limit.** DOIs go out 50 to an OR
+  filter and a list call costs 10 credits, so a 50,000-paper pass is 1,000 calls
+  and 10,000 credits against a daily quota of 100,000. One lookup per paper
+  would be 50,000 requests. A DOI containing `|` or `,` is skipped and counted:
+  those characters are the filter's own delimiters, and one inside a value
+  rewrites the query into a different, well-formed one that still returns 200.
+* **Incremental across runs.** A paper that has been asked about carries an
+  OpenAlex `source_record` afterwards, whether or not the answer helped, and is
+  not asked again. Without that, every future pass would re-pay for the tail:
+  DOIs OpenAlex does not index, and works it holds without topics. `--recheck`
+  ignores the exclusion, which is what to run once upstream has had time to
+  catch up.
+* **Dry run by default, and it still makes the requests.** What a pass would
+  change is a fact about OpenAlex's answer rather than about our database, so it
+  has to ask before it can report; it then rolls back.
+
+```bash
+python scripts/enrich_from_openalex.py               # report only
+python scripts/enrich_from_openalex.py --limit 500   # sample first
+python scripts/enrich_from_openalex.py --apply
+```
+
 ## Idempotency
 
 Idempotency is a property of the pipeline, not an accident.

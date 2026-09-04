@@ -98,8 +98,8 @@ it could be started but deliberately is not.
 | [DATA-003](#data-003) | Title-only embedding path unexercised at volume | BLOCKED | With SRC-004 |
 | [DATA-004](#data-004) | `halfvec` quantisation effect not re-checked at scale | DEFERRED | At 10x corpus |
 | [DATA-005](#data-005) | Cost model still rests on estimated ingestion volumes | DEFERRED | After a week of real harvesting |
-| [DATA-006](#data-006) | MeSH-classified papers are reachable by no field | DEFERRED | See trigger |
-| [DATA-007](#data-007) | 29,728 papers carry no topics — all Europe PMC | DEFERRED | Before more field-coverage work |
+| [DATA-006](#data-006) | MeSH-classified papers are reachable by no field | IN PROGRESS | Run the enrichment pass |
+| [DATA-007](#data-007) | 29,728 papers carry no topics — all Europe PMC | IN PROGRESS | Run the enrichment pass |
 | [DATA-008](#data-008) | Zenodo versions arrive as separate papers | READY | With feed-duplication work |
 | [DATA-009](#data-009) | 607 papers claimed a future publication date | DONE | — |
 | [DATA-010](#data-010) | The feed ranked papers by the date they claimed | DONE | — |
@@ -728,7 +728,7 @@ assumption is soft.
 
 ### DATA-006
 
-**MeSH-classified papers are reachable by no field.** — `DEFERRED`
+**MeSH-classified papers are reachable by no field.** — `IN PROGRESS` (2026-09-03)
 
 Europe PMC classifies with MeSH descriptor *terms*, and Europe PMC is roughly
 half the corpus. `ingest/taxonomy.py` does not map them, so those papers carry no
@@ -752,13 +752,24 @@ field and are excluded whenever a reader selects one.
 * **Cheaper alternative worth measuring first** — how many Europe PMC papers
   already carry OpenAlex topics through deduplication. If the overlap is large,
   the gap closes by harvesting rather than by mapping.
-* **Trigger to revisit** — when the corpus stops being half Europe PMC, or when
-  a biomedical facet is wanted in its own right.
+* **That alternative is what shipped, and it is not harvesting.** Waiting for a
+  harvest window to happen to cover a paper we already hold is a bet on
+  coincidence. `ingest/enrich.py` asks OpenAlex about those papers *by DOI*
+  instead, and merges the answer through the ordinary pipeline —
+  [ingestion.md](ingestion.md#enrichment-asking-a-second-source-about-a-paper-we-already-hold).
+  It closes both halves of the gap at once, because a paper reached this way
+  gains OpenAlex topics whether it previously had unmappable MeSH (this entry)
+  or nothing at all (DATA-007).
+* **Still open** — the pass is written and tested but has not been run against
+  the live corpus, so the recovered share is still a prediction. Mapping MeSH
+  remains unnecessary unless the residue turns out to be large.
+* **Trigger to revisit** — after the first live `--apply` run reports what it
+  could not reach.
 * **Source** — [ADR 0009](adr/0009-normalised-subject-fields.md).
 
 ### DATA-007
 
-**29,728 papers carry no topics from any source.** — `DEFERRED`
+**29,728 papers carry no topics from any source.** — `IN PROGRESS` (2026-09-03)
 
 The field backfill measured it: 28% of the live corpus has an empty `topics`
 array, so nothing classifies those papers — not a mapping gap like DATA-006, an
@@ -786,7 +797,17 @@ absence of input.
   slice carries a DOI, and an OpenAlex lookup by DOI returns topics with
   `field` already on them. That is the same work DATA-003 wants and it would
   close the field gap, not narrow it.
-* **Trigger** — before any further work on field coverage.
+* **Built (2026-09-03)** — `ingest/enrich.py` and
+  `scripts/enrich_from_openalex.py`. DOIs go out 50 to an OR filter because
+  credits, not requests, are OpenAlex's binding limit: the whole gap is ~1,000
+  list calls and ~10,000 credits against a 100,000/day quota. A paper that has
+  been asked about keeps an OpenAlex `source_record` afterwards and is not
+  asked again, so a second run is incremental rather than a re-scan — without
+  that, the tail of DOIs OpenAlex does not index would be re-paid for forever.
+* **Not yet run against the live corpus.** Until it is, the share this
+  recovers is an estimate, and so is the residue.
+* **Trigger** — run it; then this entry closes with the measured number, or
+  stays open with a smaller one.
 
 ### DATA-008
 

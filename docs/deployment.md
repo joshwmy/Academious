@@ -600,6 +600,35 @@ The host must be provisioned first - see "Provisioning the host" above.
     run. The readmission passes `force=True` because what changed is the rule,
     not the record.
 
+12. **Classify the papers that arrived with no subject field.** 46% of the
+    corpus on 2026-09-03, all of it Europe PMC, which supplies MeSH only once
+    MEDLINE has indexed a record - months after the paper reaches us. This asks
+    OpenAlex about them by DOI.
+
+    ```bash
+    docker compose run --rm worker python scripts/enrich_from_openalex.py --limit 500  # sample
+    docker compose run --rm worker python scripts/enrich_from_openalex.py              # report
+    docker compose run --rm worker python scripts/enrich_from_openalex.py --apply
+    ```
+
+    **The dry run makes the requests.** What a pass would change is a fact about
+    OpenAlex's answer, not about our database, so it asks and then rolls back -
+    which is why `--limit` is worth using first even though nothing is written.
+
+    Requires `ACADEMIOUS_OPENALEX_API_KEY`. The cost is small and worth checking
+    against the quota anyway: 50 DOIs per request at 10 credits a call, so the
+    whole gap is roughly 10,000 of the 100,000 daily credits.
+
+    Two numbers to read. **"founded a NEW paper" must be 0** - the pass
+    classifies the corpus and must not grow it; anything else means works are
+    coming back under a canonical DOI that no longer matches what was asked, and
+    the run should be stopped. **"still without a field"** is the residue, and
+    it is what decides whether mapping MeSH is still worth doing (DATA-006).
+
+    It is also on the nightly schedule in [`deploy/crontab`](../deploy/crontab),
+    because the hourly Europe PMC harvest re-creates the gap every day; running
+    it once by hand does not settle it.
+
 Then confirm the deployment-layer controls actually hold, from the server:
 
 ```bash

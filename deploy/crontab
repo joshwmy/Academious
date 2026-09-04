@@ -63,3 +63,17 @@ MAILTO=""
 # hourly schedule. Retracted papers are excluded from discovery by default, so
 # a stale run means recommending work that has been withdrawn.
 45 3 * * * cd /srv/academious && flock -n /var/lock/academious-retractions.lock docker compose run --rm worker python -m academious.workers retractions >> /var/log/academious/retractions.log 2>&1
+
+# Classify papers that arrived without a field, nightly.
+#
+# Europe PMC is the reason this is a schedule and not a one-off. It classifies
+# in MeSH, and MEDLINE assigns MeSH months after publication, so every hourly
+# harvest deposits papers no field can reach - a backfill run once would be
+# undone by the next morning. This asks OpenAlex about them by DOI and merges
+# the answer through the ordinary pipeline; see ingestion.md.
+#
+# Cheap by construction: 50 DOIs per request, and a paper already asked about
+# is not asked again, so a steady-state run handles one night's arrivals rather
+# than re-scanning the corpus. No off-peak constraint - this is OpenAlex, not
+# NCBI - so it sits away from the other entries rather than inside a window.
+15 1 * * * cd /srv/academious && flock -n /var/lock/academious-enrich.lock docker compose run --rm worker python scripts/enrich_from_openalex.py --apply >> /var/log/academious/enrich.log 2>&1

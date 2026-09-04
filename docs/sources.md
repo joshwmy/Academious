@@ -18,6 +18,14 @@ Every limit below was verified during Phase 0 research, and each is enforced in
 more than daily incremental ingest needs. Credits only bind if singleton lookups
 are run in a loop; batch up to 50 ids per call with OR-syntax filters instead.
 
+That batching is what makes OpenAlex usable as an *enrichment* source and not
+only a harvest one. `client.fetch_by_doi` asks what OpenAlex knows about papers
+another source found first - 50 DOIs to a request - so classifying the whole
+48,520-paper field gap costs about 10,000 credits rather than 48,520 requests.
+See [ingestion.md](ingestion.md#enrichment-asking-a-second-source-about-a-paper-we-already-hold).
+A DOI containing `|` or `,` cannot be sent: they are the filter's own
+delimiters, and one inside a value silently rewrites the query.
+
 **Quirks verified against live payloads:**
 
 * Abstracts arrive as `abstract_inverted_index` and must be reconstructed.
