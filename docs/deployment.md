@@ -625,6 +625,29 @@ The host must be provisioned first - see "Provisioning the host" above.
     the run should be stopped. **"still without a field"** is the residue, and
     it is what decides whether mapping MeSH is still worth doing (DATA-006).
 
+    **The first pass over a full backlog takes hours, so detach it.** Losing the
+    SSH session does not lose the work - the pass commits per batch and a restart
+    resumes from what is left - but reconnecting to a report you can still read
+    is easier:
+
+    ```bash
+    nohup docker compose run --rm worker python scripts/enrich_from_openalex.py --apply \
+      >> /var/log/academious/enrich.log 2>&1 &
+    ```
+
+    Only run one at a time. Two passes select the same candidates and race to
+    insert the same `paper_identifier`; the loser dies on the unique constraint.
+    The script refuses to start beside another pass and exits 1 saying so, so
+    the way to check on a long run is the outstanding count, not a second run:
+
+    ```bash
+    docker compose run --rm worker python -c "
+    from academious.db.session import session_scope
+    from academious.ingest.enrich import count_candidates
+    with session_scope() as s: print(count_candidates(s))
+    "
+    ```
+
     It is also on the nightly schedule in [`deploy/crontab`](../deploy/crontab),
     because the hourly Europe PMC harvest re-creates the gap every day; running
     it once by hand does not settle it.

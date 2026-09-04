@@ -90,6 +90,42 @@ def test_lookup_asks_for_doi_urls_and_carries_the_key():
     assert "sort" not in params
 
 
+# --- mutual exclusion --------------------------------------------------------
+
+
+def test_the_lock_key_does_not_depend_on_the_interpreter():
+    """The key is pinned, because a per-process salt would defeat the lock.
+
+    `hash()` is salted per interpreter, so two containers hashing one name
+    would take two different locks and each believe it ran alone. This asserts
+    a literal rather than recomputing the digest, which would agree with a
+    reimplementation of the same mistake.
+    """
+    from academious.db.session import advisory_key
+
+    assert advisory_key("enrich_from_openalex") == 1922983179669629816
+    assert advisory_key("academious-test-lock") == 4088319954693441131
+
+
+@pytest.mark.db
+def test_a_second_pass_is_refused_while_the_first_holds_the_lock():
+    """What the two colliding runs on 2026-09-04 should have hit instead.
+
+    They raced to insert the same `paper_identifier` and the loser died on the
+    unique constraint - recoverable, but it reads as a defect in the pass.
+    """
+    from academious.db.session import exclusive_lock
+
+    with exclusive_lock("academious-test-lock") as first:
+        assert first is True
+        with exclusive_lock("academious-test-lock") as second:
+            assert second is False
+
+    # Released on the way out, so the next pass is not locked out forever.
+    with exclusive_lock("academious-test-lock") as afterwards:
+        assert afterwards is True
+
+
 # --- enrichment --------------------------------------------------------------
 
 

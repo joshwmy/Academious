@@ -40,9 +40,17 @@ import sys
 import structlog
 
 from academious.core.logging import configure_logging
-from academious.db.session import session_scope
+from academious.db.session import exclusive_lock, session_scope
 from academious.ingest.enrich import count_candidates, enrich_missing_fields
 from academious.sources.openalex.client import MAX_OR_VALUES
+
+#: Two passes running at once select the same candidates and race to insert the
+#: same `paper_identifier` row; the loser dies on the unique constraint. It
+#: costs nothing but the batch in flight - every other batch is already
+#: committed - and the survivor carries on, so this is a nuisance rather than a
+#: hazard. Still worth refusing, because the traceback looks like a defect in
+#: the pass and reads as one at 2am.
+LOCK_NAME = "enrich_from_openalex"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -75,7 +83,11 @@ def main(argv: list[str] | None = None) -> int:
         # WARNING and above still comes through, so a real failure is not hidden.
         structlog.configure(wrapper_class=structlog.make_filtering_bound_logger(logging.WARNING))
 
-    with session_scope() as session:
+    with exclusive_lock(LOCK_NAME) as acquired, session_scope() as session:
+        if not acquired:
+            print("another enrichment pass is already running; leaving it to finish.")
+            return 1
+
         outstanding = count_candidates(session, recheck=args.recheck)
         print(f"papers with no field and a DOI: {outstanding}")
         if not outstanding:

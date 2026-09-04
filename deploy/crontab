@@ -76,4 +76,9 @@ MAILTO=""
 # is not asked again, so a steady-state run handles one night's arrivals rather
 # than re-scanning the corpus. No off-peak constraint - this is OpenAlex, not
 # NCBI - so it sits away from the other entries rather than inside a window.
+#
+# `flock` still guards this entry against itself, but the script also takes a
+# Postgres advisory lock and refuses to start beside another pass. It has to:
+# a file lock is invisible to a hand-run `docker compose run` in a different
+# container, which is how two passes collided on 2026-09-04.
 15 1 * * * cd /srv/academious && flock -n /var/lock/academious-enrich.lock docker compose run --rm worker python scripts/enrich_from_openalex.py --apply >> /var/log/academious/enrich.log 2>&1
