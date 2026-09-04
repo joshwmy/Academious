@@ -29,3 +29,6 @@ web/coverage/
 # file is still local configuration rather than repository content.
 .env.local
 *.local
+
+# Personal Claude Code settings: machine-specific permissions, never shared.
+.claude/settings.local.json
