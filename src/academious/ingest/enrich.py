@@ -13,7 +13,11 @@ of work on `ingest/taxonomy.py` reaches a paper that was never classified, and
 `scripts/backfill_fields.py` re-derives fields from stored topics, so it cannot
 reach one either. What reaches it is a source that classifies on publication -
 OpenAlex, where a topic already carries the `field` the vocabulary is built
-from. 91% of that slice carries a DOI, which is the join.
+from. A DOI is the join, and it reaches about 60% of that slice: the part
+MEDLINE has indexed, which is the part with a publisher behind it. The rest is
+Europe PMC's `PMC` subset, which carries a PMCID and frequently no DOI at all -
+DATA-007. Measured on 2026-09-05, the pass took field coverage from 53.5% to
+73.8% and left 25,815 papers, 25,480 of them that identifier gap.
 
 **It is ordinary ingestion, not a special path.** A looked-up work goes through
 `IngestPipeline.process_record` exactly as a harvested one does, so it is

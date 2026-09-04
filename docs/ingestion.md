@@ -98,13 +98,21 @@ and `scripts/backfill_fields.py` re-derives fields from *stored* topics, so it
 cannot either. What fixes it is a source that classifies on publication.
 
 [`ingest/enrich.py`](../src/academious/ingest/enrich.py) looks those papers up
-in OpenAlex by DOI - 91% of the Europe PMC slice carries one - and feeds the
-answer through `process_record`, the same pipeline a harvest uses. Nothing about
+in OpenAlex by DOI and feeds the answer through `process_record`, the same
+pipeline a harvest uses. Nothing about
 the merge is special-cased, which is the point: the paper is deduplicated,
 scope-checked and merged under the same field precedence, and the enrichment
 therefore brings citation counts, OA locations and a venue along with the
 topics. A separate, weaker copy of `merge.apply_candidate` would be the
 alternative.
+
+**A DOI reaches about 60% of that slice, and the shape of the other 40% is the
+useful finding.** Measured over the first full pass (2026-09-05): field
+coverage rose from 53.5% to 73.8%, and of the 25,815 papers still unclassified,
+25,480 have no DOI. All of them come from Europe PMC's `PMC` subset - the
+open-access full-text collection, which MEDLINE does not index, so it supplies
+neither MeSH nor a publisher DOI. Every one carries a PMCID. The join was too
+narrow rather than exhausted, which is DATA-007.
 
 Three properties it is built for:
 

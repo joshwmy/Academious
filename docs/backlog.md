@@ -98,8 +98,8 @@ it could be started but deliberately is not.
 | [DATA-003](#data-003) | Title-only embedding path unexercised at volume | BLOCKED | With SRC-004 |
 | [DATA-004](#data-004) | `halfvec` quantisation effect not re-checked at scale | DEFERRED | At 10x corpus |
 | [DATA-005](#data-005) | Cost model still rests on estimated ingestion volumes | DEFERRED | After a week of real harvesting |
-| [DATA-006](#data-006) | MeSH-classified papers are reachable by no field | IN PROGRESS | Run the enrichment pass |
-| [DATA-007](#data-007) | 29,728 papers carry no topics — all Europe PMC | IN PROGRESS | Run the enrichment pass |
+| [DATA-006](#data-006) | MeSH-classified papers are reachable by no field | WONTFIX | Measured: 12 papers |
+| [DATA-007](#data-007) | 29,728 papers carry no topics — all Europe PMC | IN PROGRESS | Look up by PMCID |
 | [DATA-008](#data-008) | Zenodo versions arrive as separate papers | READY | With feed-duplication work |
 | [DATA-009](#data-009) | 607 papers claimed a future publication date | DONE | — |
 | [DATA-010](#data-010) | The feed ranked papers by the date they claimed | DONE | — |
@@ -728,7 +728,7 @@ assumption is soft.
 
 ### DATA-006
 
-**MeSH-classified papers are reachable by no field.** — `IN PROGRESS` (2026-09-03)
+**MeSH-classified papers are reachable by no field.** — `WONTFIX` (2026-09-05)
 
 Europe PMC classifies with MeSH descriptor *terms*, and Europe PMC is roughly
 half the corpus. `ingest/taxonomy.py` does not map them, so those papers carry no
@@ -760,16 +760,27 @@ field and are excluded whenever a reader selects one.
   It closes both halves of the gap at once, because a paper reached this way
   gains OpenAlex topics whether it previously had unmappable MeSH (this entry)
   or nothing at all (DATA-007).
-* **Still open** — the pass is written and tested but has not been run against
-  the live corpus, so the recovered share is still a prediction. Mapping MeSH
-  remains unnecessary unless the residue turns out to be large.
-* **Trigger to revisit** — after the first live `--apply` run reports what it
-  could not reach.
+* **Answered on the live corpus (2026-09-05), and the answer is no.** The
+  enrichment pass ran; the residue it left is 25,815 papers, and **12 of them
+  carry MeSH**. The other 25,468 carry no topics in any vocabulary. A MeSH
+  mapping — the descriptor file, the term-to-tree index, the biomedical-only
+  facet — would recover twelve papers.
+* **Why the two-fifths estimate was wrong.** It was taken before enrichment
+  ran, and enrichment reached the MeSH-carrying half first: those papers had a
+  DOI, because a record MEDLINE has indexed is a record with a publisher and a
+  DOI. What the pass could not reach is the half with neither MeSH nor a DOI.
+  So the residue is not a sample of the original gap, it is the complement of
+  what a DOI lookup can see, and the 2/5 figure describes a population that no
+  longer exists.
+* **Closed** — `WONTFIX`. Not deferred: measured and refused. Reopen only if
+  papers carrying MeSH-but-no-field grow by two orders of magnitude, which
+  would mean MEDLINE indexing arriving *before* OpenAlex does — the reverse of
+  what SRC-002 observed.
 * **Source** — [ADR 0009](adr/0009-normalised-subject-fields.md).
 
 ### DATA-007
 
-**29,728 papers carry no topics from any source.** — `IN PROGRESS` (2026-09-03)
+**29,728 papers carry no topics from any source.** — `IN PROGRESS` (2026-09-05)
 
 The field backfill measured it: 28% of the live corpus has an empty `topics`
 array, so nothing classifies those papers — not a mapping gap like DATA-006, an
@@ -804,10 +815,33 @@ absence of input.
   been asked about keeps an OpenAlex `source_record` afterwards and is not
   asked again, so a second run is incremental rather than a re-scan — without
   that, the tail of DOIs OpenAlex does not index would be re-paid for forever.
-* **Not yet run against the live corpus.** Until it is, the share this
-  recovers is an estimate, and so is the residue.
-* **Trigger** — run it; then this entry closes with the measured number, or
-  stays open with a smaller one.
+* **Ran against the live corpus (2026-09-04/05).** 37,630 candidates at the
+  start, 305 at the end — 37,325 papers classified. **Field coverage went from
+  53.5% to 73.8%**, 72,587 of 98,402 papers. A 500-paper sample first: 495
+  gained a field, 4 were declined by ingestion, 1 came back without topics, and
+  zero DOIs were unknown to OpenAlex. Nothing founded a new paper, in the
+  sample or the full pass.
+* **The 91% was wrong.** Only ~60% of the fieldless slice carried a DOI
+  (37,630 candidates out of a fieldless population of ~63,000 when the run
+  began). The figure came from the MEDLINE-indexed part of Europe PMC and was
+  generalised to all of it.
+* **The residue is one shape, and it is not a tail.** 25,815 papers still carry
+  no field. **25,480 of them have no DOI, all from Europe PMC, all with a
+  PMCID, and 25,265 come from the `PMC` subset rather than `MED`** — the
+  open-access full-text collection, which is not MEDLINE-indexed and so has
+  neither MeSH nor, often, a publisher DOI. They are spread evenly across
+  2009-2026 at 350-540 a year, so this is a structural slice and not an
+  indexing lag. None has ever been asked of OpenAlex.
+* **Still open, because the join was too narrow rather than exhausted.** Every
+  one of those 25,480 papers carries a PMCID, and OpenAlex filters on
+  `ids.pmcid` with the same OR syntax as `doi`. Extending the lookup is a
+  change of filter key, not of design: batching, the incremental exclusion, the
+  pipeline merge and the advisory lock all already work. That would put
+  coverage near 99% for roughly the same credit spend.
+* **Trigger** — extend `client.fetch_by_doi` to identifiers generally, sample
+  500 by PMCID, and close this entry on what OpenAlex actually holds for the
+  PMC subset. If its coverage there is poor, the entry closes at 73.8% with the
+  ceiling recorded and named.
 
 ### DATA-008
 
