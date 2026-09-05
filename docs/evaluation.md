@@ -395,3 +395,62 @@ Stated plainly, because a benchmark that overstates its reach is worse than none
 * **This measures retrieval, not the product.** Whether a person finds the
   result *useful* is a different question, and the answer to it comes from real
   users, not from this harness.
+
+---
+
+## Recommendation: a different benchmark, and the same rule
+
+Everything above measures **retrieval**: one query, one ranked list, judged by a
+person. A feed is not that. A reader is several interests at once, with weights,
+dislikes and preferences, and the questions worth asking of a feed — did the
+second interest get representation, did the dislike suppress anything, is this
+ten versions of one paper, is it secretly a date sort — cannot be asked of a
+single query. Scoring a feed with the twelve-query benchmark would measure the
+wrong thing while looking rigorous, so recommendation gets its own harness:
+`eval/profiles.py` and `eval/recommend.py`.
+
+**Six profiles**, in `eval/profiles.py`, chosen because they behave differently
+rather than to fill a table: a narrow specialist, a three-interest generalist,
+an interdisciplinary reader whose interests genuinely overlap, one with an
+explicit dislike *adjacent to* their interest, one with a short-term focus over
+a long-term background, and one who ticked boxes and wrote nothing.
+
+| id | shape | what it probes |
+|---|---|---|
+| `rec-01` | specialist | depth without diversity forcing in weaker work |
+| `rec-02` | generalist | the averaged-vector failure — a feed relevant to none of three |
+| `rec-03` | interdisciplinary | stable attribution when two interests overlap |
+| `rec-04` | opinionated | a negative that suppresses without emptying the feed |
+| `rec-05` | drifting | this week's reading showing without erasing the year's |
+| `rec-06` | no free text | the cold-start floor: is a topic picker enough to onboard? |
+
+### Two kinds of number, kept apart
+
+**Descriptive metrics need no ground truth** and are always reported: interest
+coverage, intra-list diversity, distinct topics and the largest single topic's
+share, median age and the share within a fortnight, exploration items,
+retracted items. These are properties of the feed, computable the moment one
+exists, and each corresponds to a failure the architecture exists to prevent.
+
+**Quality metrics need a human and are withheld until one has judged.** §1's
+rule applies here with a sharper edge, because every ranked list *looks*
+scoreable and every formula treats an unjudged paper as irrelevant. So
+`score_feed` returns `None` rather than zeros when nothing in a feed has been
+judged, and a partially judged feed is scored but marked **not reportable** —
+`render` prints the withheld line and the judged fraction instead of an NDCG.
+A number over a feed with two of ten items judged is not a small measurement,
+it is a confident wrong one.
+
+**Nothing has been judged yet.** The harness runs, the descriptive half is
+real, and the quality half currently prints *"No profile has a fully judged
+feed."* That is the honest state, and it is what the harness is built to say.
+
+### When users exist
+
+Splits must be **temporal**, never random: a random split leaks future
+interactions into training and produces a model that looks excellent offline
+and fails online. And the online metrics — save rate, dismissal rate, long
+click, repeat engagement, discovery rate — are rates *per impression*, which is
+why `personalise/feedback.py` defines the impression event before anything
+emits one. A click log without an exposure log cannot be debiased, and cannot
+be repaired afterwards.

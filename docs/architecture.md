@@ -25,10 +25,14 @@ flowchart LR
 
 Solid is implemented; dashed is designed and unbuilt.
 
-Everything from `collect` to `retrieve` runs today. Everything after it is
-designed and unbuilt: there are no accounts, no interest model, no feedback
-signals, and the browsable feed is reverse-chronological rather than ranked. The
-recommendation design that ranking will be built against is
+Everything from `collect` to `retrieve` runs in production. `rank` and `explain`
+are **implemented but not served**: `academious/personalise/` builds a ranked,
+explained feed from a supplied interest profile, and no endpoint exposes it, so
+`/papers` remains reverse-chronological. `learn from feedback` is the genuinely
+absent stage - there are no accounts, so no interaction reaches the loop, and
+the return edge is what would make the system improve rather than merely
+personalise. The architecture is [ADR 0010](adr/0010-recommendation-architecture.md);
+the scoring design it implements is
 [phase-0-report §6](phase-0-report.md#6-recommendation-engine).
 
 ## Shape
@@ -49,7 +53,10 @@ src/academious/
   jobs/        PostgreSQL work queue
   embeddings/  SPECTER2 backends, input construction, vector persistence, jobs
   retrieval/   lexical, semantic and hybrid search; filters
-  eval/        benchmark queries, relevance judgments, IR metrics, harness
+  personalise/ interest profiles, candidate generation, feature extraction,
+               ranking, diversity re-ranking, feedback contract, feed pipeline
+  eval/        benchmark queries and profiles, relevance judgments, IR metrics,
+               retrieval harness and recommendation harness
   workers/     scheduled entry points (CLI)
   api/         FastAPI app (Phase 2: health and metrics only)
 ```

@@ -92,7 +92,7 @@ it could be started but deliberately is not.
 | [RETR-003](#retr-003) | Hybrid/RRF investigation is frozen | DEFERRED | With RETR-002 |
 | [RETR-004](#retr-004) | Retrieval measured at ~2.5k papers only | DEFERRED | At 10x corpus |
 | [RETR-005](#retr-005) | ONNX int8 inference unimplemented | DEFERRED | When a backfill is scheduled |
-| [RETR-006](#retr-006) | No re-ranking, learning-to-rank or personalisation | DEFERRED | Phase 3 / Phase 8 |
+| [RETR-006](#retr-006) | No re-ranking, learning-to-rank or personalisation | IN PROGRESS | Serve the feed; then learn |
 | [DATA-001](#data-001) | `specter2-benchmark@v1` ablation vectors remain in the database | DEFERRED | Storage or maintenance pressure |
 | [DATA-002](#data-002) | No normalised subject taxonomy | DONE | — |
 | [DATA-003](#data-003) | Title-only embedding path unexercised at volume | BLOCKED | With SRC-004 |
@@ -618,21 +618,48 @@ promised, and it changes the top ten on every benchmark query.**
 
 ### RETR-006
 
-**No re-ranking, learning-to-rank or personalisation.** — `DEFERRED`
+**No re-ranking, learning-to-rank or personalisation.** — `IN PROGRESS`
+(2026-09-05)
 
-Deliberate. Learning-to-rank in particular waits until there are ≥100k labelled
-interactions; there are zero, because there are no users. Personalisation is
-Phase 3. Re-ranking has no evidence yet that it would help.
+Learning-to-rank still waits for interactions: there are zero, because there
+are no users. What changed is everything before it.
 
-Ordering matters here and the dependency runs one way: personalised ranking
-needs an interest model, which needs accounts (WEB-009), which needs a reason
-for someone to create one. The design ranking will be built against — one
-centroid per coherent interest, `max` over centroids rather than an averaged
-vector, and `argmax` as the explanation string — is
-[phase-0-report §6.2](phase-0-report.md#62-multi-centroid-interest-profiles).
-The evaluation harness ([evaluation.md](evaluation.md)) measures query
-relevance, which is not the same thing as recommendation usefulness; that
-measurement problem opens when the feed becomes personalised.
+* **The stated dependency was half wrong, and inverting it was the decision.**
+  This entry said personalised ranking needs an interest model, which needs
+  accounts (WEB-009), which needs a reason to sign up. True of the *feedback
+  loop*; false of everything before it. A profile can arrive in a request body
+  exactly as a query string does, so the ranker is buildable and measurable with
+  no personal data at all — and the privacy obligations accounts create
+  (PROD-002, SEC-008, DEPLOY-006) stay deferred until there is evidence the
+  ranking is worth protecting. Following the dependency literally would have
+  meant building accounts before knowing whether the feed was any good.
+* **Built (2026-09-05)** — `academious/personalise/`, as the multi-stage
+  pipeline in [ADR 0010](adr/0010-recommendation-architecture.md):
+  profile → candidates → features → ranking → diversity re-ranking → feed.
+  Multi-interest with positive and negative interests and two horizons; 17
+  named, bounded, individually documented features; a deterministic ranker over
+  a weight table that is data; MMR re-ranking with per-interest and per-topic
+  caps; a typed feedback and impression contract; and templated explanations
+  from `argmax` and candidate provenance, with no LLM.
+* **Deliberately not built** — collaborative, sequential and learned rankers.
+  Each enters as an implementation of an interface that now exists rather than
+  as a redesign: a new `CandidateSource`, or a second `Ranker` over the same
+  `FeatureVector`.
+* **Two things measurement caught that review did not.** A profile weight only
+  decided which interest won the `argmax`, so a reader emphasising one subject
+  eightfold saw *no change in their feed* — fixed by making emphasis its own
+  feature rather than by inflating a cosine. And diversity re-ranking was
+  O(limit × candidates × chosen), 134 ms for 400 candidates; carrying a running
+  maximum forward made it 24.6 ms with identical output.
+* **Still open, and this is the honest gap** — nothing serves it. `/papers` is
+  unchanged and reverse-chronological, so no reader has ever seen a ranked feed.
+  And no benchmark profile has been judged, so the descriptive metrics are real
+  and the quality metrics are correctly withheld
+  ([evaluation.md](evaluation.md)).
+* **Trigger** — an endpoint that serves a feed, and a person judging pooled
+  results for the six profiles. Learning-to-rank stays deferred until
+  impressions exist; `personalise/feedback.py` defines the impression event now
+  because a click log without an exposure log cannot be debiased later.
 
 ---
 

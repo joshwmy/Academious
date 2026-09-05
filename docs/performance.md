@@ -344,3 +344,86 @@ python scripts/benchmark_onnx.py --limit 200 --json data/onnx-benchmark.json
 
 `--reuse-fp32` re-fuses and re-quantises without re-tracing, which is the loop
 worth having while trying quantisation settings.
+
+---
+
+## 10. Personalised feed: measured, and one claim corrected
+
+Measured 2026-09-05 with `scripts/benchmark_feed.py` over **20,000 synthetic
+embeddings** in a throwaway database, five repeats, medians reported. Windows
+development machine, local PostgreSQL — the same environment as §5, so the
+numbers here are comparable with the 61.9 ms semantic search above but **not**
+with production hardware.
+
+Synthetic vectors are random unit vectors. They say nothing about ranking
+quality, which is deliberate: the question here is how many times PostgreSQL
+touches a row, and a random vector is touched exactly as often as a meaningful
+one. Quality is [evaluation.md](evaluation.md)'s problem.
+
+### The claim the architecture rested on, and what measurement did to it
+
+A reader has several interests, and the count is theirs to choose. The naive
+implementation runs semantic search once per interest, so a five-interest
+profile costs five scans. `personalise/pgvector.py` instead carries every
+interest vector into one statement and takes `GREATEST` over the distances.
+
+| k interests | one pass | k separate passes | saved |
+|---|---|---|---|
+| 1 | 43.3 ms | 34.5 ms | — |
+| 3 | 38.9 ms | 82.2 ms | **2.1×** |
+| 5 | 54.3 ms | 150.7 ms | **2.8×** |
+| 8 | 62.7 ms | 236.1 ms | **3.8×** |
+
+The shape is right: k separate passes grow linearly, one pass does not. **But
+the claim originally written into that module — that k interests cost about one
+scan — is false, and the measurement is what caught it.** Reading each row once
+is amortised; computing k distances over 768 dimensions against that row is real
+work and it scales with k. One pass removes the repeated *I/O*, not the repeated
+*arithmetic*.
+
+At k=1 the two shapes are the same query and the difference is noise; do not
+read anything into the 0.8× row.
+
+`MAX_INTERESTS = 16` in `personalise/profile.py` exists because of that residual
+growth, not in spite of it.
+
+### Where a feed request actually spends its time
+
+Five-interest profile, 400-candidate budget, feed of 20:
+
+| stage | before | after |
+|---|---|---|
+| candidate generation | 66.9 ms | 45.9 ms |
+| fetch paper facts | 247.4 ms | 189.2 ms |
+| feature extraction | 12.5 ms | 12.8 ms |
+| ranking | 6.0 ms | 6.3 ms |
+| diversity re-ranking | 133.8 ms | **24.6 ms** |
+| **end to end** | 554.3 ms | **281.8 ms** |
+
+Two things this exposed:
+
+**Diversity re-ranking was recomputing redundancy against the whole chosen set
+on every slot** — O(limit × candidates × chosen), 134 ms for 400 candidates.
+Carrying a running maximum forward and updating it only against the item just
+picked makes it O(limit × candidates): **5.4× faster, identical output**, and
+the tests that pin the selection order did not move. Fixed in `rerank.py`.
+
+**Fetching paper facts is now the dominant cost**, not retrieval — 189 ms of a
+282 ms request, for 400 rows across `paper`, `venue` and `paper_embedding`. It
+is one query already; the cost is materialising 400 wide rows including 400
+768-dimension vectors. The obvious lever is not fetching embeddings for
+candidates whose vectors the ranker will not compare, but that needs measuring
+before it is built, and 282 ms end-to-end is not yet a problem worth optimising
+against a corpus with no users.
+
+### Reproducing
+
+```bash
+createdb academious_bench       # never point --synthetic at a real corpus
+python scripts/benchmark_feed.py --synthetic 20000 \
+  --database-url postgresql+psycopg://…/academious_bench
+```
+
+Without `--synthetic` the script only reads, so it can be pointed at the live
+corpus with `--model-key specter2@v1` to get numbers that describe production
+rather than a synthetic distribution. That has **not** been run yet.

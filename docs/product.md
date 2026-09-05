@@ -130,8 +130,13 @@ flowchart LR
     class IM,CR,RK,FD,UX planned;
 ```
 
-Every box is dashed because none of it exists: there are no accounts, so there
-is no user to model and no interaction to learn from (§7).
+Every box is dashed because the *loop* does not exist. Its first four boxes do:
+an interest model, candidate generation, personalised ranking and a feed are
+implemented in `academious/personalise/` and measured against benchmark
+profiles. The return edge is what is missing, and it is missing for one reason -
+there are no accounts, so there is no interaction to learn from (§7). A
+recommender without that edge does not compound; it is a good cold start and
+nothing more.
 
 The compounding part is the return edge. Signals that could eventually feed it:
 papers opened, saved, dismissed, marked irrelevant; time spent; topics and
@@ -145,16 +150,17 @@ column is a direction, not a feature.
 | Layer | Today | Direction |
 |---|---|---|
 | **Corpus** | Five sources harvested, normalised, deduplicated, merged into one corpus with OA locations and retraction status | Broader coverage; scheduled, measured freshness |
-| **Personalise** | *Nothing.* No accounts, no stored interests, no user model | Multi-centroid interest profiles ([phase-0-report §6.2](phase-0-report.md#62-multi-centroid-interest-profiles)) |
-| **Discover** | A user supplies a research-interest description per query | Standing interests; candidate generation runs without being asked |
-| **Rank** | Semantic, lexical and hybrid retrieval, ranked per query. The browsable feed is reverse-chronological and identical for everyone | Personalised ranking blending relevance, recency, novelty, quality and diversity |
-| **Explain** | *Nothing.* Results carry metadata, not reasons | `argmax` over interest centroids yields the matched interest, so the first explanation needs no LLM ([phase-0-report §6.2](phase-0-report.md#62-multi-centroid-interest-profiles)) |
+| **Personalise** | An `InterestProfile` a request supplies: several weighted interests, positive and negative, long- and short-term. No accounts, so nothing is stored or learned | Interests derived from behaviour; a profile that persists and improves ([ADR 0010](adr/0010-recommendation-architecture.md)) |
+| **Discover** | Candidate generation runs per request over several sources — semantic, exact-match, adjacent — each keeping its provenance | Standing interests; generation runs on a schedule rather than on a request |
+| **Rank** | A deterministic ranker over 17 named features, then MMR diversity re-ranking. **Not yet wired to an endpoint**: `/papers` is still reverse-chronological and identical for everyone | A ranker trained on impressions, replacing the hand-set weights over the same features |
+| **Explain** | Every ranked item names the interest that earned it and the reasons that contributed, from `argmax` and candidate provenance. No LLM, and none needed | Richer reasons as more signals exist; the mechanism does not change |
 | **Understand** | *Nothing.* No LLM anywhere in the codebase | Summaries and explanation, after discovery works |
 
 Two consequences worth stating plainly, because they are easy to overstate:
 
-* **Academious is not personalised today.** Retrieval is genuinely
-  query-driven: it answers the interest description it is given and forgets it.
+* **Academious is not personalised for anyone yet.** The ranking exists and is
+  tested; no endpoint serves it, and nothing remembers a reader between
+  requests. A profile is answered and forgotten, exactly as a query is.
 * **The feed is not ranked.** `/papers` is newest-first
   ([`api/repository.py`](../src/academious/api/repository.py)). It demonstrates
   the corpus; it does not demonstrate discovery.
