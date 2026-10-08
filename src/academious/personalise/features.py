@@ -213,8 +213,7 @@ FEATURES: tuple[FeatureSpec, ...] = (
         "appetite for preprints. 0.5 when they are neutral.",
         direction=1,
         missing=0.5,
-        missing_rationale="Neutral appetite is the default and should not move "
-        "the score.",
+        missing_rationale="Neutral appetite is the default and should not move the score.",
     ),
     FeatureSpec(
         "seen_fatigue",
@@ -222,8 +221,7 @@ FEATURES: tuple[FeatureSpec, ...] = (
         "zero across a week. Stage B populates it; today it is always zero.",
         direction=-1,
         missing=0.0,
-        missing_rationale="Never shown is the default while no impression log "
-        "exists.",
+        missing_rationale="Never shown is the default while no impression log exists.",
     ),
     FeatureSpec(
         "retracted",

@@ -10,7 +10,6 @@
 
 import "./Logo.css";
 
-/** The mark alone. Decorative wherever a visible wordmark sits beside it. */
 export function LogoMark({ size = 24 }: { size?: number }) {
   return (
     <svg
@@ -18,15 +17,17 @@ export function LogoMark({ size = 24 }: { size?: number }) {
       width={size}
       height={size}
       viewBox="0 0 32 32"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="3.6"
-      strokeLinejoin="miter"
       aria-hidden="true"
       focusable="false"
     >
-      <path d="M7 26 16 6.5 25 26" />
-      <path d="M1.5 26 H30.5" />
+      <defs>
+        <linearGradient id="academious-mark" x1="4" y1="3" x2="28" y2="29" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#8a9cf5" />
+          <stop offset="1" stopColor="#7169e8" />
+        </linearGradient>
+      </defs>
+      <rect width="32" height="32" rx="8" fill="url(#academious-mark)" />
+      <text x="16" y="22" textAnchor="middle" fill="white" fontFamily="Aptos, Segoe UI, sans-serif" fontSize="22" fontWeight="600">a</text>
     </svg>
   );
 }
@@ -35,7 +36,7 @@ export function Logo({ size = 24 }: { size?: number }) {
   return (
     <span className="logo">
       <LogoMark size={size} />
-      <span className="logo__word">Academious</span>
+      <span className="logo__word">academious</span>
     </span>
   );
 }

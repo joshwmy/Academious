@@ -86,9 +86,7 @@ class EventType(StrEnum):
 
 
 WEAK_POSITIVE = frozenset({EventType.OPEN, EventType.ABSTRACT_EXPAND, EventType.OUTBOUND_CLICK})
-STRONG_POSITIVE = frozenset(
-    {EventType.SAVE, EventType.FOLLOW_FROM_ITEM, EventType.MORE_LIKE_THIS}
-)
+STRONG_POSITIVE = frozenset({EventType.SAVE, EventType.FOLLOW_FROM_ITEM, EventType.MORE_LIKE_THIS})
 STRONG_NEGATIVE = frozenset(
     {EventType.DISMISS, EventType.NOT_RELEVANT, EventType.LESS_LIKE_THIS, EventType.BLOCK_TOPIC}
 )

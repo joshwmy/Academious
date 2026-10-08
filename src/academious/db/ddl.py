@@ -27,7 +27,7 @@ DROP_KEYWORDS_TEXT_FUNCTION = "DROP FUNCTION IF EXISTS academious_keywords_text(
 
 # The lexical index. Field weights are assigned here and interpreted at query
 # time by ts_rank_cd's weight array, so changing the relative importance of
-# title vs abstract does not require reindexing 
+# title vs abstract does not require reindexing
 #
 #   A  title       - the strongest signal a paper gives about its own subject
 #   B  keywords    - curated subject terms, and OpenAlex topic display names

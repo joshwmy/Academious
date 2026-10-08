@@ -4,15 +4,16 @@
  * Deliberately not a `Badge`. Status pills already own that shape, and
  * provenance is a different dimension from integrity: a reader must never have
  * to work out whether a coloured chip is telling them "bioRxiv" or "Retracted".
- * A leading rule and a name reads as a source line instead.
+ * A quiet typographic label reads as a source line instead.
  */
 
 .provenance {
   display: inline-flex;
   align-items: center;
-  padding-left: var(--space-2);
-  border-left: 2px solid var(--border-strong);
-  font-size: var(--text-sm);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: inherit;
   font-weight: var(--weight-medium);
   color: var(--text-secondary);
   overflow-wrap: anywhere;
@@ -23,6 +24,5 @@
    everything under it. Journals stay in the neutral range - "published in a
    journal" is the unremarkable case and should not shout. */
 .provenance--repository {
-  border-left-color: var(--repository);
-  color: var(--repository);
+  color: var(--text-muted);
 }

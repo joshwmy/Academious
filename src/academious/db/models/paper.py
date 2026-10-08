@@ -63,9 +63,7 @@ class Paper(Base, TimestampMixin):
     # Authors are stored denormalised. Author disambiguation is a research problem
     # in its own right and OpenAlex already solves it upstream; a local Author
     # entity arrives only when followed-author features need one (see ADR 0003).
-    authors: Mapped[list[dict[str, Any]]] = mapped_column(
-        JSONB, nullable=False, default=list
-    )
+    authors: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, nullable=False, default=list)
     first_author_surname: Mapped[str | None] = mapped_column(String(128), index=True)
 
     venue_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("venue.id"), index=True)
@@ -135,8 +133,12 @@ class Paper(Base, TimestampMixin):
     )
 
     __table_args__ = (
-        Index("ix_paper_title_norm_trgm", "title_norm", postgresql_using="gin",
-              postgresql_ops={"title_norm": "gin_trgm_ops"}),
+        Index(
+            "ix_paper_title_norm_trgm",
+            "title_norm",
+            postgresql_using="gin",
+            postgresql_ops={"title_norm": "gin_trgm_ops"},
+        ),
         Index("ix_paper_dedup_block", "first_author_surname", "published_year"),
         Index("ix_paper_search_tsv", "search_tsv", postgresql_using="gin"),
         Index("ix_paper_fields", "fields", postgresql_using="gin"),
@@ -178,13 +180,9 @@ class PaperRelation(Base):
     )
     relation_type: Mapped[str] = mapped_column(String(24), primary_key=True)
     source_key: Mapped[str] = mapped_column(String(32), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    __table_args__ = (
-        Index("ix_paper_relation_to", "to_paper_id", "relation_type"),
-    )
+    __table_args__ = (Index("ix_paper_relation_to", "to_paper_id", "relation_type"),)
 
 
 class PaperMerge(Base):

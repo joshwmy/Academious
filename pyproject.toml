@@ -23,6 +23,9 @@ dependencies = [
     # Inbound rate limiting for the public API. Process-local storage by
     # default; see docs/security.md on what that does and does not bound.
     "slowapi>=0.1.10",
+    # Account identity and Argon2 password handling. Application code depends
+    # on academious.auth rather than this package directly (ADR 0005).
+    "fastapi-users[sqlalchemy]~=15.0.5",
 ]
 
 [project.optional-dependencies]

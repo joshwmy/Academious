@@ -89,9 +89,7 @@ def list_papers(
         .offset(offset)
     ).all()
 
-    total = session.execute(
-        select(func.count()).select_from(Paper).where(*conditions)
-    ).scalar_one()
+    total = session.execute(select(func.count()).select_from(Paper).where(*conditions)).scalar_one()
     return list(rows), int(total)
 
 
@@ -125,9 +123,7 @@ def field_counts(session: Session) -> tuple[dict[str, int], int]:
 
 
 def get_paper(session: Session, paper_id: uuid.UUID) -> Row[Any] | None:
-    return session.execute(
-        _summary_select(*DETAIL_COLUMNS).where(Paper.id == paper_id)
-    ).first()
+    return session.execute(_summary_select(*DETAIL_COLUMNS).where(Paper.id == paper_id)).first()
 
 
 def summaries_for_ids(
@@ -141,9 +137,7 @@ def summaries_for_ids(
     """
     if not paper_ids:
         return {}
-    rows = session.execute(
-        _summary_select(*SUMMARY_COLUMNS).where(Paper.id.in_(paper_ids))
-    ).all()
+    rows = session.execute(_summary_select(*SUMMARY_COLUMNS).where(Paper.id.in_(paper_ids))).all()
     return {row.id: row for row in rows}
 
 

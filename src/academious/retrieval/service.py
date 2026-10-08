@@ -63,9 +63,7 @@ class RetrievalService:
         active_filters = search_filters or SearchFilters()
 
         if method == Method.LEXICAL:
-            return lexical.search(
-                session, query, limit=limit, search_filters=active_filters
-            )
+            return lexical.search(session, query, limit=limit, search_filters=active_filters)
 
         if method == Method.SEMANTIC:
             return semantic.search_text(
@@ -109,9 +107,7 @@ class RetrievalService:
         active_filters = search_filters or SearchFilters()
         pool = pool_size(limit)
 
-        lexical_result = lexical.search(
-            session, query, limit=pool, search_filters=active_filters
-        )
+        lexical_result = lexical.search(session, query, limit=pool, search_filters=active_filters)
         semantic_result = semantic.search_text(
             session,
             query,

@@ -1,7 +1,7 @@
-# The public frontend
+# The frontend
 
 React + TypeScript + Vite, in `web/`. It consumes the public read API described
-in [api.md](api.md) and nothing else.
+in [api.md](api.md), including the optional account surface.
 
 ```
 web/
@@ -9,7 +9,8 @@ web/
     api/         types mirroring the backend schemas, the HTTP client, errors
     hooks/       useRequest - one request, cancelled when it stops mattering
     components/  AppShell, SearchBar, PaperCard, Pagination, states, primitives
-    pages/       FeedPage, SearchPage, PaperPage, NotFoundPage
+    pages/       feed, search, profile, saved papers, account, paper detail
+    auth/        session bootstrap and current-reader context
     lib/         URL safety, formatting
     styles/      design tokens, then global element defaults
     test/        setup, factories, captured API fixtures, a11y and journey tests
@@ -66,8 +67,9 @@ like backend bugs.
 
 **Every `VITE_*` value is inlined into the JavaScript bundle at build time and
 is public.** It is readable by anyone who opens the site. Never put a secret, a
-key, a database URL or a credential there. The public API needs none: it is
-unauthenticated by design.
+key, a database URL or a credential there. The bundle needs none. Authentication
+uses an HTTP-only cookie that JavaScript cannot read; the only local marker says
+whether checking for a session is worth a request.
 
 An unset `VITE_API_BASE_URL` means "same origin", which is a valid production
 configuration when a reverse proxy serves the static build and the API from one
@@ -79,16 +81,23 @@ hostname.
 
 | Route | Page |
 |---|---|
-| `/` | Feed. `?offset=` selects the page |
+| `/` | Account feed for a verified reader, local-profile feed otherwise, then latest feed |
 | `/search?q=…` | Search results |
+| `/profile` | Build, preview and edit the research profile; sync when verified |
+| `/saved` | Synced saved papers, or an invitation to sign in |
+| `/account` | Register, sign in, reset password, sign out or delete account data |
+| `/verify?token=…` | Complete email verification |
 | `/papers/:id` | Paper detail |
 | anything else | Not found |
 
-Everything that identifies what you are looking at lives in the URL: the query,
-the page offset, the paper. Nothing essential is held only in memory, so back
-and forward work, and any view can be linked or bookmarked.
+Everything that identifies a corpus view lives in the URL: the query, the page
+offset, the paper. The profile draft can reveal more than a search. Anonymous
+drafts stay in that browser; a verified reader's draft is also persisted under
+their account. The account page exposes deletion of identity, profile, saves,
+interactions and personal ranker state through database cascades.
 
-`/search` and `/papers/:id` are code-split, so the feed does not carry them.
+`/search`, `/profile` and `/papers/:id` are code-split, so the feed does not
+carry them.
 
 ---
 
@@ -113,8 +122,9 @@ Pages branch on `kind`, never on message text.
 The roadmap named TanStack Query. This milestone uses plain `fetch` behind the
 typed client instead, for reasons specific to this API:
 
-* Three read endpoints, no mutations and no cache invalidation. The caching a
-  query library provides has little to invalidate.
+* The API is read-only in effect, including profile POSTs that store nothing,
+  and has no cache invalidation. The caching a query library provides has little
+  to invalidate.
 * **Background refetching would spend the user's rate-limit budget.** The
   backend allows 20 searches a minute per client; refetch-on-focus and
   refetch-on-reconnect are exactly the behaviours that would consume it without
@@ -305,9 +315,11 @@ text as instructions.
 
 ### Privacy
 
-Search queries live in the URL and nowhere else. Nothing is written to cookies,
-`localStorage` or `sessionStorage`; no search history is stored; no query is
-sent to any third party. The backend logs query *length*, not query text.
+Search queries live in the URL and nowhere else. No search history is stored and
+no query is sent to a third party. `localStorage` holds bookmarks, the normalised
+research-profile draft and at most 500 recommendation impressions or explicit
+feedback events; this state stays on the device and is not analytics. The
+backend logs query *length*, not query text.
 
 ---
 
@@ -318,7 +330,7 @@ The build is static: `npm run build` produces `web/dist`.
 | Requirement | Detail |
 |---|---|
 | Hosting | Any static host. The approved topology serves `dist/` from Caddy alongside the API |
-| SPA fallback | **Required.** `/papers/:id` and `/search` are client routes with no file behind them, so unmatched paths must fall back to `index.html` or a deep link returns 404 |
+| SPA fallback | **Required.** `/papers/:id`, `/profile` and `/search` are client routes with no file behind them, so unmatched paths must fall back to `index.html` or a deep link returns 404 |
 | API base URL | Set `VITE_API_BASE_URL` at *build* time, or leave it unset when the proxy serves both from one origin |
 | HTTPS | Terminated at the proxy. The frontend assumes it and asserts nothing about it |
 | CORS | Set `ACADEMIOUS_CORS_ALLOWED_ORIGINS` to the real frontend origin. Never a wildcard |

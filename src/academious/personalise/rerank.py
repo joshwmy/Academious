@@ -175,16 +175,30 @@ def diversify(
 
     while remaining and len(state.chosen) < limit:
         pick = _next_pick(
-            remaining, state, rules, redundancies, topic_map, candidate_map,
-            exploration_cap=exploration_cap, floor=floor, strict=True,
+            remaining,
+            state,
+            rules,
+            redundancies,
+            topic_map,
+            candidate_map,
+            exploration_cap=exploration_cap,
+            floor=floor,
+            strict=True,
         )
         if pick is None:
             # Every remaining candidate is blocked by a cap. Relax rather than
             # return a short feed: a cap is a preference about balance, not a
             # claim that these papers are unfit to be seen.
             pick = _next_pick(
-                remaining, state, rules, redundancies, topic_map, candidate_map,
-                exploration_cap=exploration_cap, floor=floor, strict=False,
+                remaining,
+                state,
+                rules,
+                redundancies,
+                topic_map,
+                candidate_map,
+                exploration_cap=exploration_cap,
+                floor=floor,
+                strict=False,
             )
         if pick is None:
             break

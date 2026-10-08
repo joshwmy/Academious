@@ -27,9 +27,13 @@ def import_notices(session: Session, notices: Iterable[RetractionNotice]) -> tup
     created = updated = 0
     now = utcnow()
     for notice in notices:
-        existing = session.execute(
-            select(RetractionRecord).where(RetractionRecord.record_id == notice.record_id)
-        ).scalars().first()
+        existing = (
+            session.execute(
+                select(RetractionRecord).where(RetractionRecord.record_id == notice.record_id)
+            )
+            .scalars()
+            .first()
+        )
         if existing is None:
             session.add(
                 RetractionRecord(
@@ -67,11 +71,15 @@ def _papers_for_notice(session: Session, notice: RetractionRecord) -> list[Paper
 
     papers: dict[object, Paper] = {}
     for id_type, value in clauses:
-        rows = session.execute(
-            select(PaperIdentifier).where(
-                PaperIdentifier.id_type == id_type, PaperIdentifier.value == value
+        rows = (
+            session.execute(
+                select(PaperIdentifier).where(
+                    PaperIdentifier.id_type == id_type, PaperIdentifier.value == value
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         for row in rows:
             paper = session.get(Paper, row.paper_id)
             if paper is not None:

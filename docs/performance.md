@@ -427,3 +427,64 @@ python scripts/benchmark_feed.py --synthetic 20000 \
 Without `--synthetic` the script only reads, so it can be pointed at the live
 corpus with `--model-key specter2@v1` to get numbers that describe production
 rather than a synthetic distribution. That has **not** been run yet.
+
+---
+
+## 11. Building a research profile: measured
+
+`scripts/benchmark_profile_build.py`, over the same 20,000 synthetic embeddings,
+5 repeats, medians. Everything except encoding, which is measured separately
+against the real model because a hashing backend says nothing about SPECTER2.
+
+### The pipeline around the model
+
+| Interests | Resolve chosen papers | Build profile | Preview | End to end |
+|---|---|---|---|---|
+| 3 | 2.2 ms | 3.1 ms | 104.2 ms | 125.9 ms |
+| 5 | 2.0 ms | 2.0 ms | 94.9 ms | 118.5 ms |
+| 8 | 2.7 ms | 3.0 ms | 113.5 ms | 110.8 ms |
+
+**Flat in the number of interests, and that is the finding.** Assembling a
+profile is dataclass construction; resolving example papers is one indexed
+`IN (…)` however many were chosen. Neither is worth optimising, and the
+variation between these rows is noise rather than a trend.
+
+The preview is higher than §10's 282 ms end-to-end would suggest, because it is
+not the same shape: §10 ran two sources, this runs three, the third being
+`AdjacentInterestSource` — a second full scan for exploration candidates, added
+so the exploration preference is connected to something.
+
+### Encoding, which is the actual cost
+
+Measured directly against `specter2-proximity@v1` on CPU, 5 repeats, median,
+after one warm-up call:
+
+| Interests | Encode |
+|---|---|
+| 1 | 83.8 ms |
+| 3 | 143.2 ms |
+| 5 | 186.2 ms |
+| 8 | 309.5 ms |
+
+**Encoding dominates profile creation, and it grows with what the reader
+typed.** At five interests it is 186 ms against 5 ms for everything else the
+builder does. The batch is already a single call — encoding each interest
+separately would cost roughly `k x 84 ms`, so batching is worth about 2.3x at
+k = 5 — and each distinct string is encoded once, so a phrase repeated across
+the positive and negative lists is paid for once.
+
+That puts a realistic five-interest preview at roughly **190 ms of model plus
+100-280 ms of pipeline**: acceptable for a screen a reader is filling in, and
+the reason `MAX_INTERESTS` is 16 rather than unbounded. It is also why no
+caching was added — a per-request saving of a few milliseconds is not worth a
+cache, and the part that costs real time is different on every request.
+
+### Reproducing
+
+```bash
+python scripts/benchmark_profile_build.py                       # configured model
+python scripts/benchmark_profile_build.py --backend hashing     # everything but the model
+```
+
+Read-only, so it can be pointed at the live corpus. That has **not** been run
+against production yet.

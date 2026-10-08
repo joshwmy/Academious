@@ -64,8 +64,7 @@ def read_limit() -> str:
 def search_limit() -> str:
     settings = get_settings()
     return (
-        f"{settings.rate_limit_search_requests}/"
-        f"{settings.rate_limit_search_window_seconds}second"
+        f"{settings.rate_limit_search_requests}/{settings.rate_limit_search_window_seconds}second"
     )
 
 

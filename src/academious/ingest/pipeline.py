@@ -62,13 +62,15 @@ def _upsert_venue(session: Session, candidate: PaperCandidate) -> Venue | None:
     venue_data = candidate.venue
     existing = None
     if venue_data.openalex_id:
-        existing = session.execute(
-            select(Venue).where(Venue.openalex_id == venue_data.openalex_id)
-        ).scalars().first()
+        existing = (
+            session.execute(select(Venue).where(Venue.openalex_id == venue_data.openalex_id))
+            .scalars()
+            .first()
+        )
     if existing is None:
-        existing = session.execute(
-            select(Venue).where(Venue.name == venue_data.name)
-        ).scalars().first()
+        existing = (
+            session.execute(select(Venue).where(Venue.name == venue_data.name)).scalars().first()
+        )
     if existing is None:
         existing = Venue(
             openalex_id=venue_data.openalex_id,
@@ -135,12 +137,16 @@ class IngestPipeline:
         scripts/readmit_orphaned.py.
         """
         digest = content_hash(raw.payload)
-        stored = session.execute(
-            select(SourceRecord).where(
-                SourceRecord.source_key == raw.source_key,
-                SourceRecord.source_id == raw.source_id,
+        stored = (
+            session.execute(
+                select(SourceRecord).where(
+                    SourceRecord.source_key == raw.source_key,
+                    SourceRecord.source_id == raw.source_id,
+                )
             )
-        ).scalars().first()
+            .scalars()
+            .first()
+        )
 
         if not force and stored is not None and stored.content_hash == digest:
             counters.records_skipped += 1
@@ -338,9 +344,7 @@ def _save_cursor(session: Session, source_key: str, cursor: str) -> None:
     now = utcnow()
     if existing is None:
         session.add(
-            SourceCursor(
-                source_key=source_key, cursor=cursor, last_success_at=now, updated_at=now
-            )
+            SourceCursor(source_key=source_key, cursor=cursor, last_success_at=now, updated_at=now)
         )
     else:
         existing.cursor = cursor

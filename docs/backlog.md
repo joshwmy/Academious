@@ -92,7 +92,9 @@ it could be started but deliberately is not.
 | [RETR-003](#retr-003) | Hybrid/RRF investigation is frozen | DEFERRED | With RETR-002 |
 | [RETR-004](#retr-004) | Retrieval measured at ~2.5k papers only | DEFERRED | At 10x corpus |
 | [RETR-005](#retr-005) | ONNX int8 inference unimplemented | DEFERRED | When a backfill is scheduled |
-| [RETR-006](#retr-006) | No re-ranking, learning-to-rank or personalisation | IN PROGRESS | Serve the feed; then learn |
+| [RETR-006](#retr-006) | Personalisation exists; learned ranking remains | IN PROGRESS | Judge profiles; then ingest interactions |
+| [RETR-008](#retr-008) | No interest suggestions while a reader types | READY | Needs a topic table |
+| [RETR-009](#retr-009) | Profile creation unmeasured against the real corpus | READY | One run on the VPS |
 | [DATA-001](#data-001) | `specter2-benchmark@v1` ablation vectors remain in the database | DEFERRED | Storage or maintenance pressure |
 | [DATA-002](#data-002) | No normalised subject taxonomy | DONE | — |
 | [DATA-003](#data-003) | Title-only embedding path unexercised at volume | BLOCKED | With SRC-004 |
@@ -121,7 +123,7 @@ it could be started but deliberately is not.
 | [WEB-006](#web-006) | Search result count fixed at 20 | DEFERRED | With the design pass |
 | [WEB-007](#web-007) | Colour contrast verified by hand, not in a browser | DEFERRED | With the design pass |
 | [WEB-008](#web-008) | No analytics | WONTFIX | — |
-| [WEB-009](#web-009) | No accounts, saved papers or recommendations | DEFERRED | Phase 3 |
+| [WEB-009](#web-009) | Personalisation is device-local; no accounts or sync | IN PROGRESS | Account-backed phase |
 | [WEB-010](#web-010) | `/search` accepts no filters, so filtering stops at the feed | DONE | — |
 | [WEB-011](#web-011) | Europe PMC is not offered in the frontend source filter | DONE | — |
 | [PROD-001](#prod-001) | A generative explanation layer changes the threat model | DEFERRED | Phase 5 |
@@ -618,11 +620,13 @@ promised, and it changes the top ten on every benchmark query.**
 
 ### RETR-006
 
-**No re-ranking, learning-to-rank or personalisation.** — `IN PROGRESS`
-(2026-09-05)
+**Personalisation exists; learned ranking remains.** — `IN PROGRESS`
+(updated 2026-10-08)
 
-Learning-to-rank still waits for interactions: there are zero, because there
-are no users. What changed is everything before it.
+Learning-to-rank still waits for server-side, consented interaction data. The
+browser now records bounded impressions and explicit recommendation feedback on
+the reader's device, but those events are neither uploaded nor used to train a
+model.
 
 * **The stated dependency was half wrong, and inverting it was the decision.**
   This entry said personalised ranking needs an interest model, which needs
@@ -651,15 +655,84 @@ are no users. What changed is everything before it.
   feature rather than by inflating a cosine. And diversity re-ranking was
   O(limit × candidates × chosen), 134 ms for 400 candidates; carrying a running
   maximum forward made it 24.6 ms with identical output.
-* **Still open, and this is the honest gap** — nothing serves it. `/papers` is
-  unchanged and reverse-chronological, so no reader has ever seen a ranked feed.
-  And no benchmark profile has been judged, so the descriptive metrics are real
-  and the quality metrics are correctly withheld
-  ([evaluation.md](evaluation.md)).
-* **Trigger** — an endpoint that serves a feed, and a person judging pooled
-  results for the six profiles. Learning-to-rank stays deferred until
-  impressions exist; `personalise/feedback.py` defines the impression event now
+* **Served (2026-09-05)** — `academious/onboarding/` and `POST /profiles/preview`
+  ([ADR 0011](adr/0011-research-profile-creation.md)). A person can now build a
+  research profile with no account — broad areas, interests in their own words,
+  example papers, explicit dislikes, discovery preferences — see the feed it
+  produces, and correct it. The previous entry's honest gap, *nothing serves
+  it*, is closed. `/papers` is deliberately unchanged.
+* **Product loop wired (2026-10-08)** — the browser retains the normalised
+  profile on the current device, Home calls `POST /profiles/preview`, explains
+  each recommendation, and sends *More like this*, *Less like this* and *Not
+  interested* through `POST /profiles/refine`. Impressions and explicit actions
+  are kept in a bounded local history. A reader can edit or forget the profile;
+  an anonymous reader still receives the honestly labelled latest feed.
+* **Three controls were made real rather than advertised.** *Peer-reviewed only*
+  needed a hard filter, because a preference expressed as a weight can be
+  out-competed and the word *only* is a promise. *Exploration* needed a database
+  source, because the feed capped exploration-only items and nothing was
+  proposing any. *Importance on a broad area* was removed, because a field
+  interest matches nothing semantically and the level would have been wired to
+  nothing.
+* **A cold-start profile could not previously be encoded.** `EncodedProfile`
+  demanded a positive *semantic* interest, so rec-06 — the reader who only
+  ticked boxes, and the exact reader onboarding must serve — could be built but
+  never run through `build_feed`. Now one positive interest of any kind is
+  enough.
+* **Still open, and this is now the honest gap** — no benchmark profile has been
+  judged, so the descriptive metrics are real and the quality metrics are
+  correctly withheld ([evaluation.md](evaluation.md)). The profile-construction
+  invariants that exist say a reader's choices survive into the feed; they say
+  nothing about whether the feed is good.
+* **Trigger** — a person judging pooled results for the six profiles, now that a
+  profile can be produced by someone other than a developer. Learning-to-rank
+  stays deferred until there is a consented server-side ingestion path and
+  enough impressions; `personalise/feedback.py` defines the event contract
   because a click log without an exposure log cannot be debiased later.
+
+---
+
+### RETR-008
+
+**No interest suggestions while a reader types.** — `READY` (2026-09-05)
+
+Stage 2 of profile creation is a free-text box with no autocomplete, so a reader
+guesses at phrasing and gets no help from the vocabulary the corpus carries.
+
+* **Why it was not built** — the data is there but not reachable at interactive
+  cost. `paper.topics` is JSONB with no index, so a containment query per
+  keystroke would sequentially scan 98,000 rows. `paper.fields` *is* GIN-indexed,
+  but it holds only 26 values, and those are already served whole by
+  `GET /fields`, which is what stage 1 uses; filtering 26 strings needs no
+  endpoint.
+* **What would fix it** — a `topic` table with counts, populated from
+  `paper.topics` during ingestion, with a trigram index on the label. That is a
+  migration and a backfill rather than an endpoint, which is why it is its own
+  entry rather than part of the onboarding work.
+* **Not worth an LLM.** Normalising or suggesting interest names with a model
+  would add a per-keystroke dependency, a cost per profile and a source of wrong
+  answers, to replace a lookup.
+* **Trigger** — evidence that readers struggle to phrase interests, which needs
+  readers.
+
+---
+
+### RETR-009
+
+**Profile creation is unmeasured against a real corpus.** — `READY` (2026-09-05)
+
+Both benchmarks that touch the recommender have only been run against 20,000
+synthetic vectors on a laptop. `scripts/benchmark_profile_build.py` is read-only
+precisely so it can be pointed at production, and has not been.
+
+* **What is known** — encoding dominates: 186 ms for five interests against 5 ms
+  for everything else the builder does ([performance.md §11](performance.md)).
+  Profile assembly is flat in the number of interests.
+* **What is not** — what a preview costs over 98,000 papers with three candidate
+  sources, one of which (`AdjacentInterestSource`) is a second full scan added
+  this phase.
+* **Trigger** — one run on the VPS. Cheap, and it should happen before any
+  optimisation is argued for.
 
 ---
 
@@ -1392,25 +1465,25 @@ Ratios were computed from the tokens by hand against WCAG AA.
 
 **No analytics.** — `WONTFIX`
 
-Nothing is written to cookies, `localStorage` or `sessionStorage`; no search
-history is stored; no query is sent to any third party.
+No analytics or search history is sent anywhere and no query is sent to a third
+party. Device-local storage now holds bookmarks, the reader's research-profile
+draft, and a bounded recommendation interaction history; it is product state,
+not telemetry, and remains on that device.
 
 * **Why** — a decision, not an omission. Reversing it is a privacy decision to
   take and document deliberately — see SEC-009 and PROD-002.
 
 ### WEB-009
 
-**No accounts, saved papers or recommendations.** — `DEFERRED`
+**Personalisation is device-local; no accounts or sync.** — `DONE`
+(2026-10-08)
 
-Roadmap Phase 3 and Phase 4. Public browsing never requires an account;
-authentication gates personalisation only.
-
-This is the largest gap between what Academious *is* and what it is *for*. The
-product is a personalised discovery feed ([product.md](product.md)); with no
-accounts there is no user to model, no interest profile to rank against, and no
-interaction to learn from, so the whole Personalise → Discover → Rank → Explain
-chain is unstartable. What ships today — corpus, retrieval, browsing — is the
-foundation that layer will be built on, not a smaller version of it.
+Public browsing and device-local personalisation still require no account.
+Consented verified accounts now add durable profile and saved-paper sync,
+attributed impressions, explicit-feedback events, recent-sequence and
+collaborative candidates, and bounded per-reader ranker tuning. Account deletion
+cascades through the personal state. See ADR 0012; backup retention remains an
+operations obligation under PROD-002 and DEPLOY-006.
 
 ### WEB-010
 
@@ -1512,11 +1585,12 @@ conveyance, so a copyleft package there would carry obligations the backend's
 ### PROD-002
 
 **Accounts turn query logs and interest profiles into privacy assets.** —
-`DEFERRED`
+`IN PROGRESS` (2026-10-08)
 
-Roadmap Phase 3. Today a query lives in a URL and a log line records its length.
-With accounts, a stored interest profile is personal data and query logs become
-far more sensitive than they are now.
+Consented accounts now store profiles, saved papers and recommendation events on
+the server. Consent provenance, private caching, reader-scoped access, deletion,
+and deliberately content-free event logging are implemented. Production remains
+blocked on a backup retention/erasure policy and operational privacy review.
 
 * **Consequences to carry in** — SEC-008 (real per-user quotas), SEC-009 (the
   logging decision), DEPLOY-006 (backups must exist before real user data does).

@@ -108,7 +108,7 @@ def test_the_lock_key_does_not_depend_on_the_interpreter():
 
 
 @pytest.mark.db
-def test_a_second_pass_is_refused_while_the_first_holds_the_lock():
+def test_a_second_pass_is_refused_while_the_first_holds_the_lock(engine):
     """What the two colliding runs on 2026-09-04 should have hit instead.
 
     They raced to insert the same `paper_identifier` and the loser died on the

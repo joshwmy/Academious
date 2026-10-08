@@ -445,6 +445,49 @@ it is a confident wrong one.
 real, and the quality half currently prints *"No profile has a fully judged
 feed."* That is the honest state, and it is what the harness is built to say.
 
+### Evaluating the profile, not only the feed
+
+A recommender is only as good as its input, so profile construction is measured
+on its own terms. `eval/drafts.py` holds three benchmark drafts — what a person
+would actually choose at signup, as distinct from the six `InterestProfile`s in
+`eval/profiles.py`, which are written by hand to evaluate the ranker. The two
+answer different questions: *does the feed serve this reader* against *does
+profile construction produce the reader we meant*.
+
+What is checked is **behavioural invariants**, not accuracy. Each one names a
+choice a reader made and asserts that changing it changes the recommendations in
+the direction the interface promised:
+
+| Invariant | The failure it catches |
+|---|---|
+| Distinct-interest preservation | Two interests merged into one, or averaged |
+| Importance mapping | A core interest that ranks no higher than an occasional one |
+| Example-paper signal | A chosen paper that pulls in nothing like itself |
+| Negative interest | A dislike that lowers nothing it matches |
+| Blocked topic | A block that is a penalty rather than an exclusion |
+| Publication stage | *Peer-reviewed only* that still shows preprints |
+| Horizon | A preview refinement that overwrites a standing interest |
+| Profile sensitivity | Changing a major choice that changes no recommendation |
+| Explanation provenance | *Similar to a paper you chose* reported as *you said this* |
+
+`tests/test_onboarding_feed.py` runs these over a synthetic orthogonal-axis
+corpus, for the same reason the ranking tests do: they are about the pipeline's
+decisions, and a real embedding would turn each assertion into a judgement about
+SPECTER2.
+
+**There are no percentages here, and there should not be.** These say a reader's
+choices survive into the feed. Whether the feed is *good* still needs a person to
+judge pooled results, and until then the rule in §1 holds unchanged.
+
+One measurement lesson worth keeping, because a failing test taught it: the
+negative-interest invariant was first written as an assertion about **rank**, and
+it failed for the wrong reason. In a small corpus a penalised paper can hold its
+position simply because nothing better exists to take it, which makes a rank
+assertion a statement about how many papers the fixture holds. The claim that
+actually belongs to a dislike is that *this paper scores lower for this reader*,
+compared per paper across two feeds — which is what the test now asserts, along
+with the complement: a dislike must not move what it does not match.
+
 ### When users exist
 
 Splits must be **temporal**, never random: a random split leaks future

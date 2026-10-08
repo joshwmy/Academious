@@ -60,7 +60,9 @@ describe("public journey, against captured backend responses", () => {
     // 1. The feed loads real papers.
     const firstTitle = contract.papers.results[0]!.title;
     await screen.findByRole("link", { name: firstTitle });
-    expect(screen.getByRole("heading", { level: 1, name: /new research/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1, name: /latest research/i }),
+    ).toBeInTheDocument();
 
     // 2. Opening one shows the detail page.
     await user.click(screen.getByRole("link", { name: firstTitle }));
@@ -68,8 +70,8 @@ describe("public journey, against captured backend responses", () => {
     expect(screen.getByRole("heading", { name: "Abstract" })).toBeInTheDocument();
 
     // 3. Back returns to the feed.
-    await user.click(screen.getByRole("link", { name: /back to new research/i }));
-    await screen.findByRole("heading", { level: 1, name: /new research/i });
+    await user.click(screen.getByRole("link", { name: /back to home/i }));
+    await screen.findByRole("heading", { level: 1, name: /latest research/i });
 
     // 4. Searching navigates and renders ranked results.
     await user.type(screen.getByRole("searchbox"), "graph neural networks");

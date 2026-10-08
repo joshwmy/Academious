@@ -124,19 +124,17 @@ flowchart LR
     CR --> RK[Personalised ranking]
     RK --> FD[Research feed]
     FD --> UX[User interaction]
-    UX -->|opened · saved · dismissed| IM
+    UX -->|more · less · not interested| IM
 
     classDef planned stroke-dasharray: 5 4;
-    class IM,CR,RK,FD,UX planned;
 ```
 
-Every box is dashed because the *loop* does not exist. Its first four boxes do:
-an interest model, candidate generation, personalised ranking and a feed are
-implemented in `academious/personalise/` and measured against benchmark
-profiles. The return edge is what is missing, and it is missing for one reason -
-there are no accounts, so there is no interaction to learn from (§7). A
-recommender without that edge does not compound; it is a good cold start and
-nothing more.
+The loop now exists for explicit feedback on one device: a reader builds an
+interest model, Home requests candidate generation and personalised ranking,
+and more/less/not-interested actions refine the profile and rebuild the feed.
+The browser retains the profile and a bounded event history; the server retains
+neither. This improves the current reader's stated model, but does not yet learn
+a ranker or compound across readers.
 
 The compounding part is the return edge. Signals that could eventually feed it:
 papers opened, saved, dismissed, marked irrelevant; time spent; topics and
@@ -150,20 +148,20 @@ column is a direction, not a feature.
 | Layer | Today | Direction |
 |---|---|---|
 | **Corpus** | Five sources harvested, normalised, deduplicated, merged into one corpus with OA locations and retraction status | Broader coverage; scheduled, measured freshness |
-| **Personalise** | An `InterestProfile` a request supplies: several weighted interests, positive and negative, long- and short-term. No accounts, so nothing is stored or learned | Interests derived from behaviour; a profile that persists and improves ([ADR 0010](adr/0010-recommendation-architecture.md)) |
+| **Personalise** | A reader can build a research profile without an account, retain it on one device, receive it on Home, and correct it with explicit feedback. Nothing is stored by the server or learned across readers ([ADR 0011](adr/0011-research-profile-creation.md)) | Synced identity; consented behavioural signals; a profile and ranker that improve over time ([ADR 0010](adr/0010-recommendation-architecture.md)) |
 | **Discover** | Candidate generation runs per request over several sources — semantic, exact-match, adjacent — each keeping its provenance | Standing interests; generation runs on a schedule rather than on a request |
-| **Rank** | A deterministic ranker over 17 named features, then MMR diversity re-ranking. **Not yet wired to an endpoint**: `/papers` is still reverse-chronological and identical for everyone | A ranker trained on impressions, replacing the hand-set weights over the same features |
+| **Rank** | A deterministic ranker over 17 named features, then MMR diversity re-ranking, served on Home for readers with a local profile. Anonymous `/papers` remains reverse-chronological | A ranker trained on impressions, replacing the hand-set weights over the same features |
 | **Explain** | Every ranked item names the interest that earned it and the reasons that contributed, from `argmax` and candidate provenance. No LLM, and none needed | Richer reasons as more signals exist; the mechanism does not change |
 | **Understand** | *Nothing.* No LLM anywhere in the codebase | Summaries and explanation, after discovery works |
 
 Two consequences worth stating plainly, because they are easy to overstate:
 
-* **Academious is not personalised for anyone yet.** The ranking exists and is
-  tested; no endpoint serves it, and nothing remembers a reader between
-  requests. A profile is answered and forgotten, exactly as a query is.
-* **The feed is not ranked.** `/papers` is newest-first
-  ([`api/repository.py`](../src/academious/api/repository.py)). It demonstrates
-  the corpus; it does not demonstrate discovery.
+* **A reader is remembered only by that browser.** Profile creation, ranking,
+  explanation and explicit correction run end to end. The API remains stateless;
+  clearing site data or choosing *Forget this profile* removes the identity.
+* **Anonymous Home is not ranked.** Without a local profile, `/papers` is
+  newest-first ([`api/repository.py`](../src/academious/api/repository.py)). It
+  demonstrates the corpus; it does not pretend to know the reader.
 
 ## 8. Why the ingestion architecture looks like this
 

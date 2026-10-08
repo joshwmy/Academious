@@ -35,9 +35,7 @@ class IngestionRun(Base):
 
     id: Mapped[uuid.UUID] = uuid_pk()
     source_key: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
-    status: Mapped[str] = mapped_column(
-        String(16), nullable=False, default=RunStatus.RUNNING.value
-    )
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default=RunStatus.RUNNING.value)
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
@@ -86,9 +84,7 @@ class Job(Base):
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
     dedup_key: Mapped[str | None] = mapped_column(String(255), unique=True)
 
-    status: Mapped[str] = mapped_column(
-        String(16), nullable=False, default=JobStatus.PENDING.value
-    )
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default=JobStatus.PENDING.value)
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=100)
     attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
@@ -100,6 +96,4 @@ class Job(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
-    __table_args__ = (
-        Index("ix_job_claim", "status", "priority", "run_after"),
-    )
+    __table_args__ = (Index("ix_job_claim", "status", "priority", "run_after"),)

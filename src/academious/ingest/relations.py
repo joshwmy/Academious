@@ -24,18 +24,20 @@ def find_by_doi(session: Session, doi: str | None) -> Paper | None:
     normalised = idutil.normalise_doi(doi)
     if not normalised:
         return None
-    identifier = session.execute(
-        select(PaperIdentifier).where(
-            PaperIdentifier.id_type == IdType.DOI.value,
-            PaperIdentifier.value == normalised,
+    identifier = (
+        session.execute(
+            select(PaperIdentifier).where(
+                PaperIdentifier.id_type == IdType.DOI.value,
+                PaperIdentifier.value == normalised,
+            )
         )
-    ).scalars().first()
+        .scalars()
+        .first()
+    )
     return session.get(Paper, identifier.paper_id) if identifier else None
 
 
-def relation_exists(
-    session: Session, from_id: object, to_id: object, relation_type: str
-) -> bool:
+def relation_exists(session: Session, from_id: object, to_id: object, relation_type: str) -> bool:
     return session.get(PaperRelation, (from_id, to_id, relation_type)) is not None
 
 

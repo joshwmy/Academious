@@ -33,6 +33,7 @@ from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
 
 from academious.personalise.features import FEATURE_SPECS, FeatureVector
+from academious.personalise.profile import Preferences
 
 #: Weight per feature. All positive; direction lives in the registry.
 #:
@@ -68,6 +69,15 @@ DEFAULT_WEIGHTS: Mapping[str, float] = {
     "seen_fatigue": 0.20,
     "retracted": 0.60,
 }
+
+
+#: The range `freshness_appetite` may move the freshness weight across. The
+#: midpoint is `DEFAULT_WEIGHTS["freshness"]` exactly, so a reader who expresses
+#: no opinion is ranked by the table the benchmark measured. The ends are
+#: deliberately narrow: freshness three times its default already reorders a
+#: feed hard, and a reader asking for newer work has not asked for a date sort.
+MIN_FRESHNESS_WEIGHT = 0.05
+MAX_FRESHNESS_WEIGHT = 0.30
 
 
 @dataclass(frozen=True, slots=True)
@@ -115,6 +125,29 @@ class Weights:
         return Weights({**self.values, **overrides})
 
 
+def weights_for(preferences: Preferences) -> Weights:
+    """The weight table for one reader's stated appetite for new work.
+
+    The only preference that reaches the ranker as a weight, and it lives here
+    rather than in `onboarding/` because a weight is the ranker's unit: a
+    profile carries an appetite in [0, 1], and this is the single place that
+    knows what a given appetite is worth. When a learned ranker arrives it will
+    read the appetite as a feature instead, and this function is what it
+    replaces.
+
+    Piecewise-linear about the midpoint so that 0.5 returns the default table
+    unchanged - equal, not approximately equal - which is what lets a test
+    assert that expressing no preference changes nothing.
+    """
+    appetite = preferences.freshness_appetite
+    default = DEFAULT_WEIGHTS["freshness"]
+    if appetite >= 0.5:
+        freshness = default + (MAX_FRESHNESS_WEIGHT - default) * (appetite - 0.5) * 2.0
+    else:
+        freshness = MIN_FRESHNESS_WEIGHT + (default - MIN_FRESHNESS_WEIGHT) * appetite * 2.0
+    return Weights({**DEFAULT_WEIGHTS, "freshness": freshness})
+
+
 @dataclass(frozen=True, slots=True)
 class ScoredCandidate:
     """A ranked paper, with the arithmetic that put it there.
@@ -156,7 +189,12 @@ class Ranker(Protocol):
     deterministic implementation ignores that freedom; the interface keeps it.
     """
 
-    name: str
+    # A read-only member rather than `name: str`. A `Ranker` is configuration
+    # and every implementation here is a frozen dataclass, which a settable
+    # protocol attribute rejects - the protocol would then describe no ranker
+    # that actually exists.
+    @property
+    def name(self) -> str: ...
 
     def rank(self, features: Sequence[FeatureVector]) -> list[ScoredCandidate]: ...
 

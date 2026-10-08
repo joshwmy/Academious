@@ -132,6 +132,19 @@ class Settings(BaseSettings):
     # the edge, which the approved topology says it is not.
     security_hsts_enabled: bool = False
 
+    # --- Accounts and consented personalisation --------------------------
+    auth_secret: str = "development-only-change-me"
+    auth_session_seconds: int = Field(default=604_800, ge=900, le=2_592_000)
+    auth_cookie_secure: bool = False
+    frontend_url: str = "http://localhost:5173"
+    recommendation_consent_version: str = "2026-10-08"
+    smtp_host: str = ""
+    smtp_port: int = Field(default=587, ge=1, le=65_535)
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    smtp_starttls: bool = True
+
     http_timeout_seconds: float = 30.0
     http_max_attempts: int = 5
 
@@ -165,8 +178,7 @@ class Settings(BaseSettings):
     @property
     def user_agent(self) -> str:
         return (
-            "Academious/0.1 (+https://github.com/joshwmy/Academious; "
-            f"mailto:{self.contact_email})"
+            f"Academious/0.1 (+https://github.com/joshwmy/Academious; mailto:{self.contact_email})"
         )
 
 

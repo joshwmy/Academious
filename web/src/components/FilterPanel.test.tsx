@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { FIELDS, NO_FILTERS, SOURCES, type PaperFilters } from "../lib/filters";
@@ -33,6 +33,8 @@ function stubFields(counts: Record<string, number> = {}, papersWithoutField = 0)
 function renderPanel(filters: PaperFilters = NO_FILTERS) {
   const onChange = vi.fn();
   render(<FilterPanel filters={filters} onChange={onChange} />);
+  const summary = screen.getByText("Subject fields");
+  if (!summary.closest("details")?.hasAttribute("open")) fireEvent.click(summary);
   return onChange;
 }
 

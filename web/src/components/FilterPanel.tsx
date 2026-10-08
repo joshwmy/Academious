@@ -15,7 +15,7 @@
  * is the opposite case and stays submit-driven; see SearchBar.
  */
 
-import { useCallback, useId } from "react";
+import { useCallback, useId, useState } from "react";
 import { listFields } from "../api/client";
 import {
   FIELDS,
@@ -50,6 +50,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
   // instance or a second panel on the page would share one selection.
   const preprintGroup = useId();
   const active = countActiveFilters(filters);
+  const [fieldsOpen, setFieldsOpen] = useState(filters.fields.length > 0);
 
   const toggleField = (slug: FieldSlug, checked: boolean) => {
     const fields = checked
@@ -97,39 +98,55 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
           ))}
         </fieldset>
 
-        <fieldset className="filters__group filters__group--fields">
-          <legend className="filters__legend">Field</legend>
-          <div className="filters__scroll">
-            {FIELDS.map((field) => {
-              const count = counts?.get(field.slug);
-              // A field with nothing in it is still shown, greyed by its count
-              // rather than removed: a list whose length changes with the
-              // corpus makes a filter people used yesterday vanish today.
-              return (
-                <label className="filters__option" key={field.slug}>
-                  <input
-                    type="checkbox"
-                    checked={filters.fields.includes(field.slug)}
-                    onChange={(event) => toggleField(field.slug, event.target.checked)}
-                  />
-                  <span>{field.label}</span>
-                  {count === undefined ? null : (
-                    <span className="filters__count">{count.toLocaleString()}</span>
-                  )}
-                </label>
-              );
-            })}
-          </div>
-          {withoutField !== null && withoutField > 0 ? (
-            // Said plainly rather than discovered: most of the corpus reaches us
-            // from sources that classify papers in a vocabulary nothing maps
-            // onto these fields, and choosing any field hides all of them.
-            <p className="filters__note">
-              {withoutField.toLocaleString()} papers carry no field and are hidden while one is
-              selected.
-            </p>
-          ) : null}
-        </fieldset>
+        <details
+          className="filters__field-disclosure"
+          open={fieldsOpen}
+          onToggle={(event) => {
+            setFieldsOpen(event.currentTarget.open);
+          }}
+        >
+          <summary className="filters__field-summary">
+            <span>Subject fields</span>
+            {filters.fields.length > 0 ? (
+              <span>{filters.fields.length} selected</span>
+            ) : (
+              <span>All fields</span>
+            )}
+          </summary>
+          <fieldset className="filters__group filters__group--fields">
+            <legend className="sr-only">Field</legend>
+            <div className="filters__scroll">
+              {FIELDS.map((field) => {
+                const count = counts?.get(field.slug);
+                // A field with nothing in it is still shown, greyed by its count
+                // rather than removed: a list whose length changes with the
+                // corpus makes a filter people used yesterday vanish today.
+                return (
+                  <label className="filters__option" key={field.slug}>
+                    <input
+                      type="checkbox"
+                      checked={filters.fields.includes(field.slug)}
+                      onChange={(event) => toggleField(field.slug, event.target.checked)}
+                    />
+                    <span>{field.label}</span>
+                    {count === undefined ? null : (
+                      <span className="filters__count">{count.toLocaleString()}</span>
+                    )}
+                  </label>
+                );
+              })}
+            </div>
+            {withoutField !== null && withoutField > 0 ? (
+              // Said plainly rather than discovered: most of the corpus reaches us
+              // from sources that classify papers in a vocabulary nothing maps
+              // onto these fields, and choosing any field hides all of them.
+              <p className="filters__note">
+                {withoutField.toLocaleString()} papers carry no field and are hidden while one
+                is selected.
+              </p>
+            ) : null}
+          </fieldset>
+        </details>
 
         <fieldset className="filters__group">
           <legend className="filters__legend">Type</legend>

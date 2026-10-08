@@ -14,26 +14,30 @@ flowchart LR
     COL[Collect<br/>broadly] --> NRM[Normalise<br/>consistently]
     NRM --> IDN[Resolve<br/>identity] --> COR[(Unified<br/>corpus)]
     COR --> RET[Retrieve<br/>candidates]
-    RET -.-> RNK[Rank<br/>personally]
-    RNK -.-> EXP[Explain<br/>relevance] -.-> FEE[Feed]
-    FEE -.-> LRN[Learn from<br/>feedback]
-    LRN -.-> RNK
-
-    classDef planned stroke-dasharray: 5 4;
-    class RNK,EXP,FEE,LRN planned;
+    RET --> RNK[Rank<br/>personally]
+    RNK --> EXP[Explain<br/>relevance] --> FEE[Feed]
+    FEE --> LRN[Learn from<br/>feedback]
+    LRN --> RNK
 ```
 
-Solid is implemented; dashed is designed and unbuilt.
-
 Everything from `collect` to `retrieve` runs in production. `rank` and `explain`
-are **implemented but not served**: `academious/personalise/` builds a ranked,
-explained feed from a supplied interest profile, and no endpoint exposes it, so
-`/papers` remains reverse-chronological. `learn from feedback` is the genuinely
-absent stage - there are no accounts, so no interaction reaches the loop, and
-the return edge is what would make the system improve rather than merely
-personalise. The architecture is [ADR 0010](adr/0010-recommendation-architecture.md);
-the scoring design it implements is
-[phase-0-report §6](phase-0-report.md#6-recommendation-engine).
+now run too: `academious/onboarding/` turns what a reader chooses into an
+`InterestProfile`, and `POST /profiles/preview` serves the ranked, explained feed
+that profile produces. The browser retains the normalised profile on the current
+device and uses it to make Home the ranked feed. A verified, consented account
+persists the draft, saved papers, issued recommendations and interactions. The
+account feed adds recent-reading and collaborative candidates, suppresses
+recently shown work, and adjusts bounded per-reader feature weights only from
+explicit positive or negative actions. Anonymous Home remains newest-first.
+
+This is the complete online feedback loop, but not a claim of mature learned
+ranking. Impressions are neutral, events are idempotent and versioned by the
+consent accepted at registration, and population-level training waits for enough
+data to evaluate offline. The architecture is
+[ADR 0010](adr/0010-recommendation-architecture.md), profile creation is
+[ADR 0011](adr/0011-research-profile-creation.md), and the scoring design they
+implement is [phase-0-report §6](phase-0-report.md#6-recommendation-engine).
+Account persistence is [ADR 0012](adr/0012-consented-account-learning.md).
 
 ## Shape
 
@@ -55,10 +59,13 @@ src/academious/
   retrieval/   lexical, semantic and hybrid search; filters
   personalise/ interest profiles, candidate generation, feature extraction,
                ranking, diversity re-ranking, feedback contract, feed pipeline
-  eval/        benchmark queries and profiles, relevance judgments, IR metrics,
-               retrieval harness and recommendation harness
+  onboarding/  research profile creation: human level vocabulary, draft
+               validation, draft-to-profile builder, deterministic refinement,
+               human-readable summary
+  eval/        benchmark queries, profiles and drafts, relevance judgments,
+               IR metrics, retrieval harness and recommendation harness
   workers/     scheduled entry points (CLI)
-  api/         FastAPI app (Phase 2: health and metrics only)
+  api/         FastAPI app: papers, search, fields, profiles, accounts, ops
 ```
 
 Files stay small - roughly 200-400 lines, 800 as a hard ceiling. A connector that

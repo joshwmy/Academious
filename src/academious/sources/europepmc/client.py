@@ -186,9 +186,7 @@ class EuropePmcClient:
             # starts a new window rather than resuming a finished one.
             yield HarvestPage(
                 records=records,
-                next_cursor=format_cursor(
-                    expression, start, end, "" if exhausted else following
-                ),
+                next_cursor=format_cursor(expression, start, end, "" if exhausted else following),
             )
 
             if exhausted:

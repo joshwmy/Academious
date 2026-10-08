@@ -15,11 +15,12 @@
  * name exactly the paper title.
  */
 
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import type { PaperSummary } from "../api/types";
 import {
   formatAuthors,
-  formatPublished,
+  formatPublishedRelative,
   integrityNotice,
   paperProvenance,
   publishedDateTime,
@@ -35,18 +36,54 @@ interface PaperCardProps {
   rank?: number;
   /** Heading level, so the surrounding page keeps a sane outline. */
   headingLevel?: 2 | 3;
+  recommendation?: {
+    reasons: string[];
+    busy?: boolean;
+    onFeedback: (action: "more_like_this" | "less_like_this" | "not_interested") => void;
+  };
+  onBookmarkChange?: (saved: boolean) => void;
+  initiallyBookmarked?: boolean;
+  onOpen?: () => void;
 }
 
-export function PaperCard({ paper, rank, headingLevel = 2 }: PaperCardProps) {
+export function PaperCard({
+  paper,
+  rank,
+  headingLevel = 2,
+  recommendation,
+  onBookmarkChange,
+  initiallyBookmarked = false,
+  onOpen,
+}: PaperCardProps) {
   const Heading = `h${headingLevel}` as "h2" | "h3";
   const authors = formatAuthors(paper.authors);
-  const published = formatPublished(paper);
+  const published = formatPublishedRelative(paper);
   const publishedValue = publishedDateTime(paper);
   const provenance = paperProvenance(paper);
   const integrity = integrityNotice(paper.retraction_status);
   const topics = topicLabels(paper.topics);
   const isOpenAccess =
     paper.open_access_status !== "closed" && paper.open_access_status !== "unknown";
+  const storageKey = `academious:bookmark:${paper.id}`;
+  const [bookmarked, setBookmarked] = useState(() => {
+    try {
+      return initiallyBookmarked || window.localStorage.getItem(storageKey) === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleBookmark = () => {
+    const next = !bookmarked;
+    setBookmarked(next);
+    try {
+      if (next) window.localStorage.setItem(storageKey, "true");
+      else window.localStorage.removeItem(storageKey);
+    } catch {
+      // The visible state still works when storage is unavailable.
+    }
+    onBookmarkChange?.(next);
+  };
 
   return (
     <article className="paper-card">
@@ -57,6 +94,17 @@ export function PaperCard({ paper, rank, headingLevel = 2 }: PaperCardProps) {
       ) : null}
 
       <div className="paper-card__body">
+        <button
+          type="button"
+          className="paper-card__bookmark"
+          aria-label={bookmarked ? `Remove ${paper.title} from saved papers` : `Save ${paper.title}`}
+          aria-pressed={bookmarked}
+          onClick={toggleBookmark}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6.5 3.5h11v17L12 17l-5.5 3.5z" />
+          </svg>
+        </button>
         {integrity ? (
           <p className="paper-card__integrity">
             <Badge tone={integrity.level}>{integrity.label}</Badge>
@@ -64,7 +112,7 @@ export function PaperCard({ paper, rank, headingLevel = 2 }: PaperCardProps) {
         ) : null}
 
         <Heading className="paper-card__title">
-          <Link className="paper-card__link" to={`/papers/${paper.id}`}>
+          <Link className="paper-card__link" to={`/papers/${paper.id}`} onClick={onOpen}>
             {paper.title}
           </Link>
         </Heading>
@@ -109,6 +157,19 @@ export function PaperCard({ paper, rank, headingLevel = 2 }: PaperCardProps) {
               </li>
             ) : null}
           </ul>
+        ) : null}
+
+        {recommendation ? (
+          <div className="paper-card__recommendation">
+            {recommendation.reasons.length > 0 ? (
+              <p className="paper-card__reason">{recommendation.reasons.join(" · ")}</p>
+            ) : null}
+            <div className="paper-card__feedback" role="group" aria-label="Tune this recommendation">
+              <button type="button" disabled={recommendation.busy} onClick={() => recommendation.onFeedback("more_like_this")}>More like this</button>
+              <button type="button" disabled={recommendation.busy} onClick={() => recommendation.onFeedback("less_like_this")}>Less like this</button>
+              <button type="button" disabled={recommendation.busy} onClick={() => recommendation.onFeedback("not_interested")}>Not interested</button>
+            </div>
+          </div>
         ) : null}
       </div>
     </article>

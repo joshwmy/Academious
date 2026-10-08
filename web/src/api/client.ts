@@ -5,7 +5,7 @@
  * or an `ApiError`, and are spared knowing about status codes, query-string
  * construction or `Retry-After` parsing.
  *
- * Two deliberate omissions:
+ * Two deliberate constraints:
  *
  * **No automatic retries.** The backend protects itself with a 20-search-per-
  * minute budget and a two-slot concurrency gate, and answers 429 and 503 when
@@ -13,17 +13,24 @@
  * backpressure into a retry storm - the exact failure the backend controls
  * exist to prevent. Retrying is the user's decision, offered as a button.
  *
- * **No caching layer.** Three read endpoints, explicit-submit search and no
- * mutations do not need one, and a library that refetches in the background
- * would silently spend the user's rate-limit budget. See docs/frontend.md.
+ * **No caching layer.** Explicit fetches make account and feed state changes
+ * visible and avoid silent background spending of the user's rate-limit budget.
  */
 
 import { ApiError } from "./errors";
 import type {
+  AccountFeedResponse,
+  AccountUser,
   FieldsResponse,
   PaperDetail,
   PaperListParams,
   PaperPage,
+  PaperSummary,
+  ProfileDraft,
+  ProfileOptions,
+  ProfileResponse,
+  Refinement,
+  RecommendationInteraction,
   SearchParams,
   SearchResponse,
 } from "./types";
@@ -114,9 +121,9 @@ async function request<T>(url: string, signal?: AbortSignal): Promise<T> {
     response = await fetch(url, {
       method: "GET",
       headers: { Accept: "application/json" },
-      // No cookies are sent: the API is unauthenticated, and credentialed CORS
-      // against a read API is how a confused-deputy bug arrives later.
-      credentials: "omit",
+      // Same-site opaque session cookies are included for account endpoints.
+      // Public endpoints remain usable without them.
+      credentials: "include",
       ...(signal ? { signal } : {}),
     });
   } catch (error) {
@@ -158,4 +165,157 @@ export function searchPapers(
   signal?: AbortSignal,
 ): Promise<SearchResponse> {
   return request<SearchResponse>(buildUrl("/search", { ...params }), signal);
+}
+
+/**
+ * JSON POST helper for stateless profile previews.
+ */
+async function postJson<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      credentials: "include",
+      ...(signal ? { signal } : {}),
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error;
+    throw new ApiError("network", "Could not reach the Academious API.");
+  }
+
+  if (!response.ok) throw await toApiError(response);
+
+  try {
+    return (await response.json()) as T;
+  } catch {
+    throw new ApiError("malformed", "The API returned a response we could not read.", {
+      status: response.status,
+    });
+  }
+}
+
+/** The level vocabulary and per-stage limits, so nothing here is hardcoded. */
+export function getProfileOptions(signal?: AbortSignal): Promise<ProfileOptions> {
+  return request<ProfileOptions>(buildUrl("/profiles/options"), signal);
+}
+
+/** Build a profile from a draft and return the feed it produces. */
+export function previewProfile(
+  draft: ProfileDraft,
+  limit: number,
+  signal?: AbortSignal,
+): Promise<ProfileResponse> {
+  return postJson<ProfileResponse>("/profiles/preview", { draft, limit }, signal);
+}
+
+/** Apply corrections to a draft and return the updated profile and preview. */
+export function refineProfile(
+  draft: ProfileDraft,
+  refinements: Refinement[],
+  limit: number,
+  signal?: AbortSignal,
+): Promise<ProfileResponse> {
+  return postJson<ProfileResponse>("/profiles/refine", { draft, refinements, limit }, signal);
+}
+
+async function mutate<T>(
+  path: string,
+  method: "POST" | "PUT" | "DELETE",
+  body?: unknown,
+): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers: body === undefined
+        ? { Accept: "application/json" }
+        : { Accept: "application/json", "Content-Type": "application/json" },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      credentials: "include",
+    });
+  } catch {
+    throw new ApiError("network", "Could not reach the Academious API.");
+  }
+  if (!response.ok) throw await toApiError(response);
+  if (response.status === 204) return undefined as T;
+  return (await response.json()) as T;
+}
+
+export function getCurrentUser(): Promise<AccountUser> {
+  return request<AccountUser>(buildUrl("/users/me"));
+}
+
+export function registerAccount(input: {
+  email: string;
+  password: string;
+  display_name: string;
+}): Promise<AccountUser> {
+  return mutate<AccountUser>("/auth/register", "POST", {
+    ...input,
+    recommendation_data_consent: true,
+  });
+}
+
+export async function loginAccount(email: string, password: string): Promise<void> {
+  const form = new URLSearchParams({ username: email, password });
+  const response = await fetch(`${API_BASE_URL}/auth/session/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: form,
+    credentials: "include",
+  });
+  if (!response.ok) throw await toApiError(response);
+}
+
+export function logoutAccount(): Promise<void> {
+  return mutate<void>("/auth/session/logout", "POST");
+}
+
+export function requestVerification(email: string): Promise<void> {
+  return mutate<void>("/auth/request-verify-token", "POST", { email });
+}
+
+export function verifyAccount(token: string): Promise<AccountUser> {
+  return mutate<AccountUser>("/auth/verify", "POST", { token });
+}
+
+export function saveAccountProfile(draft: ProfileDraft): Promise<ProfileDraft> {
+  return mutate<ProfileDraft>("/me/profile", "PUT", draft);
+}
+
+export function getAccountProfile(): Promise<ProfileDraft> {
+  return request<ProfileDraft>(buildUrl("/me/profile"));
+}
+
+export function getAccountFeed(limit = 20): Promise<AccountFeedResponse> {
+  return mutate<AccountFeedResponse>(`/me/feed?limit=${String(limit)}`, "POST");
+}
+
+export function sendInteractions(events: RecommendationInteraction[]): Promise<{
+  accepted: number;
+  duplicates: number;
+}> {
+  return mutate("/me/interactions", "POST", { events });
+}
+
+export function listSavedPapers(): Promise<PaperSummary[]> {
+  return request<PaperSummary[]>(buildUrl("/me/saved-papers"));
+}
+
+export function removeSavedPaper(paperId: string): Promise<void> {
+  return mutate<void>(`/me/saved-papers/${encodeURIComponent(paperId)}`, "DELETE");
+}
+
+export function forgotPassword(email: string): Promise<void> {
+  return mutate<void>("/auth/forgot-password", "POST", { email });
+}
+
+export function resetPassword(token: string, password: string): Promise<void> {
+  return mutate<void>("/auth/reset-password", "POST", { token, password });
+}
+
+export function deleteAccount(): Promise<void> {
+  return mutate<void>("/me/account", "DELETE");
 }

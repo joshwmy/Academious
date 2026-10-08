@@ -81,33 +81,27 @@ def apply_candidate(paper: Paper, candidate: PaperCandidate) -> bool:
     existing_source = paper.abstract_source or ""
 
     # Title: only a higher-priority source may overwrite one already present.
-    title_outranks = _priority(TITLE_PRIORITY, source) > _priority(
-        TITLE_PRIORITY, existing_source
-    )
-    if (
-        candidate.title
-        and (not paper.title or title_outranks)
-        and paper.title != candidate.title
-    ):
-            paper.title = candidate.title
-            paper.title_norm = normalise_title(candidate.title)
-            changed = True
+    title_outranks = _priority(TITLE_PRIORITY, source) > _priority(TITLE_PRIORITY, existing_source)
+    if candidate.title and (not paper.title or title_outranks) and paper.title != candidate.title:
+        paper.title = candidate.title
+        paper.title_norm = normalise_title(candidate.title)
+        changed = True
 
     # Abstract: priority first, then prefer the longer text within a tie.
     if candidate.abstract:
         incoming_rank = _priority(ABSTRACT_PRIORITY, source)
         current_rank = _priority(ABSTRACT_PRIORITY, existing_source)
         longer = len(candidate.abstract) > len(paper.abstract or "")
-        if paper.abstract is None or incoming_rank > current_rank or (
-            incoming_rank == current_rank and longer
+        if (
+            paper.abstract is None
+            or incoming_rank > current_rank
+            or (incoming_rank == current_rank and longer)
         ):
             paper.abstract = candidate.abstract
             paper.abstract_source = source
             changed = True
 
-    author_rank_ok = _priority(TITLE_PRIORITY, source) >= _priority(
-        TITLE_PRIORITY, existing_source
-    )
+    author_rank_ok = _priority(TITLE_PRIORITY, source) >= _priority(TITLE_PRIORITY, existing_source)
     if candidate.authors and (not paper.authors or author_rank_ok):
         serialised = [author.to_json() for author in candidate.authors]
         if serialised != paper.authors:
@@ -164,7 +158,6 @@ def apply_candidate(paper: Paper, candidate: PaperCandidate) -> bool:
     if derived_fields != list(paper.fields or []):
         paper.fields = derived_fields
         changed = True
-
 
     if candidate.keywords:
         merged_keywords = merge_keywords(paper.keywords or [], candidate.keywords)

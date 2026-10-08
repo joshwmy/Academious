@@ -1,14 +1,29 @@
-# The public read API
+# The HTTP API
 
-Three endpoints, unauthenticated, read-only. They are the boundary the web
-frontend will be built against, so they are versioned by contract rather than by
-URL prefix: fields are added, never repurposed or silently removed.
+The public corpus endpoints remain unauthenticated and read-only. Account routes
+are a separate private surface using a revocable HTTP-only cookie.
 
 ```
 GET /papers          browse the corpus
 GET /papers/{id}     one paper in full
 GET /search          rank papers against a research interest
 ```
+
+Account lifecycle is provided under `/auth/*` and `/users/me`: registration,
+email verification, login/logout, password reset and account updates. Creating
+an account requires explicit recommendation-data consent. Verified users gain:
+
+| Endpoint | Purpose |
+|---|---|
+| `GET/PUT /me/profile` | Read or replace the normalised research-profile draft |
+| `POST /me/feed` | Build the account feed and record server-issued feature snapshots |
+| `POST /me/interactions` | Idempotently record impressions and explicit feedback |
+| `GET /me/saved-papers` | Read the synced collection |
+| `DELETE /me/saved-papers/{id}` | Remove one saved paper |
+| `DELETE /me/account` | Delete identity and all reader-owned state |
+
+Unsafe cookie-authenticated requests must carry an allowed `Origin`. Private
+responses are `Cache-Control: private, no-store`.
 
 Interactive documentation is at `/docs`; the schema is at `/openapi.json`.
 
@@ -295,6 +310,118 @@ of papers are reachable by no field at all. Selecting any field excludes every
 one of them. The number is published rather than left to be inferred from
 arithmetic across the facet counts, and the frontend says it in words next to
 the control.
+
+---
+
+## 5b. `POST /profiles/*` — research profile creation
+
+Three endpoints that turn what a reader chooses into an `InterestProfile` and
+show them the feed it produces. **Stateless and unauthenticated.** Nothing is
+stored: the client holds the draft between requests and posts it back. There is
+no account, no session, and no identifier by which one request could find
+another. Design and reasoning: [ADR 0011](adr/0011-research-profile-creation.md).
+
+| Endpoint | Does |
+|---|---|
+| `GET /profiles/options` | The level vocabulary and per-stage limits, so a client hardcodes neither |
+| `POST /profiles/preview` | Normalise a draft, build the profile, return it with a feed preview |
+| `POST /profiles/refine` | Apply corrections to a draft, rebuild, return the new preview |
+
+### The draft
+
+Everything a reader chose, in their own terms:
+
+```json
+{
+  "draft": {
+    "fields": ["computer-science"],
+    "interests": [
+      {"text": "recommendation systems and ranking", "importance": "core"}
+    ],
+    "example_papers": [{"paper_id": "…", "importance": "interested"}],
+    "negatives": [{"text": "generative image synthesis", "strength": "avoid"}],
+    "negative_papers": [],
+    "blocked_topics": [],
+    "discovery": {
+      "freshness": "balanced",
+      "exploration": "balanced",
+      "publication": "include_preprints"
+    }
+  },
+  "limit": 20
+}
+```
+
+`importance` is `core`, `interested` or `occasional`; `strength` is `avoid` or
+`less`. **No numbers.** Weights, cosine thresholds and ranker constants are
+implementation and are not addressable from a request — the same distinction
+`/search` makes when it accepts `preprints` but refuses `method`.
+
+Example papers are found through `GET /search`; there is no separate search for
+onboarding. A chosen paper reuses the embedding the corpus already holds.
+
+### The response
+
+`draft` comes back **normalised** — deduplicated, trimmed, unknown values
+removed — and a client should replace its own copy with it. Alongside it:
+`profile` (the canonical interests, described in words), `summary` (headed
+sections a reader can check), `preview` (ranked papers with reasons), `issues`
+(warnings that did not prevent the build) and, for a refinement, `changes`.
+
+Every response carries `schema_version`, so a draft a client stored today stays
+recognisable when accounts arrive and the same shape is persisted server-side.
+
+### No score, ever
+
+A preview item carries a `rank`, the paper, the interest that earned it and the
+reasons that contributed. It does not carry a score, a cosine, a feature value or
+a weight. The ranking's numbers are diagnostics in units no reader can calibrate,
+and `/search` refuses to expose a score for the same reason (§4).
+
+### Refinement
+
+```json
+{"draft": {"…": "…"}, "refinements": [
+  {"action": "more_like_this", "paper_id": "…", "interest_key": "i-…"}
+]}
+```
+
+Actions: `fits`, `more_like_this`, `less_like_this`, `not_interested`,
+`more_from_interest`, `less_from_interest`, `remove_interest`, `block_topic`.
+`interest_key` is the `matched_interest_key` the preview reported for that item —
+send it back so the correction lands on the interest the reader was actually
+shown, rather than on one recomputed afterwards.
+
+Each action is deterministic and visible in the returned draft. Nothing is
+inferred, and nothing accumulates invisibly.
+
+### Errors and limits
+
+A draft that cannot become a profile is `422`, and the body names **every**
+reason at once: a reader who typed one interest too short and picked one field
+that does not exist should not have to submit twice to find the second problem.
+
+| Limit | Default |
+|---|---|
+| Broad areas | 8 |
+| Specific interests | 12 |
+| Example papers | 8 |
+| Dislikes | 8 |
+| Interests in total | 16 |
+| Characters per interest | 200 |
+| Preview size | 5–30, default 20 |
+| Requests | shares the search budget: 20 / 60 s per client |
+
+Lists longer than 64 entries are refused by the parser before any of this is
+evaluated. `GET /profiles/options` serves these numbers so a form can enforce
+them before the server has to.
+
+### Privacy
+
+A research profile can say more about someone than any single search. Nothing in
+a draft is logged: the request log records interest *counts*, candidate counts
+and timings, exactly as `/search` logs `query_length` and never the query
+(SEC-009). Nothing is persisted, and nothing is sent anywhere else.
 
 ---
 

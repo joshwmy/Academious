@@ -65,10 +65,10 @@ describe("listPapers", () => {
     expect(page.page.total).toBe(0);
   });
 
-  it("never sends cookies", async () => {
+  it("includes the same-site account session when one exists", async () => {
     const mock = stubFetch(jsonResponse(emptyPage));
     await listPapers();
-    expect(mock.mock.calls[0]![1]?.credentials).toBe("omit");
+    expect(mock.mock.calls[0]![1]?.credentials).toBe("include");
   });
 });
 

@@ -125,9 +125,7 @@ def fuse(
         if row is None:
             # The paper was deleted between the component query and now.
             continue
-        hit = common.row_to_hit(
-            row, rank=index + 1, score=accumulator.total, score_kind=score_kind
-        )
+        hit = common.row_to_hit(row, rank=index + 1, score=accumulator.total, score_kind=score_kind)
         hits.append(
             RetrievalHit(
                 paper_id=hit.paper_id,

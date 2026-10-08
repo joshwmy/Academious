@@ -1,5 +1,5 @@
 /**
- * Automated accessibility checks over the three real pages.
+ * Automated accessibility checks over the four real pages.
  *
  * axe catches the mechanical violations - unlabelled controls, broken heading
  * order, insufficient contrast on the tokens, list markup that is not a list.
@@ -107,6 +107,42 @@ describe("accessibility", () => {
       </MemoryRouter>,
     );
     await findByRole("heading", { level: 1 });
+
+    expect(await audit(container)).toEqual([]);
+  });
+
+  it("profile creation has no detectable violations", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: string) => {
+        const path = new URL(input, "http://api.test").pathname;
+        if (path === "/fields") return Promise.resolve(jsonOk(makeFields()));
+        if (path === "/profiles/options") {
+          return Promise.resolve(
+            jsonOk({
+              schema_version: 1,
+              importance: [
+                { value: "core", label: "Core" },
+                { value: "interested", label: "Interested" },
+                { value: "occasional", label: "Occasional" },
+              ],
+              avoidance: [],
+              freshness: [{ value: "balanced", label: "Balanced" }],
+              exploration: [{ value: "balanced", label: "Balanced" }],
+              publication: [{ value: "include_preprints", label: "Include preprints" }],
+              limits: { interest_characters: 200 },
+            }),
+          );
+        }
+        return Promise.reject(new Error(`unhandled path ${path}`));
+      }),
+    );
+    const { container, findByRole } = render(
+      <MemoryRouter initialEntries={["/profile"]}>
+        <App />
+      </MemoryRouter>,
+    );
+    await findByRole("button", { name: "Computer Science" });
 
     expect(await audit(container)).toEqual([]);
   });

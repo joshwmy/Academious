@@ -53,9 +53,7 @@ def enqueue(
     """
     now = utcnow()
     if dedup_key is not None:
-        existing = (
-            session.execute(select(Job).where(Job.dedup_key == dedup_key)).scalars().first()
-        )
+        existing = session.execute(select(Job).where(Job.dedup_key == dedup_key)).scalars().first()
         if existing is not None:
             if existing.status in {JobStatus.PENDING.value, JobStatus.RUNNING.value}:
                 return None
@@ -147,13 +145,17 @@ def reap_stale(
     """
     moment = now or utcnow()
     cutoff = moment - older_than
-    stale = session.execute(
-        select(Job).where(
-            Job.status == JobStatus.RUNNING.value,
-            Job.locked_at.is_not(None),
-            Job.locked_at < cutoff,
+    stale = (
+        session.execute(
+            select(Job).where(
+                Job.status == JobStatus.RUNNING.value,
+                Job.locked_at.is_not(None),
+                Job.locked_at < cutoff,
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     for job in stale:
         job.locked_at = None

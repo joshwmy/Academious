@@ -1,13 +1,12 @@
-# Security of the public read API
+# Security
 
 This document says which controls exist, which layer owns each of them, and what
 remains dependent on deployment. It does not claim the system is secure; that is
 not a property software has, and a document asserting it would be the least
 trustworthy part of the repository.
 
-Scope: the public surface added in the Phase 2 public-read-API milestone -
-`GET /papers`, `GET /papers/{id}`, `GET /search` - plus the middleware and
-configuration it introduced.
+Scope: the public corpus API, consented account routes, recommendation-event
+store, middleware and deployment configuration.
 
 ---
 
@@ -27,19 +26,19 @@ configuration it introduced.
 | Availability | A single VPS; there is no second instance to fail over to |
 | Internal configuration | Database URL, OpenAlex API key, contact email |
 | Logs | Contain user queries, which are a privacy asset |
+| Account state | Email, research profile, saves and reading interactions are personal data |
+| Session tokens | Bearer credentials stored in revocable database rows |
 | Operational endpoints | Corpus size, job health, model state, active profile |
 | Model/profile identifiers | Reveal which model and which experiments exist |
 | Infrastructure topology | Host names, internal addresses, library versions |
 
 ### Attackers
 
-Anonymous internet users; scrapers wanting the corpus cheaply; abusive bots;
+Anonymous internet users; authenticated abusive users; scrapers wanting the corpus cheaply;
 denial-of-service clients; input fuzzers; parameter manipulators; attackers
-specifically trying to make expensive model calls; attackers trying to infer
-internal implementation details; automated vulnerability scanners.
-
-No authenticated users exist, so there is no privilege-escalation surface and no
-IDOR surface: every reader is entitled to every paper.
+specifically trying to make expensive model calls; credential thieves; CSRF and
+account-enumeration attempts; attackers trying to poison recommendation
+feedback; automated vulnerability scanners.
 
 ### Trust boundaries
 
@@ -78,16 +77,39 @@ a model identifier, a file path, a URL, or a configuration value.
 
 | Risk | Status | Why |
 |---|---|---|
-| API1 Broken object-level authorisation | **Not applicable** | No per-object ownership. Every paper is public to every reader |
-| API2 Broken authentication | **Not applicable** | No authentication exists. Nothing to bypass |
+| API1 Broken object-level authorisation | **Applicable** | `/me/*` derives ownership exclusively from the verified session; no user id is accepted from the caller |
+| API2 Broken authentication | **Applicable** | Library-managed Argon2 credentials, verification/reset tokens and revocable opaque cookie sessions |
 | API3 Broken object property-level authorisation | **Applicable** | Mitigated: responses are an explicit allowlist, never an ORM row (§7) |
 | API4 Unrestricted resource consumption | **Applicable, primary risk** | Mitigated: rate limits, page/query bounds, bounded model concurrency (§3-§5) |
-| API5 Broken function-level authorisation | **Partially applicable** | The public surface is read-only; operational endpoints need proxy restriction (§9) |
+| API5 Broken function-level authorisation | **Applicable** | Personal routes require an active verified user; deletion requires an active user; ops still needs proxy restriction (§9) |
 | API6 Unrestricted access to sensitive business flows | **Partially applicable** | Bulk corpus scraping is the flow worth throttling; rate limits are the control |
 | API7 SSRF | **Not exposed** | No endpoint accepts a URL or fetches one (§8) |
 | API8 Security misconfiguration | **Applicable** | Mitigated: explicit CORS, security headers, host allowlist, generic errors (§6, §7) |
 | API9 Improper inventory management | **Applicable** | Mitigated: one OpenAPI document; public and ops routes tagged distinctly, asserted by test |
 | API10 Unsafe consumption of third-party APIs | **Partially applicable** | Ingestion consumes external sources, but not on the public request path |
+
+---
+
+## 2a. Account and recommendation-data controls
+
+- Registration requires literal consent and records its version and timestamp.
+- Passwords use the authentication library's Argon2 default; application policy
+  requires at least 12 characters.
+- Sessions are opaque database tokens in `HttpOnly`, `SameSite=Lax` cookies.
+  Production refuses to start without `Secure` cookies and a changed secret.
+- Email verification gates every profile, feed, saved-paper and interaction
+  route. Verification and password reset require SMTP in production.
+- Unsafe requests carrying a session cookie must include an explicitly allowed
+  `Origin`; CORS credentials never use a wildcard origin.
+- Private responses are `private, no-store`. Event payloads are bounded,
+  timestamp-checked and idempotent; referenced papers must exist.
+- Impressions never become negative labels. Only explicit actions update bounded
+  per-reader weights, using the feature snapshot issued with that feed.
+- `DELETE /me/account` removes the identity and cascades to tokens, profile,
+  saves, events and personal ranker state.
+
+Outstanding deployment duty: backups containing account data need a documented
+retention and erasure policy before real users are accepted.
 
 ---
 
@@ -252,8 +274,17 @@ responses too, which is the case usually missed.
 
 `ACADEMIOUS_CORS_ALLOWED_ORIGINS`, comma-separated. **Empty by default**, which
 allows no browser origin at all - the correct default while no frontend is
-deployed. `Access-Control-Allow-Origin: *` is never emitted, credentials are
-never allowed, and only `GET` and `OPTIONS` are advertised.
+deployed. `Access-Control-Allow-Origin: *` is never emitted and credentials are
+never allowed.
+
+`GET`, `POST` and `OPTIONS` are advertised. `POST` was added for `/profiles/*`,
+which takes a draft too large and too structured for a query string. What makes
+that safe is what did **not** change: nothing the application accepts a `POST`
+for writes to the database, `allow_credentials` stays `False` so no cookie or
+`Authorization` header is ever attached, and the origin list stays explicit. A
+cross-origin `POST` can therefore do no more than ask for a feed the same caller
+could have asked for directly. If a write endpoint is ever added, this paragraph
+stops being true and CSRF has to be reconsidered from the beginning.
 
 Development sets `http://localhost:5173` (Vite) through the environment; it is
 not baked into the application.
@@ -284,6 +315,26 @@ filesystem or model paths, stack traces, module or class names. A test asserts
 each of these strings is absent from every endpoint's response.
 
 No relevance score is exposed - see [api.md](api.md).
+
+### Research profiles
+
+A profile is a statement about what someone is working on, and can be more
+revealing than any single search: several interests together, the papers they
+chose, and what they said they do not want. It is treated accordingly.
+
+* **Never logged.** `POST /profiles/*` records interest counts, candidate counts
+  and timings. No interest text, no labels, no chosen paper ids, no draft. This
+  is the rule `/search` already follows in logging `query_length` and never the
+  query.
+* **Stateless previews are never persisted.** `/profiles/*` remains independent
+  and anonymous. Only an explicit authenticated `PUT /me/profile` persists a
+  draft under the verified reader's identity.
+* **Never forwarded.** No third-party service is called, and no LLM is involved
+  at any point in profile creation or explanation.
+
+When accounts arrive this stops being sufficient on its own: a stored profile is
+a privacy asset with retention, export and deletion obligations, which is
+[PROD-002](backlog.md#prod-002) and remains deferred.
 
 ### Errors
 

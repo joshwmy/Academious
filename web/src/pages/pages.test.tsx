@@ -12,6 +12,8 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { App } from "../App";
+import type { ProfileDraft, ProfileResponse } from "../api/types";
+import { saveProfileDraft } from "../lib/profileStorage";
 import {
   jsonError,
   jsonOk,
@@ -59,9 +61,97 @@ function searchCalls(mock: ReturnType<typeof stubApi>) {
   return mock.mock.calls.filter(([input]) => String(input).includes("/search"));
 }
 
+async function openSubjectFields(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByText("Subject fields"));
+}
+
 // -------------------------------------------------------------------- feed
 
 describe("feed", () => {
+  it("builds a personalised feed and learns from explicit feedback", async () => {
+    const user = userEvent.setup();
+    const draft: ProfileDraft = {
+      fields: ["computer-science"],
+      interests: [{ text: "graph learning", importance: "core" }],
+      example_papers: [],
+      negatives: [],
+      negative_papers: [],
+      blocked_topics: [],
+      discovery: {
+        freshness: "balanced",
+        exploration: "balanced",
+        publication: "include_preprints",
+      },
+    };
+    const response = (title: string, changes: string[] = []): ProfileResponse => ({
+      schema_version: 1,
+      draft,
+      profile: {
+        schema_version: 1,
+        model_key: "test-model",
+        interests: [{
+          key: "interest:graph-learning",
+          label: "graph learning",
+          kind: "topic",
+          polarity: "positive",
+          level: "Core interest",
+          horizon: "long",
+          provenance: "reader",
+        }],
+        preferences: [],
+        blocked_topics: [],
+        peer_reviewed_only: false,
+      },
+      summary: { sections: [], preferences: [] },
+      preview: [{
+        rank: 1,
+        paper: makeSummary({ title }),
+        matched_interest: "graph learning",
+        matched_interest_key: "interest:graph-learning",
+        reasons: ["Because you follow graph learning"],
+        is_exploration: false,
+        is_retracted: false,
+      }],
+      issues: [],
+      changes,
+    });
+    saveProfileDraft(draft);
+    const mock = vi.fn((input: string) => {
+      const path = new URL(input, "http://api.test").pathname;
+      if (path === "/profiles/preview") {
+        return Promise.resolve(jsonOk(response("Personalised paper")));
+      }
+      if (path === "/profiles/refine") {
+        return Promise.resolve(
+          jsonOk(response("Updated recommendation", ["Raised graph learning."])),
+        );
+      }
+      return Promise.reject(new Error(`unhandled path in test stub: ${path}`));
+    });
+    vi.stubGlobal("fetch", mock);
+
+    renderApp();
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: /recommended for you/i }),
+    ).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "Personalised paper" })).toBeInTheDocument();
+    expect(screen.getByText("Because you follow graph learning")).toBeInTheDocument();
+    expect(
+      mock.mock.calls.some(([input]) => new URL(input, "http://api.test").pathname === "/papers"),
+    ).toBe(false);
+
+    await user.click(screen.getByRole("button", { name: "More like this" }));
+
+    expect(await screen.findByRole("link", { name: "Updated recommendation" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Raised graph learning.");
+    const paths = mock.mock.calls.map(([input]) => new URL(input, "http://api.test").pathname);
+    expect(paths).toEqual(["/profiles/preview", "/profiles/refine"]);
+    expect(window.localStorage.getItem("academious:interactions:v1")).toContain(
+      "more_like_this",
+    );
+  });
+
   it("renders papers returned by the API", async () => {
     stubApi({
       "/papers": () =>
@@ -241,6 +331,7 @@ describe("feed filters", () => {
     renderApp();
 
     await screen.findByRole("link", { name: "A paper" });
+    await openSubjectFields(user);
     await user.click(screen.getByRole("checkbox", { name: /^neuroscience/i }));
 
     await waitFor(() => expect(lastFilterParams(mock).field).toEqual(["neuroscience"]));

@@ -184,7 +184,7 @@ def build_feed(
             paper_id=scored.paper_id,
             score=scored.score,
             matched_interest=scored.matched_interest_label,
-            reasons=explain(scored, by_id[scored.paper_id]),
+            reasons=explain(scored, by_id[scored.paper_id], profile),
             scored=scored,
             candidate=by_id[scored.paper_id],
         )
@@ -214,6 +214,12 @@ def _apply_hard_filters(
     Also drops anything matching a *negative* interest of an exact-match kind -
     a blocked author or topic expressed as an interest rather than in the block
     set - so the two ways of saying one thing behave identically.
+
+    `require_peer_reviewed` is enforced here for the same reason and not as a
+    penalty: it backs a control whose label says *only*, and a penalty can
+    always be out-competed by a large enough bonus elsewhere. The soft version
+    of the same preference is `preprint_fit`, and both exist because *prefer*
+    and *only* are different promises.
     """
     blocked_topics = profile.profile.blocked_topics | profile.profile.values_of(
         InterestKind.TOPIC, Polarity.NEGATIVE
@@ -221,7 +227,8 @@ def _apply_hard_filters(
     blocked_authors = profile.profile.blocked_authors | profile.profile.values_of(
         InterestKind.AUTHOR, Polarity.NEGATIVE
     )
-    if not blocked_topics and not blocked_authors:
+    peer_reviewed_only = profile.profile.require_peer_reviewed
+    if not blocked_topics and not blocked_authors and not peer_reviewed_only:
         return list(pool), 0
 
     facts = facts_for(pool.paper_ids())
@@ -230,7 +237,12 @@ def _apply_hard_filters(
     for candidate in pool:
         known = facts.get(candidate.paper_id)
         if known is not None and (
-            known.topic_ids & blocked_topics or known.author_ids & blocked_authors
+            known.topic_ids & blocked_topics
+            or known.author_ids & blocked_authors
+            # A paper with no facts at all is left here and dropped downstream
+            # as `missing_facts`, so the two diagnostics keep measuring what
+            # they say they measure.
+            or (peer_reviewed_only and not known.is_peer_reviewed)
         ):
             removed += 1
             continue
@@ -238,17 +250,45 @@ def _apply_hard_filters(
     return allowed, removed
 
 
-def explain(scored: ScoredCandidate, candidate: Candidate) -> tuple[str, ...]:
+#: How the winning interest is phrased, by where that interest came from.
+#: *Because you said you follow X* and *because this resembles a paper you
+#: chose* are different claims, and a reader deciding whether their profile is
+#: right needs to be able to tell them apart. The distinction only survives if
+#: provenance is carried this far, which is why `InterestKind` is on the
+#: interest rather than inferred from its text.
+_INTEREST_TEMPLATES = {
+    InterestKind.STATED: "matches your interest in {label}",
+    InterestKind.PAPER: "similar to a paper you chose: {label}",
+    InterestKind.DERIVED: "based on what you have been reading about {label}",
+}
+# Only the semantic kinds appear here: the winning interest comes from an argmax
+# over `EncodedProfile.positive`, which holds semantic interests alone. A topic
+# or field earns its phrasing through `_ORIGIN_TEMPLATES` below, because it
+# reaches a candidate as a source rather than as a match.
+_DEFAULT_INTEREST_TEMPLATE = "matches your interest in {label}"
+
+
+def explain(
+    scored: ScoredCandidate,
+    candidate: Candidate,
+    profile: EncodedProfile | None = None,
+) -> tuple[str, ...]:
     """Why this paper, for this reader: deterministic, templated, free.
 
     Ordered by what actually contributed, so the first reason is the true one
     rather than the most flattering. Phrases are short because they sit under a
     title in a feed, not in a paragraph.
+
+    `profile` is optional only so an existing caller with a scored candidate and
+    nothing else still works; with it, the winning interest is phrased according
+    to where it came from.
     """
     reasons: list[str] = []
 
     if scored.matched_interest_label:
-        reasons.append(f"matches your interest in {scored.matched_interest_label}")
+        kind = _matched_kind(scored, profile)
+        template = _INTEREST_TEMPLATES.get(kind, _DEFAULT_INTEREST_TEMPLATE)
+        reasons.append(template.format(label=scored.matched_interest_label))
 
     for origin, template in _ORIGIN_TEMPLATES.items():
         reason = candidate.best_reason(origin)
@@ -265,3 +305,12 @@ def explain(scored: ScoredCandidate, candidate: Candidate) -> tuple[str, ...]:
         reasons.append("retracted - shown because you follow this area")
 
     return tuple(dict.fromkeys(reasons))
+
+
+def _matched_kind(scored: ScoredCandidate, profile: EncodedProfile | None) -> InterestKind | None:
+    if profile is None or scored.matched_interest_key is None:
+        return None
+    for interest in profile.profile.interests:
+        if interest.key == scored.matched_interest_key:
+            return interest.kind
+    return None

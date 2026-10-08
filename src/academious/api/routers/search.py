@@ -174,6 +174,4 @@ def search(
         # prose and are what makes a slow search reproducible.
         filters=search_filters.describe(),
     )
-    return schemas.SearchResponse(
-        query=query, count=len(hits), limit=limit, results=hits
-    )
+    return schemas.SearchResponse(query=query, count=len(hits), limit=limit, results=hits)

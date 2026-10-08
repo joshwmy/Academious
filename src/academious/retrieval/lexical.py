@@ -107,9 +107,7 @@ def _fetch(
     normalisation: int,
 ) -> Sequence[Row[Any]]:
     rank = _rank(tsquery, weights, normalisation)
-    statement = common.ranking_select(rank.label("score")).where(
-        Paper.search_tsv.op("@@")(tsquery)
-    )
+    statement = common.ranking_select(rank.label("score")).where(Paper.search_tsv.op("@@")(tsquery))
     condition = filter_module.combined(active_filters)
     if condition is not None:
         statement = statement.where(condition)

@@ -31,9 +31,13 @@ def health_db() -> dict[str, Any]:
 def ingestion_metrics(limit: int = 20) -> dict[str, Any]:
     """Most recent ingestion runs. This table is the ingestion metrics store."""
     with session_scope() as session:
-        runs = session.execute(
-            select(IngestionRun).order_by(IngestionRun.started_at.desc()).limit(limit)
-        ).scalars().all()
+        runs = (
+            session.execute(
+                select(IngestionRun).order_by(IngestionRun.started_at.desc()).limit(limit)
+            )
+            .scalars()
+            .all()
+        )
         return {
             "runs": [
                 {
@@ -80,16 +84,14 @@ def embedding_metrics() -> dict[str, Any]:
                 PaperEmbedding.model_key,
                 func.count().label("vectors"),
                 func.sum(case((PaperEmbedding.truncated, 1), else_=0)).label("truncated"),
-                func.sum(
-                    case((PaperEmbedding.input_strategy == "title_only", 1), else_=0)
-                ).label("title_only"),
+                func.sum(case((PaperEmbedding.input_strategy == "title_only", 1), else_=0)).label(
+                    "title_only"
+                ),
             ).group_by(PaperEmbedding.model_key)
         ).all()
 
         jobs = session.execute(
-            select(Job.status, func.count())
-            .where(Job.kind == JOB_KIND)
-            .group_by(Job.status)
+            select(Job.status, func.count()).where(Job.kind == JOB_KIND).group_by(Job.status)
         ).all()
 
         models = [

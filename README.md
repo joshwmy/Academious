@@ -25,23 +25,26 @@ it.
 
 ## Where this actually is
 
-**Phase 2, public web.** What runs today is the foundation discovery needs, not
-discovery itself:
+**Phase 3, consented account-backed personalised feed.** Public discovery still
+works anonymously; verified readers can sync their profile, saved papers and
+recommendation feedback across devices:
 
 | | Today | Direction |
 |---|---|---|
 | **Corpus** | Five sources harvested, normalised, deduplicated into one corpus | Broader coverage, scheduled freshness |
 | **Retrieval** | Semantic, lexical and hybrid search over a research-interest description | Candidate generation for a feed |
-| **Feed** | `/papers` is newest-first and identical for every visitor | Personalised ranking |
-| **Personalisation** | None. No accounts, no interest model, no feedback signals | Multi-centroid interest profiles |
-| **Explanation** | None | Why this paper, for this reader |
+| **Feed** | Ranked, explained account feed; local profile fallback; newest-first anonymous feed | Reader evaluation and larger-scale learning-to-rank |
+| **Personalisation** | Multi-centroid profile, sequential and collaborative candidates, per-reader online tuning from explicit feedback | Offline debiased training after enough traffic |
+| **Explanation** | Every preview item carries reasons tied to the profile | Calibrated explanations evaluated with readers |
 | **Understanding** | None. No LLM anywhere in the codebase | Summaries, after discovery works |
 
-Phase 1 built the literature-data foundation. Phase 2 built the layer that makes
-it searchable — SPECTER2 embeddings in pgvector, semantic, lexical and hybrid
-retrieval, and a reproducible way to measure whether any of it is any good —
-then put a public API and a React frontend on top of it. **Personalised ranking
-is the next product layer, and none of it exists yet.**
+Phase 1 built the literature-data foundation. Phase 2 made it searchable with
+SPECTER2 embeddings in pgvector, semantic, lexical and hybrid retrieval, and a
+public API and React frontend. Phase 3 now adds consented accounts and a durable
+feedback loop. This is a YouTube-style *architecture*—multiple candidate
+sources, ranking, diversity and feedback—not a claim of YouTube-scale model
+quality. **No quality claim is made until benchmark profiles and live outcomes
+have been evaluated.**
 
 ```bash
 # API

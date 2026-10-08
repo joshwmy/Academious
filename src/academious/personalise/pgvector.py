@@ -66,7 +66,8 @@ from academious.db.models.paper import Paper
 from academious.db.models.support import Venue
 from academious.personalise.candidates import Candidate, CandidateOrigin, CandidateReason
 from academious.personalise.features import PaperFacts
-from academious.personalise.profile import EncodedProfile
+from academious.personalise.profile import EncodedProfile, InterestKind
+from academious.personalise.sources import ADJACENCY_CEILING, ADJACENCY_FLOOR
 
 #: How far back a feed looks by default. Discovery is about what is new, and
 #: scanning a decade of corpus to rank twenty recent papers is work whose result
@@ -131,12 +132,181 @@ class SemanticInterestSource:
             .order_by(best.desc(), PaperEmbedding.paper_id)
             .limit(budget)
         )
+        peer_reviewed_only = profile.profile.require_peer_reviewed
+        cutoff = (
+            (self.today or date.today()) - timedelta(days=self.window_days)
+            if self.window_days is not None
+            else None
+        )
+        if cutoff is not None or peer_reviewed_only:
+            statement = statement.join(Paper, Paper.id == PaperEmbedding.paper_id)
+        if cutoff is not None:
+            statement = statement.where(Paper.feed_date >= cutoff)
+        if peer_reviewed_only:
+            # Applied here as well as in `feed._apply_hard_filters`, which is
+            # duplication with a purpose: filtering after generation spends the
+            # candidate budget on papers about to be discarded, and a reader who
+            # asked for peer-reviewed work only would get a thin feed built from
+            # whatever survived. The filter downstream is what makes it correct;
+            # this is what makes it useful.
+            statement = statement.where(Paper.is_peer_reviewed.is_(True))
+        return statement
+
+
+@dataclass(slots=True)
+class AdjacentInterestSource:
+    """Papers near the edge of what the reader cares about - exploration, in SQL.
+
+    The corpus twin of `sources.AdjacentSource`, and it exists because without
+    it the exploration preference is a control connected to nothing: the feed
+    caps how many exploration-only items may appear, and with no source
+    proposing any the cap is never approached whatever the reader chose.
+
+    Same band and same argument as the in-memory version: above the ceiling a
+    paper is not exploration, it is something the main scan would have found
+    anyway and relabelled; below the floor it is not adjacent, it is unrelated,
+    and a random paper is noise rather than serendipity.
+
+    A second scan, and honestly so. It runs only when the budget allocates
+    exploration slots, and `scripts/benchmark_profile_build.py` reports what it
+    costs rather than leaving that to be guessed at.
+    """
+
+    session: Session
+    model_key: str
+    name: str = "adjacent"
+    window_days: int | None = DEFAULT_WINDOW_DAYS
+    today: date | None = None
+    floor: float = ADJACENCY_FLOOR
+    ceiling: float = ADJACENCY_CEILING
+
+    def generate(self, profile: EncodedProfile, *, budget: int) -> Iterable[Candidate]:
+        if len(profile.positive) == 0 or budget <= 0:
+            return []
+
+        similarities = [
+            (1.0 - PaperEmbedding.embedding.cosine_distance(np.asarray(vector, dtype=np.float32)))
+            for vector in profile.positive_vectors
+        ]
+        best = func.greatest(*similarities) if len(similarities) > 1 else similarities[0]
+
+        statement = (
+            select(PaperEmbedding.paper_id, best.label("best"))
+            .where(
+                PaperEmbedding.model_key == self.model_key,
+                best >= self.floor,
+                best <= self.ceiling,
+            )
+            .order_by(best.desc(), PaperEmbedding.paper_id)
+            .limit(budget)
+        )
+        if self.window_days is not None or profile.profile.require_peer_reviewed:
+            statement = statement.join(Paper, Paper.id == PaperEmbedding.paper_id)
         if self.window_days is not None:
             cutoff = (self.today or date.today()) - timedelta(days=self.window_days)
-            statement = statement.join(Paper, Paper.id == PaperEmbedding.paper_id).where(
-                Paper.feed_date >= cutoff
+            statement = statement.where(Paper.feed_date >= cutoff)
+        if profile.profile.require_peer_reviewed:
+            statement = statement.where(Paper.is_peer_reviewed.is_(True))
+
+        return [
+            Candidate(
+                paper_id=paper_id,
+                reasons=(
+                    CandidateReason(
+                        origin=CandidateOrigin.EXPLORATION,
+                        detail="adjacent to your interests",
+                        strength=float(score),
+                    ),
+                ),
             )
-        return statement
+            for paper_id, score in self.session.execute(statement).all()
+        ]
+
+
+@dataclass(slots=True)
+class ExactFieldSource:
+    """Recent papers in a subject field the reader follows.
+
+    The cold-start floor, and the reason it exists in SQL rather than only in
+    `sources.ExactMatchSource`: a reader who ticked three broad areas and typed
+    nothing has no semantic interest to scan against, and without this their
+    preview is empty. `eval/profiles.py` calls that reader rec-06 and the
+    architecture claimed to serve them; nothing served them from the corpus
+    until this.
+
+    **Fields, not topics.** `paper.fields` is a normalised `text[]` with a GIN
+    index (`ix_paper_fields`) covering all four source vocabularies, so an
+    overlap test is an index scan. `paper.topics` is JSONB with no index, and a
+    containment test over 98,000 rows per request is not a facility, it is an
+    outage. Topic interests still score - `topic_affinity` reads them from
+    facts - and a negative topic still blocks; they simply do not *generate*.
+    """
+
+    session: Session
+    name: str = "field"
+    window_days: int | None = DEFAULT_WINDOW_DAYS
+    today: date | None = None
+
+    def generate(self, profile: EncodedProfile, *, budget: int) -> Iterable[Candidate]:
+        followed = profile.profile.values_of(InterestKind.FIELD)
+        if not followed or budget <= 0:
+            return []
+
+        labels = {
+            interest.value: interest.label
+            for interest in profile.profile.interests
+            if interest.kind is InterestKind.FIELD and interest.value is not None
+        }
+
+        statement = (
+            select(Paper.id, Paper.fields)
+            .where(Paper.fields.op("&&")(_text_array(sorted(followed))))
+            # Newest first. A field is a broad bucket and the reader asked for
+            # *what is new* in it; ranking will reorder within what this finds,
+            # but it cannot rank what a stale slice never returned.
+            .order_by(Paper.feed_date.desc().nullslast(), Paper.id.desc())
+            .limit(budget)
+        )
+        if profile.profile.require_peer_reviewed:
+            statement = statement.where(Paper.is_peer_reviewed.is_(True))
+        if self.window_days is not None:
+            cutoff = (self.today or date.today()) - timedelta(days=self.window_days)
+            statement = statement.where(Paper.feed_date >= cutoff)
+
+        candidates: list[Candidate] = []
+        for paper_id, fields in self.session.execute(statement).all():
+            matched = sorted(followed & frozenset(fields or ()))
+            if not matched:
+                continue
+            candidates.append(
+                Candidate(
+                    paper_id=paper_id,
+                    reasons=tuple(
+                        CandidateReason(
+                            origin=CandidateOrigin.FIELD,
+                            detail=labels.get(slug, slug),
+                            strength=1.0,
+                        )
+                        for slug in matched
+                    ),
+                )
+            )
+        return candidates
+
+
+def _text_array(values: Sequence[str]) -> Any:
+    """A `text[]` literal for the overlap operator.
+
+    Cast explicitly, or psycopg sends an untyped array and PostgreSQL cannot
+    resolve `&&` against `text[]`. The same three lines as
+    `retrieval/filters._text_array`, kept here rather than imported because
+    reaching into another layer's private helper is a worse dependency than
+    three lines of duplication.
+    """
+    from sqlalchemy import Text, cast, literal
+    from sqlalchemy.dialects.postgresql import ARRAY
+
+    return cast(literal(list(values), ARRAY(Text)), ARRAY(Text))
 
 
 @dataclass(slots=True)

@@ -89,9 +89,7 @@ def write(path: Path, judgments: Iterable[Judgment]) -> int:
     """Write judgments in a stable order. Returns how many were written."""
     ordered = sorted(judgments, key=lambda j: (j.query_id, j.title.lower(), j.paper_id))
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        "\n".join(judgment.to_json() for judgment in ordered) + "\n", encoding="utf-8"
-    )
+    path.write_text("\n".join(judgment.to_json() for judgment in ordered) + "\n", encoding="utf-8")
     return len(ordered)
 
 

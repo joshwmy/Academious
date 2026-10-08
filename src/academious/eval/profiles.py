@@ -142,8 +142,7 @@ PROFILES: tuple[BenchmarkProfile, ...] = (
                 _stated(
                     "bioinf",
                     "computational biology methods",
-                    "algorithms and statistical methods for biological sequence "
-                    "analysis",
+                    "algorithms and statistical methods for biological sequence analysis",
                 ),
             )
         ),
@@ -159,8 +158,7 @@ PROFILES: tuple[BenchmarkProfile, ...] = (
                 _stated(
                     "llm",
                     "language model evaluation",
-                    "benchmarking, evaluation and safety assessment of large "
-                    "language models",
+                    "benchmarking, evaluation and safety assessment of large language models",
                 ),
                 _stated(
                     "imggen",
@@ -210,8 +208,7 @@ PROFILES: tuple[BenchmarkProfile, ...] = (
             )
         ),
         expect_represented=("f-cs", "t-ml"),
-        notes="Exercises ExactMatchSource alone - the semantic source has "
-        "nothing to encode.",
+        notes="Exercises ExactMatchSource alone - the semantic source has nothing to encode.",
     ),
 )
 

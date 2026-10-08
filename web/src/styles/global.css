@@ -10,6 +10,7 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -21,6 +22,7 @@ body {
   line-height: var(--leading-normal);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  font-variant-numeric: proportional-nums;
 }
 
 h1,
@@ -154,16 +156,25 @@ img {
   transition:
     background var(--transition-fast),
     border-color var(--transition-fast),
-    color var(--transition-fast);
+    color var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
 .button:hover {
   background: var(--accent-hover);
   color: var(--accent-contrast);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-1px);
+}
+
+.button:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: none;
 }
 
 .button--quiet {
-  background: var(--surface);
+  background: var(--surface-raised);
   color: var(--accent);
   border-color: var(--border-strong);
 }
@@ -189,6 +200,8 @@ img {
 .button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* A disabled control keeps its own colours and simply stops responding.

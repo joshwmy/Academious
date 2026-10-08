@@ -81,9 +81,7 @@ class OaLocation(Base):
         "Paper", back_populates="oa_locations", foreign_keys=[paper_id]
     )
 
-    __table_args__ = (
-        UniqueConstraint("paper_id", "url", name="uq_oa_location_paper_url"),
-    )
+    __table_args__ = (UniqueConstraint("paper_id", "url", name="uq_oa_location_paper_url"),)
 
 
 class SourceRecord(Base):

@@ -68,9 +68,7 @@ def sync_retractions() -> tuple[int, int, int]:
             created, updated = retractions.import_notices(session, client.fetch())
             session.flush()
             changed = retractions.apply_to_papers(session)
-            log.info(
-                "retractions.synced", created=created, updated=updated, papers_changed=changed
-            )
+            log.info("retractions.synced", created=created, updated=updated, papers_changed=changed)
             return created, updated, changed
     finally:
         client.close()

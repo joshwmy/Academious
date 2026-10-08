@@ -1,6 +1,14 @@
 """All ORM models. Importing this module registers every table on Base.metadata."""
 
 from academious.db.base import Base
+from academious.db.models.account import (
+    AccessToken,
+    RankerWeight,
+    RecommendationEvent,
+    SavedPaper,
+    User,
+    UserResearchProfile,
+)
 from academious.db.models.embedding import EMBEDDING_DIM, PaperEmbedding
 from academious.db.models.ops import (
     IngestionRun,
@@ -30,6 +38,7 @@ from academious.db.models.support import (
 __all__ = [
     "EMBEDDING_DIM",
     "Base",
+    "AccessToken",
     "FullTextStatus",
     "HostType",
     "IngestionRun",
@@ -46,7 +55,12 @@ __all__ = [
     "RetractionRecord",
     "RetractionStatus",
     "RunStatus",
+    "RankerWeight",
+    "RecommendationEvent",
+    "SavedPaper",
     "SourceCursor",
     "SourceRecord",
+    "User",
+    "UserResearchProfile",
     "Venue",
 ]

@@ -75,7 +75,7 @@ export function PaperPage() {
   return (
     <article className="paper-detail">
       <p className="paper-detail__back">
-        <Link to="/">← Back to new research</Link>
+        <Link to="/">← Back to Home</Link>
       </p>
 
       {integrity ? (

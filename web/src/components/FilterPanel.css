@@ -8,9 +8,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-4) 0;
-  border-top: var(--border-width) solid var(--border);
-  border-bottom: var(--border-width) solid var(--border);
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-lg);
+  background: color-mix(in oklch, var(--surface-subtle) 62%, transparent);
 }
 
 .filters__head {
@@ -21,10 +22,9 @@
 }
 
 .filters__title {
-  font-size: var(--text-2xs);
+  font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
+  letter-spacing: -0.01em;
   color: var(--text-muted);
 }
 
@@ -57,7 +57,7 @@
   font-size: var(--text-2xs);
   font-weight: var(--weight-semibold);
   letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
+  text-transform: none;
   color: var(--text-muted);
 }
 
@@ -67,11 +67,13 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: 1.75rem;
-  font-size: var(--text-base);
+  min-height: 2rem;
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   cursor: pointer;
-  transition: color var(--transition-fast);
+  transition:
+    color var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .filters__option input {
@@ -84,6 +86,7 @@
 
 .filters__option:hover {
   color: var(--text);
+  transform: translateX(1px);
 }
 
 /* A set filter reads as set without needing a second indicator elsewhere. */
@@ -110,7 +113,7 @@
      a screen reader here. */
   .filters {
     gap: var(--space-2);
-    padding: var(--space-3) 0;
+    padding: var(--space-3);
   }
 
   .filters__head {
@@ -143,6 +146,51 @@
   display: block;
 }
 
+.filters__field-disclosure {
+  border-top: var(--border-width) solid var(--border);
+  border-bottom: var(--border-width) solid var(--border);
+}
+
+.filters__field-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 2.75rem;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  list-style: none;
+}
+
+.filters__field-summary::-webkit-details-marker {
+  display: none;
+}
+
+.filters__field-summary::after {
+  content: "+";
+  margin-inline-start: auto;
+  color: var(--text-muted);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-normal);
+  transition: transform var(--transition-base);
+}
+
+.filters__field-summary > span:last-child {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-normal);
+}
+
+.filters__field-disclosure[open] .filters__field-summary::after {
+  transform: rotate(45deg);
+}
+
+.filters__field-disclosure[open] .filters__group--fields {
+  padding-block: var(--space-2) var(--space-3);
+}
+
 .filters__scroll {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
@@ -172,5 +220,9 @@
   .filters__scroll {
     grid-template-columns: 1fr;
     max-block-size: 13rem;
+  }
+
+  .filters__field-summary {
+    min-height: 3rem;
   }
 }

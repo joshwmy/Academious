@@ -117,9 +117,7 @@ class SourceHttpClient:
                         retry_after=retry_after,
                     )
                 elif response.status_code in _RETRYABLE_STATUS:
-                    last_error = TransientSourceError(
-                        self.source, f"HTTP {response.status_code}"
-                    )
+                    last_error = TransientSourceError(self.source, f"HTTP {response.status_code}")
                 else:
                     # 4xx other than 429: the request itself is wrong. Do not retry.
                     raise PermanentSourceError(

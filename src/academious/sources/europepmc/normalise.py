@@ -229,9 +229,7 @@ def work_type_of(result: dict[str, Any], *, is_preprint: bool) -> str | None:
         return WorkType.REFERENCE_ENTRY
     if is_preprint:
         return WorkType.PREPRINT
-    mapped = {
-        PUB_TYPE_MAP[pub_type] for pub_type in _pub_types(result) if pub_type in PUB_TYPE_MAP
-    }
+    mapped = {PUB_TYPE_MAP[pub_type] for pub_type in _pub_types(result) if pub_type in PUB_TYPE_MAP}
     for work_type in TYPE_PRECEDENCE:
         if work_type in mapped:
             return work_type

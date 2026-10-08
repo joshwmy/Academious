@@ -98,9 +98,7 @@ def normalise(raw: RawRecord) -> PaperCandidate | None:
         is_peer_reviewed=bool(journal_ref),
         work_type=WorkType.PREPRINT,
         language="en",
-        topics=[
-            {"id": category, "label": category, "scheme": "arxiv"} for category in categories
-        ],
+        topics=[{"id": category, "label": category, "scheme": "arxiv"} for category in categories],
         keywords=[],
         oa_status="green",
         locations=[

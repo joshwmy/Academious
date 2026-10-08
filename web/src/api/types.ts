@@ -143,3 +143,202 @@ export interface SearchParams extends PaperFilterParams {
   q: string;
   limit?: number | undefined;
 }
+
+/**
+ * Research profile creation.
+ *
+ * These mirror `api/schemas_profiles.py` exactly, including the deliberate
+ * absence of any score, cosine or weight: a preview item carries a rank, a
+ * paper and reasons, and nothing a reader cannot calibrate.
+ *
+ * The draft is the artifact this client owns. The server normalises it and
+ * hands it back; there is no account and nothing is stored, so keeping it is
+ * the client's job.
+ */
+
+export type Importance = "core" | "interested" | "occasional";
+export type Avoidance = "avoid" | "less";
+export type Horizon = "long" | "short";
+export type FreshnessLevel = "newest_first" | "balanced" | "relevance_first";
+export type ExplorationLevel = "focused" | "balanced" | "adventurous";
+export type PublicationStage =
+  | "include_preprints"
+  | "prefer_peer_reviewed"
+  | "peer_reviewed_only";
+
+export interface DraftInterest {
+  text: string;
+  importance: Importance;
+  horizon?: Horizon;
+  label?: string | null;
+}
+
+export interface DraftExamplePaper {
+  paper_id: string;
+  importance: Importance;
+  horizon?: Horizon;
+  label?: string | null;
+}
+
+export interface DraftNegative {
+  text: string;
+  strength: Avoidance;
+  label?: string | null;
+}
+
+export interface DraftNegativePaper {
+  paper_id: string;
+  strength: Avoidance;
+  label?: string | null;
+}
+
+export interface DiscoveryChoices {
+  freshness: FreshnessLevel;
+  exploration: ExplorationLevel;
+  publication: PublicationStage;
+}
+
+export interface ProfileDraft {
+  fields: string[];
+  interests: DraftInterest[];
+  example_papers: DraftExamplePaper[];
+  negatives: DraftNegative[];
+  negative_papers: DraftNegativePaper[];
+  blocked_topics: string[];
+  discovery: DiscoveryChoices;
+}
+
+export interface DraftIssue {
+  code: string;
+  message: string;
+  severity: "error" | "warning";
+  subject?: string | null;
+}
+
+export interface ProfileInterest {
+  key: string;
+  label: string;
+  kind: string;
+  polarity: string;
+  /** A word - "Core interest" - never a weight. */
+  level: string;
+  horizon: Horizon;
+  provenance: string;
+}
+
+export interface Preference {
+  label: string;
+  value: string;
+}
+
+export interface SummarySection {
+  heading: string;
+  items: string[];
+}
+
+export interface ProfileSummary {
+  sections: SummarySection[];
+  preferences: Preference[];
+}
+
+export interface CanonicalProfile {
+  schema_version: number;
+  model_key: string;
+  interests: ProfileInterest[];
+  preferences: Preference[];
+  blocked_topics: string[];
+  peer_reviewed_only: boolean;
+}
+
+export interface PreviewItem {
+  rank: number;
+  paper: PaperSummary;
+  matched_interest?: string | null;
+  /** Send this back with a refinement so it lands on the interest shown. */
+  matched_interest_key?: string | null;
+  reasons: string[];
+  is_exploration: boolean;
+  is_retracted: boolean;
+}
+
+export interface ProfileResponse {
+  schema_version: number;
+  draft: ProfileDraft;
+  profile: CanonicalProfile;
+  summary: ProfileSummary;
+  preview: PreviewItem[];
+  issues: DraftIssue[];
+  changes: string[];
+}
+
+export interface AccountUser {
+  id: string;
+  email: string;
+  display_name: string;
+  is_active: boolean;
+  is_verified: boolean;
+  is_superuser: boolean;
+  recommendation_data_consent: boolean;
+  consent_version: string | null;
+  consented_at: string | null;
+}
+
+export interface AccountFeedResponse {
+  feed_session_id: string;
+  result: ProfileResponse;
+}
+
+export interface RecommendationInteraction {
+  event_id: string;
+  type:
+    | "impression"
+    | "open"
+    | "abstract_expand"
+    | "outbound_click"
+    | "save"
+    | "follow_from_item"
+    | "more_like_this"
+    | "less_like_this"
+    | "not_interested"
+    | "dismiss"
+    | "block_topic";
+  paper_id: string;
+  occurred_at: string;
+  position?: number;
+  interest_key?: string;
+  session_id?: string;
+  dwell_ms?: number;
+}
+
+export type RefinementAction =
+  | "fits"
+  | "more_like_this"
+  | "less_like_this"
+  | "not_interested"
+  | "more_from_interest"
+  | "less_from_interest"
+  | "remove_interest"
+  | "block_topic";
+
+export interface Refinement {
+  action: RefinementAction;
+  paper_id?: string | undefined;
+  interest_key?: string | undefined;
+  topic_id?: string | undefined;
+  label?: string | undefined;
+}
+
+export interface LevelOption {
+  value: string;
+  label: string;
+}
+
+export interface ProfileOptions {
+  schema_version: number;
+  importance: LevelOption[];
+  avoidance: LevelOption[];
+  freshness: LevelOption[];
+  exploration: LevelOption[];
+  publication: LevelOption[];
+  limits: Record<string, number>;
+}

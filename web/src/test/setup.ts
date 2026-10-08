@@ -16,6 +16,7 @@ configure({ asyncUtilTimeout: 15_000 });
 // Tests never reach the network. Any component that tries without an explicit
 // stub fails loudly here rather than hanging or silently hitting a real API.
 beforeEach(() => {
+  window.localStorage.clear();
   vi.stubGlobal(
     "fetch",
     vi.fn(() => Promise.reject(new Error("unstubbed fetch in a test"))),

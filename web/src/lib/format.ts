@@ -42,6 +42,23 @@ export function formatPublished(paper: Pick<PaperSummary, "published_date" | "pu
   return null;
 }
 
+/** Compact relative date for discovery cards; detail pages retain the exact date. */
+export function formatPublishedRelative(
+  paper: Pick<PaperSummary, "published_date" | "published_year">,
+  now = new Date(),
+): string | null {
+  if (!paper.published_date) return paper.published_year ? String(paper.published_year) : null;
+  const published = new Date(`${paper.published_date}T00:00:00Z`);
+  if (Number.isNaN(published.getTime())) return formatPublished(paper);
+
+  const days = Math.round((published.getTime() - now.getTime()) / 86_400_000);
+  const formatter = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+  if (Math.abs(days) < 30) return formatter.format(days, "day");
+  const months = Math.round(days / 30.44);
+  if (Math.abs(months) < 12) return formatter.format(months, "month");
+  return formatter.format(Math.round(days / 365.25), "year");
+}
+
 /** The machine-readable value for a `<time datetime>` attribute. */
 export function publishedDateTime(
   paper: Pick<PaperSummary, "published_date" | "published_year">,

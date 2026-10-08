@@ -35,9 +35,7 @@ def _json(status_code: int, detail: str, headers: dict[str, str] | None = None) 
     return JSONResponse(status_code=status_code, content={"detail": detail}, headers=headers)
 
 
-async def http_exception_handler(
-    request: Request, exc: StarletteHTTPException
-) -> JSONResponse:
+async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
     detail = exc.detail if isinstance(exc.detail, str) else "Request failed"
     return _json(exc.status_code, detail, dict(exc.headers or {}))
 
@@ -68,9 +66,7 @@ async def rate_limit_handler(request: Request, exc: Exception) -> JSONResponse:
     if isinstance(exc, RateLimitExceeded):
         # slowapi knows the window; expose the wait, not the policy internals.
         retry_after = str(getattr(exc, "retry_after", None) or retry_after)
-    return _json(
-        status.HTTP_429_TOO_MANY_REQUESTS, RATE_LIMITED_429, {"Retry-After": retry_after}
-    )
+    return _json(status.HTTP_429_TOO_MANY_REQUESTS, RATE_LIMITED_429, {"Retry-After": retry_after})
 
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:

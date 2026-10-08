@@ -41,8 +41,7 @@ def validated_fields(field: list[str] | None) -> tuple[str, ...]:
             # constant and both spellings warn on one version or the other.
             status_code=422,
             detail=(
-                f"field: unknown value(s) {', '.join(unknown)}. "
-                "GET /fields lists the vocabulary"
+                f"field: unknown value(s) {', '.join(unknown)}. GET /fields lists the vocabulary"
             ),
         )
     return tuple(dict.fromkeys(field or ()))

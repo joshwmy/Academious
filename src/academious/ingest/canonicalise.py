@@ -73,11 +73,15 @@ def find_by_identifiers(session: Session, candidate: PaperCandidate) -> list[Pap
     if not candidate.identifiers:
         return []
     pairs = [(i.id_type.value, i.value) for i in candidate.identifiers]
-    rows = session.execute(
-        select(PaperIdentifier).where(
-            tuple_(PaperIdentifier.id_type, PaperIdentifier.value).in_(pairs)
+    rows = (
+        session.execute(
+            select(PaperIdentifier).where(
+                tuple_(PaperIdentifier.id_type, PaperIdentifier.value).in_(pairs)
+            )
         )
-    ).scalars().all()
+        .scalars()
+        .all()
+    )
 
     papers: dict[uuid.UUID, Paper] = {}
     for row in rows:
@@ -111,9 +115,7 @@ def _fuzzy_query(
                 and_(Paper.published_year >= year - 1, Paper.published_year <= year + 1),
             )
         )
-    return (
-        select(Paper.id, score).where(and_(*conditions)).order_by(score.desc()).limit(10)
-    )
+    return select(Paper.id, score).where(and_(*conditions)).order_by(score.desc()).limit(10)
 
 
 def find_fuzzy(
@@ -214,8 +216,11 @@ def _identifier_rank(paper: Paper, candidate: PaperCandidate) -> int:
     """How strongly `paper` is attached to `candidate`, for survivor selection."""
     values = {(i.id_type, i.value) for i in paper.identifiers}
     for strength, id_type in enumerate(IDENTIFIER_STRENGTH):
-        if any(key == (id_type.value, value) for key in values
-               for value in candidate.identifier_values(id_type)):
+        if any(
+            key == (id_type.value, value)
+            for key in values
+            for value in candidate.identifier_values(id_type)
+        ):
             return len(IDENTIFIER_STRENGTH) - strength
     return 0
 

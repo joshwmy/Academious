@@ -64,9 +64,7 @@ def hits_from_ranked(
             # Deleted between the two phases. Dropping it is right; inventing a
             # placeholder would put a paper that no longer exists on a page.
             continue
-        hits.append(
-            row_to_hit(detail, rank=index + 1, score=row.score, score_kind=score_kind)
-        )
+        hits.append(row_to_hit(detail, rank=index + 1, score=row.score, score_kind=score_kind))
     return hits
 
 

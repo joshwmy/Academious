@@ -194,9 +194,20 @@ class Preferences:
     recency_of_interest: float = 0.5
     #: >1 favours preprints, <1 favours peer-reviewed work, 1.0 is neutral.
     preprint_appetite: float = 1.0
+    #: Appetite for new work over well-matched work. 0.5 leaves the ranker's
+    #: `freshness` weight where the benchmark measured it; 1.0 raises it, 0.0
+    #: lowers it. Distinct from `recency_of_interest`, which is about how old an
+    #: *interest* is rather than how old a paper is - conflating them would mean
+    #: a reader with a current side-interest silently got a newer feed too.
+    #:
+    #: An appetite rather than a stored weight: a weight table belongs to the
+    #: ranker and changes with it, and a profile carrying one would pin a reader
+    #: to whatever the constants were the day they wrote it.
+    #: `ranking.weights_for` performs the translation.
+    freshness_appetite: float = 0.5
 
     def __post_init__(self) -> None:
-        for name in ("exploration", "recency_of_interest"):
+        for name in ("exploration", "recency_of_interest", "freshness_appetite"):
             value = getattr(self, name)
             if not 0.0 <= value <= 1.0:
                 raise ProfileError(f"{name} must be in [0, 1], got {value}")
@@ -216,6 +227,11 @@ class InterestProfile:
     #: bonus somewhere else.
     blocked_topics: frozenset[str] = frozenset()
     blocked_authors: frozenset[str] = frozenset()
+    #: Refuse anything not marked peer-reviewed. A hard filter for the same
+    #: reason blocks are: it exists to back a control that says *only*, and a
+    #: preference expressed as a penalty can be out-competed. Off by default, so
+    #: every profile written before this existed behaves as it did.
+    require_peer_reviewed: bool = False
 
     def __post_init__(self) -> None:
         if not self.interests:
@@ -302,8 +318,13 @@ class EncodedProfile:
 
         positive = self.profile.semantic(Polarity.POSITIVE)
         negative = self.profile.semantic(Polarity.NEGATIVE)
-        if not positive:
-            raise ProfileError("a profile needs at least one positive semantic interest")
+        # No requirement that any of them be semantic. A reader who only ticked
+        # boxes at signup - the cold-start floor `eval/profiles.py` calls rec-06
+        # - has topic and field interests and nothing to encode, and refusing to
+        # encode that profile made the one case onboarding must handle the one
+        # case the pipeline could not run. `ExactMatchSource` generates for it,
+        # every consumer of `positive_vectors` already guards on emptiness, and
+        # `InterestProfile` still insists on at least one positive interest.
 
         object.__setattr__(self, "positive", positive)
         object.__setattr__(self, "negative", negative)

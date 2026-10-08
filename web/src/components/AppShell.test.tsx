@@ -59,3 +59,14 @@ describe("AppShell footer", () => {
     }
   });
 });
+
+describe("AppShell navigation", () => {
+  it("links to profile creation from every page", () => {
+    renderShell();
+
+    expect(screen.getByRole("link", { name: "Interests" })).toHaveAttribute(
+      "href",
+      "/profile",
+    );
+  });
+});
