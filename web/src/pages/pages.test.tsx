@@ -23,7 +23,7 @@ import {
   makeSummary,
 } from "../test/factories";
 
-function renderApp(path = "/") {
+function renderApp(path = "/feed") {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <App />
@@ -240,7 +240,7 @@ describe("feed", () => {
     const mock = stubApi({
       "/papers": () => jsonOk(makePage([makeSummary()], { offset: 40, total: 100 })),
     });
-    renderApp("/?offset=40");
+    renderApp("/feed?offset=40");
     await screen.findByRole("link", { name: /neural message passing/i });
     expect(callsTo(mock, "/papers")[0]!.searchParams.get("offset")).toBe("40");
   });
@@ -302,7 +302,7 @@ describe("feed filters", () => {
 
   it("applies the filters the URL carries, so a filtered feed is linkable", async () => {
     const mock = stubApi({ "/papers": onePage });
-    renderApp("/?source=arxiv&preprints=only_preprints&open_access=true");
+    renderApp("/feed?source=arxiv&preprints=only_preprints&open_access=true");
 
     await screen.findByRole("link", { name: "A paper" });
     expect(lastFilterParams(mock)).toMatchObject({
@@ -315,7 +315,7 @@ describe("feed filters", () => {
 
   it("applies a field filter from the URL", async () => {
     const mock = stubApi({ "/papers": onePage });
-    renderApp("/?field=computer-science");
+    renderApp("/feed?field=computer-science");
 
     await screen.findByRole("link", { name: "A paper" });
     expect(lastFilterParams(mock).field).toEqual(["computer-science"]);
@@ -326,7 +326,7 @@ describe("feed filters", () => {
     // The backend refuses an unknown field by design, so forwarding a typo
     // from a shared link would render an error page instead of a feed.
     const mock = stubApi({ "/papers": onePage });
-    renderApp("/?field=computer-science&field=comptuer-science");
+    renderApp("/feed?field=computer-science&field=comptuer-science");
 
     await screen.findByRole("link", { name: "A paper" });
     expect(lastFilterParams(mock).field).toEqual(["computer-science"]);
@@ -346,7 +346,7 @@ describe("feed filters", () => {
 
   it("drops a source the backend does not know rather than sending a 422", async () => {
     const mock = stubApi({ "/papers": onePage });
-    renderApp("/?source=arxiv&source=nonsense");
+    renderApp("/feed?source=arxiv&source=nonsense");
 
     await screen.findByRole("link", { name: "A paper" });
     expect(lastFilterParams(mock).source).toEqual(["arxiv"]);
@@ -370,7 +370,7 @@ describe("feed filters", () => {
     // that exist.
     const user = userEvent.setup();
     const mock = stubApi({ "/papers": onePage });
-    renderApp("/?offset=40");
+    renderApp("/feed?offset=40");
 
     await screen.findByRole("link", { name: "A paper" });
     expect(lastFilterParams(mock).offset).toBe("40");
@@ -386,7 +386,7 @@ describe("feed filters", () => {
   it("keeps the filters while paging", async () => {
     const user = userEvent.setup();
     const mock = stubApi({ "/papers": onePage });
-    renderApp("/?source=biorxiv");
+    renderApp("/feed?source=biorxiv");
 
     await screen.findByRole("link", { name: "A paper" });
     await user.click(screen.getByRole("button", { name: /next page/i }));
@@ -398,7 +398,7 @@ describe("feed filters", () => {
   it("clears every filter at once, and the URL with them", async () => {
     const user = userEvent.setup();
     const mock = stubApi({ "/papers": onePage });
-    renderApp("/?source=arxiv&peer_reviewed=true");
+    renderApp("/feed?source=arxiv&peer_reviewed=true");
 
     await screen.findByRole("link", { name: "A paper" });
     await user.click(screen.getByRole("button", { name: /clear filters/i }));
@@ -429,7 +429,7 @@ describe("feed filters", () => {
 
   it("distinguishes an empty corpus from a filter that matched nothing", async () => {
     stubApi({ "/papers": () => jsonOk(makePage([])) });
-    renderApp("/?open_access=true");
+    renderApp("/feed?open_access=true");
 
     expect(await screen.findByText(/no papers match/i)).toBeInTheDocument();
     expect(screen.queryByText(/no papers yet/i)).not.toBeInTheDocument();
@@ -443,7 +443,7 @@ describe("feed filters", () => {
           ? jsonOk(makePage([]))
           : jsonOk(makePage([makeSummary({ title: "Everything" })])),
     });
-    renderApp("/?open_access=true");
+    renderApp("/feed?open_access=true");
 
     await screen.findByText(/no papers match/i);
     await user.click(screen.getAllByRole("button", { name: /clear filters/i })[0]!);

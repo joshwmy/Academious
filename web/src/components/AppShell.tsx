@@ -44,10 +44,10 @@ export function AppShell() {
           <Link className="app-sidebar__brand" to="/" aria-label="Academious, home"><Logo /></Link>
           {/* The phone-width twin of the toolbar's account link; CSS shows
               exactly one of the two, so a screen reader meets one. */}
-          <Link className="app-sidebar__account" to="/account">{user ? user.display_name : "Sign in"}</Link>
+          <Link className="app-sidebar__account" to={user ? "/account" : "/signin"}>{user ? user.display_name : "Sign in"}</Link>
         </div>
         <nav className="app-nav" aria-label="Primary navigation">
-          <Link className="app-nav__link" to="/" aria-current={location.pathname === "/" ? "page" : undefined}><NavIcon name="home" /><span>Home</span></Link>
+          <Link className="app-nav__link" to="/feed" aria-current={location.pathname === "/feed" ? "page" : undefined}><NavIcon name="home" /><span>Home</span></Link>
           <Link className="app-nav__link" to="/search" aria-current={isPapers ? "page" : undefined}><NavIcon name="papers" /><span>Papers</span></Link>
           <Link className="app-nav__link" to="/saved" aria-current={location.pathname === "/saved" ? "page" : undefined}><NavIcon name="collections" /><span>Collections</span></Link>
           <Link className="app-nav__link" to="/profile" aria-current={location.pathname === "/profile" ? "page" : undefined}><NavIcon name="interests" /><span>Interests</span></Link>
@@ -62,7 +62,7 @@ export function AppShell() {
           <div className="app-toolbar__search"><SearchBar initialQuery={activeQuery} onSubmit={submitSearch} /></div>
           <Link
             className="app-toolbar__profile"
-            to="/account"
+            to={user ? "/account" : "/signin"}
             aria-current={location.pathname === "/account" ? "page" : undefined}
           >
             {user ? user.display_name : "Sign in"}

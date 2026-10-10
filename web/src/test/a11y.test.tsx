@@ -61,7 +61,7 @@ describe("accessibility", () => {
       ),
     );
     const { container, findByRole } = render(
-      <MemoryRouter initialEntries={["/"]}>
+      <MemoryRouter initialEntries={["/feed"]}>
         <App />
       </MemoryRouter>,
     );

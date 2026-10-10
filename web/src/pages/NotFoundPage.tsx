@@ -12,7 +12,7 @@ export function NotFoundPage() {
         <p className="page__lead">There is nothing at this address.</p>
       </header>
       <p>
-        <Link className="button" to="/">
+        <Link className="button" to="/feed">
           Back to recent papers
         </Link>
       </p>

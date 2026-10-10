@@ -20,7 +20,7 @@ function renderShell() {
     vi.fn(() => Promise.reject(new Error("the shell itself fetches nothing"))),
   );
   return render(
-    <MemoryRouter initialEntries={["/"]}>
+    <MemoryRouter initialEntries={["/feed"]}>
       <AppShell />
     </MemoryRouter>,
   );

@@ -1,0 +1,73 @@
+/*
+ * Motion. Three moves, used everywhere, so the product has one way of moving:
+ *
+ *   rise    - content entering: a short fade and lift.
+ *   pop     - a small thing appearing or being chosen: a slight overshoot.
+ *   float   - ambient drift on decorative elements only, never on text.
+ *
+ * Stagger is set per element with `--i` (0, 1, 2...), so a list enters in order
+ * without a class per position. The reduced-motion rule in tokens.css collapses
+ * all of it, so nothing here needs its own media query.
+ */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.rise {
+  animation: rise 640ms var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+
+.pop {
+  animation: pop 360ms var(--ease-out) both;
+}
+
+/* Scroll reveal: useReveal() adds `is-visible` once the element is on screen.
+   Without JavaScript, or before it runs, the content is simply shown. */
+.reveal {
+  opacity: 1;
+}
+
+.js-reveal .reveal:not(.is-visible) {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+.js-reveal .reveal {
+  transition:
+    opacity 700ms var(--ease-out),
+    transform 700ms var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 90ms);
+}

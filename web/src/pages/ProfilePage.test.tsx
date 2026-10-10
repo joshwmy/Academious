@@ -138,7 +138,7 @@ describe("research profile", () => {
     renderProfile();
 
     expect(
-      await screen.findByRole("heading", { level: 1, name: "Your research profile" }),
+      await screen.findByRole("heading", { level: 1, name: "Your interests" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Interests" })).toHaveAttribute(
       "aria-current",

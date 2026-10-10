@@ -136,7 +136,7 @@ export function ErrorState({ error, onRetry, context }: ErrorStateProps) {
             Try again
           </button>
         ) : null}
-        <Link className="button button--quiet" to="/">
+        <Link className="button button--quiet" to="/feed">
           Back to recent papers
         </Link>
       </div>

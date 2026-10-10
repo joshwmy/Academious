@@ -26,7 +26,7 @@ export function SavedPapersPage() {
 
   if (authLoading || (user?.is_verified && loading)) return <div className="page"><PaperListSkeleton count={3} /></div>;
   if (!user?.is_verified) {
-    return <div className="page"><EmptyState title="Sign in to keep a collection"><p>Your saved papers will follow you between devices.</p><p><Link className="button" to="/account">Sign in or create an account</Link></p></EmptyState></div>;
+    return <div className="page"><EmptyState title="Sign in to keep a collection"><p>Your saved papers will follow you between devices.</p><p><Link className="button" to="/signup">Create an account</Link> <Link className="button button--quiet" to="/signin">Sign in</Link></p></EmptyState></div>;
   }
   return (
     <div className="page">

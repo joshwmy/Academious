@@ -52,7 +52,7 @@ describe("public journey, against captured backend responses", () => {
     stubRealBackend();
 
     render(
-      <MemoryRouter initialEntries={["/"]}>
+      <MemoryRouter initialEntries={["/feed"]}>
         <App />
       </MemoryRouter>,
     );
@@ -70,7 +70,7 @@ describe("public journey, against captured backend responses", () => {
     expect(screen.getByRole("heading", { name: "Abstract" })).toBeInTheDocument();
 
     // 3. Back returns to the feed.
-    await user.click(screen.getByRole("link", { name: /back to home/i }));
+    await user.click(screen.getByRole("link", { name: /back to your feed/i }));
     await screen.findByRole("heading", { level: 1, name: /latest research/i });
 
     // 4. Searching navigates and renders ranked results.

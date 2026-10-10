@@ -67,6 +67,18 @@ const EMPTY_DRAFT: ProfileDraft = {
   },
 };
 
+/** True when the reader has used any of the tuning behind "More ways to tune". */
+function advancedInUse(draft: ProfileDraft): boolean {
+  return (
+    draft.example_papers.length > 0 ||
+    draft.negatives.length > 0 ||
+    draft.blocked_topics.length > 0 ||
+    draft.discovery.freshness !== EMPTY_DRAFT.discovery.freshness ||
+    draft.discovery.exploration !== EMPTY_DRAFT.discovery.exploration ||
+    draft.discovery.publication !== EMPTY_DRAFT.discovery.publication
+  );
+}
+
 export function ProfilePage() {
   useDocumentTitle("Your research profile");
   const { user } = useAuth();
@@ -199,10 +211,10 @@ export function ProfilePage() {
   return (
     <div className="page profile">
       <header className="page__header">
-        <h1 className="page__title">Your research profile</h1>
+        <h1 className="page__title">Your interests</h1>
         <p className="page__lead">
-          Tell Academious what you work on, then see what it would show you. Your profile is
-          {user?.is_verified ? "synced to your account" : "saved on this device"} and can be changed whenever your interests move.
+          What you tell Academious here shapes your feed. It is{" "}
+          {user?.is_verified ? "synced to your account" : "saved on this device"}, and you can change it whenever your work moves on.
         </p>
       </header>
 
@@ -301,119 +313,129 @@ export function ProfilePage() {
         </ul>
       </section>
 
-      <ExamplePaperPicker
-        papers={draft.example_papers}
-        limit={options?.limits["example_papers"] ?? 8}
-        onAdd={(paper, importance) => {
-          setDraft((current) => ({
-            ...current,
-            example_papers: [
-              ...current.example_papers,
-              { paper_id: paper.id, importance, label: paper.title },
-            ],
-          }));
-        }}
-        onRemove={(paperId) => {
-          setDraft((current) => ({
-            ...current,
-            example_papers: current.example_papers.filter(
-              (paper) => paper.paper_id !== paperId,
-            ),
-          }));
-        }}
-      />
+      {/* Tuning, not setup. Fields and topics are enough for a good first
+          feed, so everything else waits behind one disclosure instead of
+          asking five questions before the reader has seen a single paper.
+          It opens by itself when any of it is already in use. */}
+      <details className="profile__more" open={advancedInUse(draft)}>
+        <summary className="profile__more-summary">
+          <span>More ways to tune your feed</span>
+          <span className="profile__hint">Example papers, topics to avoid, how much to explore</span>
+        </summary>
+        <ExamplePaperPicker
+          papers={draft.example_papers}
+          limit={options?.limits["example_papers"] ?? 8}
+          onAdd={(paper, importance) => {
+            setDraft((current) => ({
+              ...current,
+              example_papers: [
+                ...current.example_papers,
+                { paper_id: paper.id, importance, label: paper.title },
+              ],
+            }));
+          }}
+          onRemove={(paperId) => {
+            setDraft((current) => ({
+              ...current,
+              example_papers: current.example_papers.filter(
+                (paper) => paper.paper_id !== paperId,
+              ),
+            }));
+          }}
+        />
 
-      <section className="profile__section" aria-labelledby="dislikes">
-        <h2 className="profile__heading" id="dislikes">
-          Anything you do not want?
-        </h2>
-        <p className="profile__hint">
-          Optional. Skipping a topic is not the same as disliking it - only what you type here
-          counts against a paper.
-        </p>
-        <div className="profile__row">
-          <input
-            className="profile__input"
-            value={dislikeText}
-            maxLength={options?.limits["interest_characters"] ?? 200}
-            placeholder="generative image synthesis"
-            aria-label="Something to avoid"
-            onChange={(event) => {
-              setDislikeText(event.target.value);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                addDislike();
-              }
-            }}
-          />
-          <button type="button" className="profile__button" onClick={addDislike}>
-            Add
-          </button>
-        </div>
-        <ul className="profile__list">
-          {draft.negatives.map((negative, index) => (
-            <li key={`${negative.text}-${String(index)}`} className="profile__item">
-              <span>{negative.text}</span>
-              <button
-                type="button"
-                className="profile__remove"
-                aria-label={`Remove ${negative.text}`}
-                onClick={() => {
-                  setDraft((current) => ({
-                    ...current,
-                    negatives: current.negatives.filter((_, at) => at !== index),
-                  }));
-                }}
-              >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
+        <section className="profile__section" aria-labelledby="dislikes">
+          <h2 className="profile__heading" id="dislikes">
+            Anything you do not want?
+          </h2>
+          <p className="profile__hint">
+            Optional. Skipping a topic is not the same as disliking it - only what you type here
+            counts against a paper.
+          </p>
+          <div className="profile__row">
+            <input
+              className="profile__input"
+              value={dislikeText}
+              maxLength={options?.limits["interest_characters"] ?? 200}
+              placeholder="generative image synthesis"
+              aria-label="Something to avoid"
+              onChange={(event) => {
+                setDislikeText(event.target.value);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  addDislike();
+                }
+              }}
+            />
+            <button type="button" className="profile__button" onClick={addDislike}>
+              Add
+            </button>
+          </div>
+          <ul className="profile__list">
+            {draft.negatives.map((negative, index) => (
+              <li key={`${negative.text}-${String(index)}`} className="profile__item">
+                <span>{negative.text}</span>
+                <button
+                  type="button"
+                  className="profile__remove"
+                  aria-label={`Remove ${negative.text}`}
+                  onClick={() => {
+                    setDraft((current) => ({
+                      ...current,
+                      negatives: current.negatives.filter((_, at) => at !== index),
+                    }));
+                  }}
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-      <section className="profile__section" aria-labelledby="discovery">
-        <h2 className="profile__heading" id="discovery">
-          How should Academious explore?
-        </h2>
-        <div className="profile__row profile__row--wrap">
-          <Choice
-            label="New research"
-            value={draft.discovery.freshness}
-            options={options?.freshness ?? []}
-            onChange={(value) => {
-              setDraft((current) => ({
-                ...current,
-                discovery: { ...current.discovery, freshness: value as never },
-              }));
-            }}
-          />
-          <Choice
-            label="Exploration"
-            value={draft.discovery.exploration}
-            options={options?.exploration ?? []}
-            onChange={(value) => {
-              setDraft((current) => ({
-                ...current,
-                discovery: { ...current.discovery, exploration: value as never },
-              }));
-            }}
-          />
-          <Choice
-            label="Publication stage"
-            value={draft.discovery.publication}
-            options={options?.publication ?? []}
-            onChange={(value) => {
-              setDraft((current) => ({
-                ...current,
-                discovery: { ...current.discovery, publication: value as never },
-              }));
-            }}
-          />
-        </div>
-      </section>
+        <section className="profile__section" aria-labelledby="discovery">
+          <h2 className="profile__heading" id="discovery">
+            How should Academious explore?
+          </h2>
+          <div className="profile__row profile__row--wrap">
+            <Choice
+              label="New research"
+              value={draft.discovery.freshness}
+              options={options?.freshness ?? []}
+              onChange={(value) => {
+                setDraft((current) => ({
+                  ...current,
+                  discovery: { ...current.discovery, freshness: value as never },
+                }));
+              }}
+            />
+            <Choice
+              label="Exploration"
+              value={draft.discovery.exploration}
+              options={options?.exploration ?? []}
+              onChange={(value) => {
+                setDraft((current) => ({
+                  ...current,
+                  discovery: { ...current.discovery, exploration: value as never },
+                }));
+              }}
+            />
+            <Choice
+              label="Publication stage"
+              value={draft.discovery.publication}
+              options={options?.publication ?? []}
+              onChange={(value) => {
+                setDraft((current) => ({
+                  ...current,
+                  discovery: { ...current.discovery, publication: value as never },
+                }));
+              }}
+            />
+          </div>
+        </section>
+      </details>
 
       <div className="profile__actions">
         <button

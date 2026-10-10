@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
   getAccountFeed,
   getAccountProfile,
@@ -33,17 +33,34 @@ import {
 } from "../lib/profileStorage";
 import "./Page.css";
 
-const PAGE_SIZE = 20;
+export const PAGE_SIZE = 20;
+
+/**
+ * Router state a page can hand the feed: a preview it has just fetched for the
+ * same draft, so first-run setup does not pay for the same ranking twice.
+ */
+export interface FeedHandoff {
+  preview?: ProfileResponse;
+}
 
 export function FeedPage() {
   const { user } = useAuth();
   const [savedDraft] = useState(loadProfileDraft);
+  const handoff = (useLocation().state as FeedHandoff | null)?.preview ?? null;
   return savedDraft || user?.is_verified ? (
-    <PersonalisedFeed initialDraft={savedDraft} account={Boolean(user?.is_verified)} />
+    <PersonalisedFeed initialDraft={savedDraft} initialResult={handoff} account={Boolean(user?.is_verified)} />
   ) : <LatestFeed />;
 }
 
-function PersonalisedFeed({ initialDraft, account }: { initialDraft: ProfileDraft | null; account: boolean }) {
+function PersonalisedFeed({
+  initialDraft,
+  initialResult,
+  account,
+}: {
+  initialDraft: ProfileDraft | null;
+  initialResult: ProfileResponse | null;
+  account: boolean;
+}) {
   const [draft, setDraft] = useState(initialDraft);
   const [result, setResult] = useState<ProfileResponse | null>(null);
   const [feedSessionId, setFeedSessionId] = useState<string | null>(null);
@@ -104,7 +121,8 @@ function PersonalisedFeed({ initialDraft, account }: { initialDraft: ProfileDraf
     const controller = new AbortController();
     const initial = async () => {
       if (!account) {
-        if (initialDraft) accept(await previewProfile(initialDraft, PAGE_SIZE, controller.signal));
+        if (initialResult) accept(initialResult);
+        else if (initialDraft) accept(await previewProfile(initialDraft, PAGE_SIZE, controller.signal));
         return;
       }
       try {
@@ -127,7 +145,7 @@ function PersonalisedFeed({ initialDraft, account }: { initialDraft: ProfileDraf
         if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [accept, account, initialDraft]);
+  }, [accept, account, initialDraft, initialResult]);
 
   const feedback = async (
     item: PreviewItem,
@@ -252,6 +270,7 @@ function PersonalisedFeed({ initialDraft, account }: { initialDraft: ProfileDraf
 }
 
 function LatestFeed() {
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const offset = parseOffset(searchParams.get("offset"));
   const query = searchParams.toString();
@@ -280,7 +299,7 @@ function LatestFeed() {
           <h1 className="page__title">Latest research</h1>
           <p className="page__lead">Build a research profile to turn this into your personal feed.</p>
         </div>
-        <Link className="button" to="/profile">Choose my interests</Link>
+        <Link className="button" to={user ? "/welcome" : "/signup"}>{user ? "Choose my interests" : "Personalise my feed"}</Link>
       </header>
       <FilterPanel filters={filters} onChange={changeFilters} />
       {state.status === "loading" ? <LoadingRegion label="Loading recent papers"><PaperListSkeleton /></LoadingRegion> : null}
