@@ -1,24 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 184 32" role="img" aria-labelledby="academious-logo-title">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 176 32" role="img" aria-labelledby="academious-logo-title">
   <title id="academious-logo-title">Academious</title>
   <!--
-    The horizontal lockup: mark, one mark-width of clear space, wordmark.
-
-    The wordmark is set in the same serif stack the product uses for paper
-    titles, so the logo and the literature it presents share a voice. That makes
-    this file font-dependent: it renders correctly in a browser, and anywhere a
-    system serif exists, but it is not a press-ready outlined asset. Converting
-    the wordmark to paths needs a licensed face and is the one brand deliverable
-    still outstanding.
+    The horizontal lockup: mark, a quarter-mark of clear space, lowercase
+    wordmark in navy. The wordmark is live text in the product's sans stack, so
+    this file is font-dependent; it is right in a browser but not a
+    press-ready outlined asset.
   -->
-  <g fill="none" stroke="#0f4c81" stroke-width="3.6" stroke-linejoin="miter">
-    <path d="M7 26 16 6.5 25 26" />
-    <path d="M1.5 26 H30.5" />
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7d8af0" />
+      <stop offset="1" stop-color="#6359dc" />
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="8" fill="url(#g)" />
+  <g stroke="#ffffff" stroke-width="3" stroke-linecap="round">
+    <path d="M9 10.5H23" />
+    <path d="M9 16H19.5" />
+    <path d="M9 21.5H15.5" />
   </g>
+  <circle cx="22" cy="21.5" r="2" fill="#d4d0fb" />
   <text
-    x="46" y="25"
-    font-family="ui-serif, Charter, 'Bitstream Charter', 'Iowan Old Style', Georgia, Cambria, 'Times New Roman', serif"
-    font-size="26"
-    letter-spacing="-0.4"
-    fill="#1a1917"
-  >Academious</text>
+    x="41" y="23.5"
+    font-family="Inter, 'Segoe UI Variable', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif"
+    font-size="22"
+    font-weight="600"
+    letter-spacing="-0.7"
+    fill="#171b2e"
+  >academious</text>
 </svg>

@@ -8,7 +8,7 @@
  * submission produces exactly one request.
  */
 
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { MAX_QUERY_LENGTH } from "../api/client";
 import "./SearchBar.css";
 
@@ -21,6 +21,7 @@ interface SearchBarProps {
 export function SearchBar({ initialQuery = "", onSubmit }: SearchBarProps) {
   const inputId = useId();
   const hintId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState(initialQuery);
   const [lastQuery, setLastQuery] = useState(initialQuery);
 
@@ -45,28 +46,39 @@ export function SearchBar({ initialQuery = "", onSubmit }: SearchBarProps) {
         event.preventDefault();
         // Client-side checks are courtesy, not enforcement: the backend
         // validates independently and remains authoritative.
-        if (!canSubmit) return;
+        // An empty submit sends the reader back to the field rather than being
+        // impossible: a disabled button is low-contrast, explains nothing and
+        // made the bar look broken before anyone had typed.
+        if (!canSubmit) {
+          inputRef.current?.focus();
+          return;
+        }
         onSubmit(trimmed);
       }}
     >
       <label className="sr-only" htmlFor={inputId}>
         Search papers
       </label>
+      <svg className="search-bar__icon" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="11" cy="11" r="6.5" />
+        <path d="m16 16 4 4" />
+      </svg>
       <input
+        ref={inputRef}
         id={inputId}
         className="search-bar__input"
         type="search"
         name="q"
         value={value}
         onChange={(event) => setValue(event.target.value)}
-        placeholder="Search by research interest…"
+        placeholder="Search a topic, method or question"
         autoComplete="off"
         spellCheck={false}
         maxLength={MAX_QUERY_LENGTH}
         aria-describedby={tooLong ? hintId : undefined}
         aria-invalid={tooLong || undefined}
       />
-      <button type="submit" className="button search-bar__submit" disabled={!canSubmit}>
+      <button type="submit" className="button search-bar__submit" disabled={tooLong}>
         Search
       </button>
       {tooLong ? (

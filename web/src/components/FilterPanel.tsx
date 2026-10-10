@@ -8,6 +8,12 @@
  * same component serves both surfaces: a reader who learns the controls once
  * should not meet a second, differently-shaped set of them on search.
  *
+ * Collapsed by default, behind one button that says how many filters are set.
+ * The feed is the product and the filters are an occasional adjustment to it,
+ * so they should not be the first and heaviest thing on the page. A panel that
+ * opens with filters already active starts expanded, so nothing narrowing the
+ * list is ever out of sight.
+ *
  * Changes apply immediately rather than behind an "Apply" button. The read
  * budget is 120 requests a minute against roughly 12 ms of database work, so a
  * request per toggle is affordable, and a filter that only takes effect after a
@@ -37,6 +43,7 @@ interface FilterPanelProps {
 
 export function FilterPanel({ filters, onChange }: FilterPanelProps) {
   const headingId = useId();
+  const groupsId = useId();
   // The vocabulary itself is a constant; only the counts come from the network.
   // A failed or pending request therefore costs the numbers, never the filter:
   // the fields render either way. One request per mount, cancelled on unmount.
@@ -51,6 +58,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
   const preprintGroup = useId();
   const active = countActiveFilters(filters);
   const [fieldsOpen, setFieldsOpen] = useState(filters.fields.length > 0);
+  const [open, setOpen] = useState(active > 0);
 
   const toggleField = (slug: FieldSlug, checked: boolean) => {
     const fields = checked
@@ -71,10 +79,25 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
   };
 
   return (
-    <section className="filters" aria-labelledby={headingId}>
+    <section className={open ? "filters filters--open" : "filters"} aria-labelledby={headingId}>
       <div className="filters__head">
         <h2 className="filters__title" id={headingId}>
-          Filters
+          <button
+            type="button"
+            className="filters__toggle"
+            aria-expanded={open}
+            aria-controls={groupsId}
+            onClick={() => setOpen((current) => !current)}
+          >
+            <svg className="filters__toggle-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 6h16M7 12h10M10 18h4" />
+            </svg>
+            <span>Filters</span>
+            {active > 0 ? <span className="filters__badge">{active}</span> : null}
+            <svg className="filters__chevron" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </button>
         </h2>
         {active > 0 ? (
           <button type="button" className="button button--quiet" onClick={() => onChange(NO_FILTERS)}>
@@ -83,7 +106,7 @@ export function FilterPanel({ filters, onChange }: FilterPanelProps) {
         ) : null}
       </div>
 
-      <div className="filters__groups">
+      <div className="filters__groups" id={groupsId} hidden={!open}>
         <fieldset className="filters__group">
           <legend className="filters__legend">Source</legend>
           {SOURCES.map((source) => (

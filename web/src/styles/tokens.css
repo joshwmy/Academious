@@ -1,5 +1,7 @@
 :root {
-  --font-sans: "Aptos", "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Inter is bundled (see main.tsx), so every platform gets the same face; the
+     system stack only shows for the moment before the font file arrives. */
+  --font-sans: "Inter Variable", "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-serif: var(--font-sans);
   --font-mono: ui-monospace, "SFMono-Regular", Consolas, monospace;
 

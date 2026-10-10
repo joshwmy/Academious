@@ -61,7 +61,14 @@ function searchCalls(mock: ReturnType<typeof stubApi>) {
   return mock.mock.calls.filter(([input]) => String(input).includes("/search"));
 }
 
+/** The filter panel starts collapsed when nothing is filtered; open it if so. */
+async function openFilters(user: ReturnType<typeof userEvent.setup>) {
+  const toggle = screen.getByRole("button", { name: /^filters/i });
+  if (toggle.getAttribute("aria-expanded") !== "true") await user.click(toggle);
+}
+
 async function openSubjectFields(user: ReturnType<typeof userEvent.setup>) {
+  await openFilters(user);
   await user.click(screen.getByText("Subject fields"));
 }
 
@@ -351,6 +358,7 @@ describe("feed filters", () => {
     renderApp();
 
     await screen.findByRole("link", { name: "A paper" });
+    await openFilters(user);
     await user.click(screen.getByRole("checkbox", { name: /open access only/i }));
 
     await waitFor(() => expect(lastFilterParams(mock).open_access).toBe("true"));
@@ -366,6 +374,8 @@ describe("feed filters", () => {
 
     await screen.findByRole("link", { name: "A paper" });
     expect(lastFilterParams(mock).offset).toBe("40");
+
+    await openFilters(user);
 
     await user.click(screen.getByRole("checkbox", { name: /peer-reviewed only/i }));
 
@@ -408,6 +418,8 @@ describe("feed filters", () => {
 
     await screen.findByRole("link", { name: "A paper" });
     const before = mock.mock.calls.length;
+
+    await openFilters(user);
 
     await user.click(screen.getByRole("checkbox", { name: /open access only/i }));
     await waitFor(() => expect(lastFilterParams(mock).open_access).toBe("true"));
@@ -481,9 +493,12 @@ describe("search", () => {
     renderApp();
     await screen.findByText(/no papers yet/i);
 
-    await user.type(screen.getByRole("searchbox"), "   ");
-    expect(screen.getByRole("button", { name: "Search" })).toBeDisabled();
+    const box = screen.getByRole("searchbox");
+    await user.type(box, "   ");
+    await user.click(screen.getByRole("button", { name: "Search" }));
     expect(searchCalls(mock)).toHaveLength(0);
+    // The button stays enabled and answers by returning the reader to the field.
+    expect(box).toHaveFocus();
   });
 
   it("renders results in the backend order, not sorted by date or title", async () => {
@@ -651,6 +666,7 @@ describe("search filters", () => {
     renderApp("/search?q=graph");
 
     await screen.findByRole("link", { name: "A paper" });
+    await openFilters(user);
     await user.click(screen.getByRole("checkbox", { name: /open access only/i }));
 
     await waitFor(() => expect(lastSearchParams(mock).open_access).toBe("true"));

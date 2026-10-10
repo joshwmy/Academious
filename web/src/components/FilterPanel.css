@@ -1,17 +1,82 @@
 /*
- * Filters sit above the feed, so they are styled to be scanned past. No panel
- * fill, no heading weight competing with the page title - a rule, a row of
- * labelled groups, and nothing that looks like an enterprise query builder.
+ * Filters sit above the feed, so they are styled to be scanned past. Closed,
+ * they are one quiet button; open, a light panel of labelled groups - never
+ * anything that looks like an enterprise query builder.
  */
 
 .filters {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-4);
+}
+
+.filters--open {
+  padding: var(--space-3) var(--space-4) var(--space-4);
   border: var(--border-width) solid var(--border);
   border-radius: var(--radius-lg);
-  background: color-mix(in oklch, var(--surface-subtle) 62%, transparent);
+  background: var(--surface);
+}
+
+.filters__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2.25rem;
+  padding: 0 var(--space-3);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), color var(--transition-fast);
+}
+
+.filters__toggle:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.filters--open .filters__toggle {
+  margin-left: calc(-1 * var(--space-3));
+  border-color: transparent;
+  background: transparent;
+  color: var(--text);
+}
+
+.filters__toggle-icon,
+.filters__chevron {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.filters__chevron {
+  color: var(--text-muted);
+  transition: transform var(--transition-fast);
+}
+
+.filters__toggle[aria-expanded="true"] .filters__chevron {
+  transform: rotate(180deg);
+}
+
+.filters__badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.35rem;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-semibold);
 }
 
 .filters__head {
@@ -22,16 +87,19 @@
 }
 
 .filters__title {
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  letter-spacing: -0.01em;
-  color: var(--text-muted);
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 .filters__groups {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+/* `display: flex` above outranks the user-agent rule for [hidden]. */
+.filters__groups[hidden] {
+  display: none;
 }
 
 /* Options wrap in a row rather than stacking. Four sources in a column pushed
@@ -107,30 +175,9 @@
     gap: 0 var(--space-4);
   }
 
-  /* Taller targets cost vertical space, and on a phone that space comes
-     straight out of the feed. The "Filters" heading is what gives it back:
-     three legends already say what the block is, so it only needs to exist for
-     a screen reader here. */
-  .filters {
+  .filters--open {
     gap: var(--space-2);
-    padding: var(--space-3);
-  }
-
-  .filters__head {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-  }
-
-  .filters:has(.button) .filters__head {
-    position: static;
-    width: auto;
-    height: auto;
-    overflow: visible;
-    clip: auto;
+    padding: var(--space-2) var(--space-3) var(--space-3);
   }
 
   .filters__legend {

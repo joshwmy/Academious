@@ -33,12 +33,34 @@ function stubFields(counts: Record<string, number> = {}, papersWithoutField = 0)
 function renderPanel(filters: PaperFilters = NO_FILTERS) {
   const onChange = vi.fn();
   render(<FilterPanel filters={filters} onChange={onChange} />);
+  const toggle = screen.getByRole("button", { name: /^filters/i });
+  if (toggle.getAttribute("aria-expanded") !== "true") fireEvent.click(toggle);
   const summary = screen.getByText("Subject fields");
   if (!summary.closest("details")?.hasAttribute("open")) fireEvent.click(summary);
   return onChange;
 }
 
 describe("FilterPanel", () => {
+  it("starts collapsed when nothing is filtered, so the feed comes first", () => {
+    render(<FilterPanel filters={NO_FILTERS} onChange={vi.fn()} />);
+
+    const toggle = screen.getByRole("button", { name: /^filters/i });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("group", { name: /source/i })).not.toBeInTheDocument();
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("group", { name: /source/i })).toBeInTheDocument();
+  });
+
+  it("starts open when filters are active, so nothing narrowing the list is hidden", () => {
+    render(<FilterPanel filters={{ ...NO_FILTERS, openAccess: true }} onChange={vi.fn()} />);
+
+    const toggle = screen.getByRole("button", { name: /^filterss*1/i });
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("checkbox", { name: /open access only/i })).toBeChecked();
+  });
+
   it("groups its controls so a screen reader announces what each one filters", () => {
     renderPanel();
 

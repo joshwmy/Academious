@@ -1,16 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-labelledby="academious-favicon-title">
   <title id="academious-favicon-title">Academious</title>
-  <style>
-    /* The tab strip is the one surface this product does not control the
-       background of, so the mark tracks the browser's own theme instead of
-       assuming a light one. */
-    .mark { stroke: #0f4c81; }
-    @media (prefers-color-scheme: dark) {
-      .mark { stroke: #7cb4dd; }
-    }
-  </style>
-  <g class="mark" fill="none" stroke-width="3.6" stroke-linejoin="miter">
-    <path d="M7 26 16 6.5 25 26" />
-    <path d="M1.5 26 H30.5" />
+  <!--
+    The mark at tab-strip size. The dot is dropped and the lines are heavier:
+    at 16px a 2px dot is one blurred pixel, and 3px strokes thin to grey. The
+    filled tile carries its own background, so it reads on light and dark tab
+    strips alike without a prefers-color-scheme branch.
+  -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7d8af0" />
+      <stop offset="1" stop-color="#6359dc" />
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="7" fill="url(#g)" />
+  <g stroke="#ffffff" stroke-width="3.8" stroke-linecap="round">
+    <path d="M8.5 10H23.5" />
+    <path d="M8.5 16H19.5" />
+    <path d="M8.5 22H15" />
   </g>
 </svg>
