@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { getCurrentUser, logoutAccount } from "../api/client";
+import { ApiError } from "../api/errors";
 import type { AccountUser } from "../api/types";
 import { ACCOUNT_SESSION_MARKER } from "./session";
 
@@ -17,38 +18,92 @@ const guestAuth: AuthValue = {
   refresh: async () => undefined,
   logout: async () => undefined,
 };
+
+/** How long to wait before asking again after a failure that was not a 401. */
+const RETRY_AFTER_MS = 4000;
+
+function readMarker(): boolean {
+  try {
+    return localStorage.getItem(ACCOUNT_SESSION_MARKER) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function writeMarker(present: boolean): void {
+  try {
+    if (present) localStorage.setItem(ACCOUNT_SESSION_MARKER, "true");
+    else localStorage.removeItem(ACCOUNT_SESSION_MARKER);
+  } catch {
+    // Storage is a hint for the first paint, never the source of truth.
+  }
+}
+
+/**
+ * Who is signed in.
+ *
+ * The session lives in an HTTP-only cookie the page cannot read, so the only
+ * way to know whether it is still valid is to ask `/users/me`. A local marker
+ * records that this browser has signed in, so a reader who never has costs no
+ * request on every visit.
+ *
+ * Only a 401 means signed out. Any failed check used to remove the marker, and
+ * with it every later check: a network blip or an API restart during a deploy
+ * signed the reader out of the page for good while their cookie was still
+ * valid. Now anything other than a 401 keeps the marker and asks once more.
+ */
 const AuthContext = createContext<AuthValue>(guestAuth);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AccountUser | null>(null);
-  const [loading, setLoading] = useState(
-    () => localStorage.getItem(ACCOUNT_SESSION_MARKER) === "true",
-  );
+  const [loading, setLoading] = useState(readMarker);
 
-  const refresh = useCallback(async () => {
+  const check = useCallback(async (): Promise<"ok" | "signed-out" | "unknown"> => {
     try {
       const account = await getCurrentUser();
       if (typeof account.id !== "string" || typeof account.email !== "string") {
         throw new Error("Malformed account response");
       }
-      localStorage.setItem(ACCOUNT_SESSION_MARKER, "true");
+      writeMarker(true);
       setUser(account);
-    } catch {
-      localStorage.removeItem(ACCOUNT_SESSION_MARKER);
-      setUser(null);
-    } finally {
-      setLoading(false);
+      return "ok";
+    } catch (cause: unknown) {
+      if (cause instanceof ApiError && cause.status === 401) {
+        writeMarker(false);
+        setUser(null);
+        return "signed-out";
+      }
+      return "unknown";
     }
   }, []);
 
+  const refresh = useCallback(async () => {
+    await check();
+    setLoading(false);
+  }, [check]);
+
   useEffect(() => {
-    if (localStorage.getItem(ACCOUNT_SESSION_MARKER) !== "true") return;
-    const timer = window.setTimeout(() => void refresh(), 0);
-    return () => window.clearTimeout(timer);
-  }, [refresh]);
+    let cancelled = false;
+    let retry: number | undefined;
+    if (!readMarker()) return;
+    const first = window.setTimeout(() => {
+      void check().then((outcome) => {
+        if (cancelled) return;
+        setLoading(false);
+        if (outcome === "unknown") {
+          retry = window.setTimeout(() => void check(), RETRY_AFTER_MS);
+        }
+      });
+    }, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(first);
+      if (retry !== undefined) window.clearTimeout(retry);
+    };
+  }, [check]);
 
   const logout = useCallback(async () => {
     await logoutAccount();
-    localStorage.removeItem(ACCOUNT_SESSION_MARKER);
+    writeMarker(false);
     setUser(null);
   }, []);
 
