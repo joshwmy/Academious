@@ -359,6 +359,46 @@ variable with placeholder values. `.gitignore` excludes `.env`.
 Secrets in play by Phase 3: OpenAlex API key, NCBI API key, contact email, the
 database password, the backup encryption public key, and the SMTP or Resend key.
 
+## Outbound mail
+
+Verification and password-reset links go out through Resend over SMTP. Production
+startup refuses an empty `ACADEMIOUS_SMTP_HOST` or `ACADEMIOUS_SMTP_FROM`, but it
+does not check that the host is reachable - a wrong value fails per request,
+as a 500 from `/auth/request-verify-token` and `/auth/forgot-password`.
+
+**netcup blocks outbound 25, 465 and 587.** The connection does not get refused;
+it hangs until the 15-second timeout, which is easy to mistake for a wrong host
+or a firewall on Resend's side. Resend also listens on 2465 (implicit TLS) and
+2587 (STARTTLS); the application uses `smtplib.SMTP` plus `starttls()`, so
+production uses **2587**:
+
+```bash
+ACADEMIOUS_SMTP_HOST=smtp.resend.com
+ACADEMIOUS_SMTP_PORT=2587
+ACADEMIOUS_SMTP_USERNAME=resend
+ACADEMIOUS_SMTP_PASSWORD=<Resend API key>
+ACADEMIOUS_SMTP_FROM=hello@academious.org
+```
+
+Prove the port and the credentials before restarting the API on new values -
+this logs in and sends nothing:
+
+```bash
+for p in 587 2587; do timeout 8 bash -c "</dev/tcp/smtp.resend.com/$p" && echo "$p open" || echo "$p blocked"; done
+docker compose run --rm --no-deps api python -c "
+import smtplib
+from academious.core.config import get_settings
+s = get_settings()
+c = smtplib.SMTP(s.smtp_host, s.smtp_port, timeout=15); c.starttls()
+print(c.login(s.smtp_username, s.smtp_password)[0])   # 235 = authenticated
+c.quit()"
+```
+
+The `From` domain must be verified in Resend: the DKIM record at
+`resend._domainkey`, and the SPF and MX records on `send`, all at Porkbun.
+Inbound mail to `@academious.org` is handled by Resend receiving (the apex MX
+points at it), not by the VPS.
+
 ## CI/CD
 
 GitHub Actions builds the image and pushes to GHCR; deployment is
