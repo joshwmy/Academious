@@ -1,0 +1,460 @@
+{
+  "id": "resendInboundFwd",
+  "name": "Resend inbound forward",
+  "nodes": [
+    {
+      "id": "ae57d00d-f96e-4922-bc16-472beb3de082",
+      "name": "Resend webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        200
+      ],
+      "webhookId": "08881432-c9bc-4179-9745-3ef201681b91",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "resend-inbound",
+        "responseMode": "responseNode",
+        "options": {
+          "rawBody": true
+        }
+      }
+    },
+    {
+      "id": "bb6b4b0c-3097-48d0-b0d0-e74fbce1193a",
+      "name": "Verify signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        200
+      ],
+      "onError": "continueErrorOutput",
+      "parameters": {
+        "jsCode": "// Verifies the Svix signature Resend puts on every webhook.\n//\n// Paste the signing secret from Resend > Webhooks > (this webhook) below.\n// It lives here rather than in an n8n credential because the Code node cannot\n// read credentials, and the Crypto node takes its HMAC key as text while a\n// Svix key is binary (base64 after \"whsec_\"). Node's crypto module is not\n// allowed in the Code sandbox either, hence the small SHA-256 below.\nconst SIGNING_SECRET = 'whsec_PASTE_THE_RESEND_SIGNING_SECRET_HERE';\nconst TOLERANCE_SECONDS = 5 * 60;\n\nconst K = [\n  0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,\n  0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,\n  0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,\n  0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,\n  0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,\n  0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,\n  0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,\n  0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2,\n];\n\nconst rotr = (x, n) => (x >>> n) | (x << (32 - n));\n\nfunction sha256(msg) {\n  const len = msg.length;\n  const padded = Buffer.alloc((((len + 9) + 63) >> 6) << 6);\n  msg.copy(padded);\n  padded[len] = 0x80;\n  padded.writeUInt32BE(Math.floor(len / 0x20000000), padded.length - 8);\n  padded.writeUInt32BE((len * 8) >>> 0, padded.length - 4);\n\n  const H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];\n  const W = new Array(64);\n  for (let off = 0; off < padded.length; off += 64) {\n    for (let i = 0; i < 16; i++) W[i] = padded.readUInt32BE(off + i * 4) | 0;\n    for (let i = 16; i < 64; i++) {\n      const s0 = rotr(W[i - 15], 7) ^ rotr(W[i - 15], 18) ^ (W[i - 15] >>> 3);\n      const s1 = rotr(W[i - 2], 17) ^ rotr(W[i - 2], 19) ^ (W[i - 2] >>> 10);\n      W[i] = (W[i - 16] + s0 + W[i - 7] + s1) | 0;\n    }\n    let [a, b, c, d, e, f, g, h] = H;\n    for (let i = 0; i < 64; i++) {\n      const t1 = (h + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + W[i]) | 0;\n      const t2 = ((rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;\n      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;\n    }\n    H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + c) | 0; H[3] = (H[3] + d) | 0;\n    H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;\n  }\n  const out = Buffer.alloc(32);\n  H.forEach((v, i) => out.writeUInt32BE(v >>> 0, i * 4));\n  return out;\n}\n\nfunction hmacSha256(key, msg) {\n  const block = Buffer.alloc(64);\n  (key.length > 64 ? sha256(key) : key).copy(block);\n  const inner = Buffer.alloc(64);\n  const outer = Buffer.alloc(64);\n  for (let i = 0; i < 64; i++) {\n    inner[i] = block[i] ^ 0x36;\n    outer[i] = block[i] ^ 0x5c;\n  }\n  return sha256(Buffer.concat([outer, sha256(Buffer.concat([inner, msg]))]));\n}\n\nfunction sameString(a, b) {\n  if (a.length !== b.length) return false;\n  let diff = 0;\n  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);\n  return diff === 0;\n}\n\nfunction verify(headers, rawBody, nowSeconds) {\n  const id = headers['svix-id'];\n  const timestamp = headers['svix-timestamp'];\n  const signatures = headers['svix-signature'];\n  if (!id || !timestamp || !signatures) return 'missing svix headers';\n  if (SIGNING_SECRET.includes('PASTE')) return 'signing secret not set in the Verify node';\n\n  const age = Math.abs(nowSeconds - Number(timestamp));\n  if (!Number.isFinite(age) || age > TOLERANCE_SECONDS) return 'timestamp outside tolerance';\n\n  const key = Buffer.from(SIGNING_SECRET.replace(/^whsec_/, ''), 'base64');\n  const signed = Buffer.concat([Buffer.from(`${id}.${timestamp}.`, 'utf8'), rawBody]);\n  const expected = hmacSha256(key, signed).toString('base64');\n  const matches = signatures\n    .split(' ')\n    .some((entry) => entry.startsWith('v1,') && sameString(entry.slice(3), expected));\n  return matches ? null : 'signature mismatch';\n}\n\n// --- n8n entry point ---\nconst item = $input.first();\nconst rawBody = await this.helpers.getBinaryDataBuffer(0, 'data');\nconst failure = verify(item.json.headers || {}, rawBody, Math.floor(Date.now() / 1000));\nif (failure) return [{ json: { valid: false, reason: failure } }];\n\nconst event = JSON.parse(rawBody.toString('utf8'));\nreturn [{ json: { valid: true, type: event.type, email_id: event.data && event.data.email_id } }];\n"
+      }
+    },
+    {
+      "id": "e7dfbc6b-b99b-47a6-82fd-1ea099e29d4b",
+      "name": "Signature valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        440,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "90748ad2-be31-41f5-8990-e5064506e874",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "3bf7355e-3f94-4150-811b-d40bad683a46",
+      "name": "Reject",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        400
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "invalid signature",
+        "options": {
+          "responseCode": 401
+        }
+      }
+    },
+    {
+      "id": "ba2c88d8-e1ea-4115-9622-d3a97da02cfc",
+      "name": "email.received?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        660,
+        100
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "fdab17fc-bda9-4f3d-ae99-4f37fa315957",
+              "leftValue": "={{ $json.type === 'email.received' && !!$json.email_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "78a6ba14-0625-49a7-b9e4-3d65d6b4507d",
+      "name": "Ignore other events",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        300
+      ],
+      "parameters": {
+        "respondWith": "noData",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "e2d85dc7-fd4c-467c-9550-739f26677edd",
+      "name": "Get received email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "onError": "continueErrorOutput",
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.resend.com/emails/receiving/{{ $json.email_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "html_format",
+              "value": "cid"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "academious-n8n-forwarder"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "84c1f3e2-4af0-4105-b63f-4552883ace10",
+      "name": "List attachments",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        0
+      ],
+      "onError": "continueErrorOutput",
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.resend.com/emails/receiving/{{ $('Verify signature').first().json.email_id }}/attachments",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "limit",
+              "value": "100"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "academious-n8n-forwarder"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a2420f62-54e1-4459-b2f6-3098d75176fa",
+      "name": "Build forward",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        0
+      ],
+      "onError": "continueErrorOutput",
+      "parameters": {
+        "jsCode": "// Turns the received email into a POST /emails body. Resend has no REST\n// \"forward\" call - the SDK's forward() does this same get-then-send.\nconst FORWARD_TO = 'you@example.com';\nconst FORWARD_FROM = 'hello@academious.org';\n\nconst email = $('Get received email').first().json;\nconst attachments = $('List attachments').first().json.data || [];\n\n// \"Ada Lovelace <ada@example.org>\" or a bare address.\nconst match = /^\\s*\"?([^\"<]*?)\"?\\s*<([^>]+)>\\s*$/.exec(email.from || '');\nconst senderName = match ? match[1].trim() : '';\nconst senderAddress = match ? match[2].trim() : (email.from || '').trim();\nconst displayName = (senderName || senderAddress || 'unknown sender').replace(/[\"\\\\\\r\\n]/g, '');\n\nconst receivedFor = (email.received_for && email.received_for.length ? email.received_for : email.to || []).join(', ');\nconst banner = `Forwarded from ${senderAddress} to ${receivedFor}`;\nconst escapeHtml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');\n\nconst body = {\n  from: `\"${displayName} via academious\" <${FORWARD_FROM}>`,\n  to: [FORWARD_TO],\n  reply_to: email.reply_to && email.reply_to.length ? email.reply_to : [senderAddress],\n  subject: email.subject || '(no subject)',\n  text: `${banner}\\n\\n${email.text || (email.html ? '' : '(empty message)')}`,\n};\nif (email.html) {\n  body.html = `<p style=\"color:#888;font-size:12px\">${escapeHtml(banner)}</p>${email.html}`;\n}\nif (attachments.length) {\n  // Resend fetches each file from its signed download URL itself.\n  body.attachments = attachments.map((a) => {\n    const out = { path: a.download_url, filename: a.filename || 'attachment' };\n    if (a.content_type) out.content_type = a.content_type;\n    if (a.content_id) out.content_id = a.content_id.replace(/^<|>$/g, '');\n    return out;\n  });\n}\n\nreturn [{ json: { body } }];\n"
+      }
+    },
+    {
+      "id": "9fae044e-1990-4380-9fb6-97e763e90c84",
+      "name": "Send forward",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1540,
+        0
+      ],
+      "onError": "continueErrorOutput",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "academious-n8n-forwarder"
+            },
+            {
+              "name": "Idempotency-Key",
+              "value": "=forward-{{ $('Verify signature').first().json.email_id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "990389cd-27f7-4d25-9149-f206077d177b",
+      "name": "Respond forwarded",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1760,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ forwarded: $json.id }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    },
+    {
+      "id": "c243256d-0eac-4fd5-b165-626c099d0dc3",
+      "name": "Fail",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1320,
+        400
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "forward failed",
+        "options": {
+          "responseCode": 500
+        }
+      }
+    },
+    {
+      "id": "5c7184bc-d1e8-46f8-8dab-231eedd3d08c",
+      "name": "Mark execution failed",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        1540,
+        400
+      ],
+      "parameters": {
+        "errorMessage": "=Forward failed: {{ $json.error && ($json.error.message || $json.error) }}"
+      }
+    }
+  ],
+  "connections": {
+    "Resend webhook": {
+      "main": [
+        [
+          {
+            "node": "Verify signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify signature": {
+      "main": [
+        [
+          {
+            "node": "Signature valid?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Signature valid?": {
+      "main": [
+        [
+          {
+            "node": "email.received?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "email.received?": {
+      "main": [
+        [
+          {
+            "node": "Get received email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ignore other events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get received email": {
+      "main": [
+        [
+          {
+            "node": "List attachments",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List attachments": {
+      "main": [
+        [
+          {
+            "node": "Build forward",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build forward": {
+      "main": [
+        [
+          {
+            "node": "Send forward",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send forward": {
+      "main": [
+        [
+          {
+            "node": "Respond forwarded",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fail": {
+      "main": [
+        [
+          {
+            "node": "Mark execution failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

@@ -399,6 +399,39 @@ The `From` domain must be verified in Resend: the DKIM record at
 Inbound mail to `@academious.org` is handled by Resend receiving (the apex MX
 points at it), not by the VPS.
 
+### Inbound forwarding
+
+Resend receives every address at the apex, but it is not a mailbox. Each
+received email fires an `email.received` webhook at the n8n workflow "Resend
+inbound forward" (`https://n8n.academious.org/webhook/resend-inbound-<suffix>`;
+the live suffix is in the workflow's Webhook node). The workflow:
+
+1. checks the Svix signature (`svix-id`, `svix-timestamp`, `svix-signature`,
+   five minutes of tolerance) and answers 401 if it does not match;
+2. fetches the email and its attachment URLs from `GET /emails/receiving/{id}`
+   and `/attachments`; it never trusts content from the webhook body;
+3. re-sends the email with `POST /emails`, from `"<sender> via academious"
+   <hello@academious.org>` with the original sender as `Reply-To`. Resend has
+   no REST "forward" call; the SDK's `forward()` does the same get-then-send.
+
+Any failed step answers 500, so Resend retries the delivery, and the execution
+is marked failed in n8n. Without that routing n8n answers 200 even when the
+workflow errors, and the forward is silently lost. An `Idempotency-Key` of
+`forward-<email id>` stops a retry from sending a second copy.
+
+Its definition is in [`deploy/n8n/resend-inbound-forward.json`](../deploy/n8n/resend-inbound-forward.json)
+with placeholders: the destination (`FORWARD_TO` in "Build forward") and the
+signing secret (`SIGNING_SECRET` in "Verify signature"). The secret is pasted
+into the node rather than kept as a credential. The Code node cannot read
+credentials, n8n's Crypto node takes its HMAC key as text while a Svix key is
+binary, and `crypto` is not allowed in the Code sandbox, so the node carries its
+own SHA-256. The Resend API key is a Header Auth credential (`Authorization:
+Bearer re_...`). It needs full access, because a sending-only key cannot read
+received mail.
+
+Replies go out from Gmail's "Send mail as" through `smtp.resend.com`. Gmail's
+servers are not behind netcup's port block, so 465 or 587 works there.
+
 ## CI/CD
 
 GitHub Actions builds the image and pushes to GHCR; deployment is
