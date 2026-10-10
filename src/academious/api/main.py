@@ -14,6 +14,10 @@ security posture:
 
 from __future__ import annotations
 
+import threading
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.middleware import SlowAPIASGIMiddleware
@@ -25,9 +29,40 @@ from academious.api.middleware import CookieOriginMiddleware, SecurityHeadersMid
 from academious.api.routers import account, health, papers, profiles, search
 from academious.auth import UserCreate, UserRead, UserUpdate, auth_backend, fastapi_users
 from academious.core.config import get_settings
-from academious.core.logging import configure_logging
+from academious.core.logging import configure_logging, get_logger
 
 configure_logging()
+log = get_logger(__name__)
+
+
+def _warm_encoder() -> None:
+    """Load the query encoder and run it once, off the request path.
+
+    The retrieval service builds its model on first use, which on the VPS is
+    about four seconds of loading plus a first forward pass that is several
+    times slower than every later one. Left lazy, that cost lands on whichever
+    reader happens to search or finish onboarding first after a deploy: their
+    preview took 14 s where the next one took under 4. A background thread
+    pays it at startup instead. Failure is logged and otherwise ignored - the
+    service still builds lazily on first use, exactly as before.
+    """
+    from academious.api.dependencies import get_retrieval_service
+
+    try:
+        get_retrieval_service().backend.encode_queries(["warm up the query encoder"])
+        log.info("api.encoder_warm")
+    except Exception:  # noqa: BLE001 - a warm-up must never take the API down
+        log.warning("api.encoder_warm_failed", exc_info=True)
+
+
+@asynccontextmanager
+async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
+    # Production only: tests and local development should not load a model just
+    # because an app object was created.
+    if get_settings().env == "production":
+        threading.Thread(target=_warm_encoder, name="encoder-warmup", daemon=True).start()
+    yield
+
 
 DESCRIPTION = """
 A discovery layer over global scientific literature.
@@ -57,6 +92,7 @@ def create_app() -> FastAPI:
             raise RuntimeError("SMTP must be configured for verification and password reset")
 
     app = FastAPI(
+        lifespan=_lifespan,
         title="Academious",
         version="0.2.0",
         description=DESCRIPTION,

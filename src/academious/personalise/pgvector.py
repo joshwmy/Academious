@@ -58,7 +58,7 @@ from datetime import date, timedelta
 from typing import Any
 
 import numpy as np
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, func, literal, select, union_all
 from sqlalchemy.orm import Session
 
 from academious.db.models.embedding import PaperEmbedding
@@ -78,6 +78,117 @@ DEFAULT_WINDOW_DAYS = 90
 
 
 @dataclass(slots=True)
+class InterestScan:
+    """One pass over the window, shared by the semantic and adjacent sources.
+
+    Both sources rank the same papers by the same number - the best cosine
+    across the reader's positive interests - and differ only in which slice of
+    that ranking they keep: the top, or the band between the adjacency floor
+    and ceiling. Run separately they scan the window twice, and the adjacent
+    query is the worse of the two, because its band test repeats the GREATEST
+    expression in WHERE as well as ORDER BY: measured on the production corpus
+    (548,824 embeddings, 197,878 inside the 90-day window), semantic took about
+    0.6 s and adjacent 2.0 s of a 3.0 s preview.
+
+    This computes each distance once, into a MATERIALIZED CTE, and answers both
+    questions from it in one statement. The ordering and the tie-break
+    (`best DESC, paper_id`) are the ones each source used on its own, so a
+    source reading from a scan returns exactly what its own query would have.
+
+    Per request: it caches the result for the profile object it was last asked
+    about, which is what one `gather` call passes to every source.
+    """
+
+    session: Session
+    model_key: str
+    #: How many rows each list holds - the most any source can be allocated.
+    limit: int
+    window_days: int | None = DEFAULT_WINDOW_DAYS
+    today: date | None = None
+    floor: float = ADJACENCY_FLOOR
+    ceiling: float = ADJACENCY_CEILING
+    _profile: EncodedProfile | None = None
+    _top: list[Any] = field(default_factory=list)
+    _band: list[tuple[uuid.UUID, float]] = field(default_factory=list)
+    _fetched: int = 0
+
+    def top(self, profile: EncodedProfile, *, budget: int) -> list[Any]:
+        """Rows of `(paper_id, s0..sk, best)`, best first, at most `budget`."""
+        self._ensure(profile, budget)
+        return self._top[:budget]
+
+    def band(self, profile: EncodedProfile, *, budget: int) -> list[tuple[uuid.UUID, float]]:
+        """`(paper_id, best)` inside [floor, ceiling], best first, at most `budget`."""
+        self._ensure(profile, budget)
+        return self._band[:budget]
+
+    def _ensure(self, profile: EncodedProfile, budget: int) -> None:
+        if self._profile is profile and budget <= self._fetched:
+            return
+        fetch = max(budget, self.limit)
+        rows = self.session.execute(self.statement(profile, limit=fetch)).all()
+        width = len(profile.positive_vectors)
+        self._top = [tuple(row[1:]) for row in rows if row[0] == 0]
+        self._band = [(row[1], float(row[2 + width])) for row in rows if row[0] == 1]
+        self._profile = profile
+        self._fetched = fetch
+
+    def statement(self, profile: EncodedProfile, *, limit: int) -> Any:
+        """Both lists in one statement. Exposed so a benchmark can EXPLAIN it."""
+        similarities = [
+            (
+                1.0 - PaperEmbedding.embedding.cosine_distance(np.asarray(vector, dtype=np.float32))
+            ).label(f"s{index}")
+            for index, vector in enumerate(profile.positive_vectors)
+        ]
+        scored_select = _window(
+            select(PaperEmbedding.paper_id, *similarities).where(
+                PaperEmbedding.model_key == self.model_key
+            ),
+            window_days=self.window_days,
+            today=self.today,
+            peer_reviewed_only=profile.profile.require_peer_reviewed,
+        )
+        # MATERIALIZED, or PostgreSQL may inline the CTE into both branches and
+        # scan twice - the very thing this class exists to stop.
+        scored = scored_select.cte("scored").prefix_with("MATERIALIZED")
+        columns = [scored.c[f"s{index}"] for index in range(len(similarities))]
+        best = func.greatest(*columns) if len(columns) > 1 else columns[0]
+
+        top = (
+            select(literal(0).label("list"), scored.c.paper_id, *columns, best.label("best"))
+            .order_by(best.desc(), scored.c.paper_id)
+            .limit(limit)
+        )
+        band = (
+            select(literal(1).label("list"), scored.c.paper_id, *columns, best.label("best"))
+            .where(best >= self.floor, best <= self.ceiling)
+            .order_by(best.desc(), scored.c.paper_id)
+            .limit(limit)
+        )
+        return union_all(top, band)
+
+
+def _window(
+    statement: Select[Any],
+    *,
+    window_days: int | None,
+    today: date | None,
+    peer_reviewed_only: bool,
+) -> Select[Any]:
+    """The recency window and peer-review filter an embedding scan applies."""
+    if window_days is None and not peer_reviewed_only:
+        return statement
+    statement = statement.join(Paper, Paper.id == PaperEmbedding.paper_id)
+    if window_days is not None:
+        cutoff = (today or date.today()) - timedelta(days=window_days)
+        statement = statement.where(Paper.feed_date >= cutoff)
+    if peer_reviewed_only:
+        statement = statement.where(Paper.is_peer_reviewed.is_(True))
+    return statement
+
+
+@dataclass(slots=True)
 class SemanticInterestSource:
     """Best-matching papers across every positive interest, in one scan."""
 
@@ -91,12 +202,19 @@ class SemanticInterestSource:
     today: date | None = None
     #: Minimum cosine for a paper to be worth proposing at all.
     floor: float = 0.0
+    #: Read from a shared scan instead of querying alone. It must carry the same
+    #: window and date as this source; `_feed` builds both in one place.
+    scan: InterestScan | None = None
 
     def generate(self, profile: EncodedProfile, *, budget: int) -> Iterable[Candidate]:
         if len(profile.positive) == 0 or budget <= 0:
             return []
 
-        rows = self.session.execute(self.statement(profile, budget=budget)).all()
+        rows = (
+            self.scan.top(profile, budget=budget)
+            if self.scan is not None
+            else self.session.execute(self.statement(profile, budget=budget)).all()
+        )
         candidates: list[Candidate] = []
         for row in rows:
             similarities = row[1:-1]
@@ -179,10 +297,14 @@ class AdjacentInterestSource:
     today: date | None = None
     floor: float = ADJACENCY_FLOOR
     ceiling: float = ADJACENCY_CEILING
+    #: Read the band from a shared scan instead of a second pass of its own.
+    scan: InterestScan | None = None
 
     def generate(self, profile: EncodedProfile, *, budget: int) -> Iterable[Candidate]:
         if len(profile.positive) == 0 or budget <= 0:
             return []
+        if self.scan is not None:
+            return [_adjacent(pid, score) for pid, score in self.scan.band(profile, budget=budget)]
 
         similarities = [
             (1.0 - PaperEmbedding.embedding.cosine_distance(np.asarray(vector, dtype=np.float32)))
@@ -208,19 +330,21 @@ class AdjacentInterestSource:
         if profile.profile.require_peer_reviewed:
             statement = statement.where(Paper.is_peer_reviewed.is_(True))
 
-        return [
-            Candidate(
-                paper_id=paper_id,
-                reasons=(
-                    CandidateReason(
-                        origin=CandidateOrigin.EXPLORATION,
-                        detail="adjacent to your interests",
-                        strength=float(score),
-                    ),
-                ),
-            )
-            for paper_id, score in self.session.execute(statement).all()
-        ]
+        return [_adjacent(pid, score) for pid, score in self.session.execute(statement).all()]
+
+
+def _adjacent(paper_id: uuid.UUID, score: float) -> Candidate:
+    """An exploration candidate, with the reason the feed explains it by."""
+    return Candidate(
+        paper_id=paper_id,
+        reasons=(
+            CandidateReason(
+                origin=CandidateOrigin.EXPLORATION,
+                detail="adjacent to your interests",
+                strength=float(score),
+            ),
+        ),
+    )
 
 
 @dataclass(slots=True)

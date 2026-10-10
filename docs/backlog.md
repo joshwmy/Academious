@@ -94,7 +94,7 @@ it could be started but deliberately is not.
 | [RETR-005](#retr-005) | ONNX int8 inference unimplemented | DEFERRED | When a backfill is scheduled |
 | [RETR-006](#retr-006) | Personalisation exists; learned ranking remains | IN PROGRESS | Judge profiles; then ingest interactions |
 | [RETR-008](#retr-008) | No interest suggestions while a reader types | READY | Needs a topic table |
-| [RETR-009](#retr-009) | Profile creation unmeasured against the real corpus | READY | One run on the VPS |
+| [RETR-009](#retr-009) | Profile creation unmeasured against the real corpus | DONE | — |
 | [DATA-001](#data-001) | `specter2-benchmark@v1` ablation vectors remain in the database | DEFERRED | Storage or maintenance pressure |
 | [DATA-002](#data-002) | No normalised subject taxonomy | DONE | — |
 | [DATA-003](#data-003) | Title-only embedding path unexercised at volume | BLOCKED | With SRC-004 |
@@ -719,7 +719,7 @@ guesses at phrasing and gets no help from the vocabulary the corpus carries.
 
 ### RETR-009
 
-**Profile creation is unmeasured against a real corpus.** — `READY` (2026-09-05)
+**Profile creation is unmeasured against a real corpus.** — `DONE` (2026-10-10)
 
 Both benchmarks that touch the recommender have only been run against 20,000
 synthetic vectors on a laptop. `scripts/benchmark_profile_build.py` is read-only
@@ -733,6 +733,20 @@ precisely so it can be pointed at production, and has not been.
   this phase.
 * **Trigger** — one run on the VPS. Cheap, and it should happen before any
   optimisation is argued for.
+* **Resolution (2026-10-10)** — measured on the VPS against 548,824 embeddings,
+  197,878 of them inside the 90-day window. A warm preview took about 3.0 s and
+  the first one after a restart 14.3 s; encoding was ~110 ms once the model was
+  loaded, and building the profile flat in the number of interests, as above.
+  The time was candidate generation: `SemanticInterestSource` 0.6 s and
+  `AdjacentInterestSource` 2.0 s. The adjacent query was the worse of the two
+  because its band test repeats the GREATEST expression in WHERE as well as
+  ORDER BY, so every distance was computed about three times per row.
+  `InterestScan` now computes each distance once, into a MATERIALIZED CTE, and
+  serves both sources from one statement with the same ordering and
+  tie-break: a warm preview is ~0.8 s (`tests/test_interest_scan_db.py` pins
+  the two lists, row for row, against the queries they replace). The 14 s
+  cold start was model loading on the first request; production now warms the
+  encoder in a background thread at startup.
 
 ---
 

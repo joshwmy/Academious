@@ -46,6 +46,7 @@ from academious.personalise.pgvector import (
     AdjacentInterestSource,
     DatabaseFacts,
     ExactFieldSource,
+    InterestScan,
     SemanticInterestSource,
 )
 from academious.personalise.ranking import DeterministicRanker, weights_for
@@ -173,10 +174,12 @@ def _preview(
     session: Session, model_key: str, built: BuildResult, args: argparse.Namespace
 ) -> FeedResult:
     preferences = built.profile.preferences
+    # The shared scan, as `/profiles/preview` builds it.
+    scan = InterestScan(session=session, model_key=model_key, limit=args.budget)
     sources: list[CandidateSource] = [
-        SemanticInterestSource(session=session, model_key=model_key),
+        SemanticInterestSource(session=session, model_key=model_key, scan=scan),
         ExactFieldSource(session=session),
-        AdjacentInterestSource(session=session, model_key=model_key),
+        AdjacentInterestSource(session=session, model_key=model_key, scan=scan),
     ]
     return build_feed(
         built.encoded,

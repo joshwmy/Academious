@@ -84,6 +84,7 @@ from academious.personalise.pgvector import (
     AdjacentInterestSource,
     DatabaseFacts,
     ExactFieldSource,
+    InterestScan,
     SemanticInterestSource,
 )
 from academious.personalise.profile import MAX_INTERESTS, InterestKind, Polarity
@@ -273,8 +274,15 @@ def _feed(
 ) -> FeedResult:
     today = utcnow().date()
     preferences = built.profile.preferences
+    # One pass over the embeddings serves both the semantic and the adjacent
+    # source; see InterestScan for what two passes cost.
+    scan = InterestScan(
+        session=session, model_key=service.model_key, limit=PREVIEW_BUDGET, today=today
+    )
     sources: list[CandidateSource] = [
-        SemanticInterestSource(session=session, model_key=service.model_key, today=today),
+        SemanticInterestSource(
+            session=session, model_key=service.model_key, today=today, scan=scan
+        ),
         ExactFieldSource(session=session, today=today),
     ]
     if user_id is not None:
@@ -287,7 +295,7 @@ def _feed(
     # Last, so it spends what the earlier sources left rather than competing
     # with established and behavioural signals for the budget.
     sources.append(
-        AdjacentInterestSource(session=session, model_key=service.model_key, today=today)
+        AdjacentInterestSource(session=session, model_key=service.model_key, today=today, scan=scan)
     )
     base_facts = DatabaseFacts(session, service.model_key)
     facts = (
