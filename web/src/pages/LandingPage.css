@@ -460,6 +460,11 @@
   max-width: 40rem;
 }
 
+.landing-footer__legal {
+  margin-inline-start: auto;
+  white-space: nowrap;
+}
+
 /* ---------------------------------------------------------- responsive */
 
 @media (max-width: 56rem) {
@@ -486,6 +491,10 @@
     flex-direction: column;
     align-items: flex-start;
     gap: var(--space-3);
+  }
+
+  .landing-footer__legal {
+    margin-inline-start: 0;
   }
 }
 

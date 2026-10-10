@@ -137,7 +137,7 @@ class Settings(BaseSettings):
     auth_session_seconds: int = Field(default=604_800, ge=900, le=2_592_000)
     auth_cookie_secure: bool = False
     frontend_url: str = "http://localhost:5173"
-    recommendation_consent_version: str = "2026-10-08"
+    recommendation_consent_version: str = "2026-10-10"
     smtp_host: str = ""
     smtp_port: int = Field(default=587, ge=1, le=65_535)
     smtp_username: str = ""

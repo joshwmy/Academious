@@ -108,8 +108,12 @@ a model identifier, a file path, a URL, or a configuration value.
 - `DELETE /me/account` removes the identity and cascades to tokens, profile,
   saves, events and personal ranker state.
 
-Outstanding deployment duty: backups containing account data need a documented
-retention and erasure policy before real users are accepted.
+The public privacy policy (`web/src/pages/PrivacyPage.tsx`, served at
+`/privacy`) commits to this behaviour, including that deleted accounts leave
+backups within 12 months as the 7/4/12 rotation in [deployment.md](deployment.md)
+ages them out, and are never restored from them. Change the policy, and bump
+`ACADEMIOUS_RECOMMENDATION_CONSENT_VERSION` with `LEGAL_VERSION`, in the same
+commit as any change to what is collected, kept or shared.
 
 ---
 

@@ -45,6 +45,12 @@ const SignInPage = lazy(() =>
 const WelcomePage = lazy(() =>
   import("./pages/WelcomePage").then((module) => ({ default: module.WelcomePage })),
 );
+const PrivacyPage = lazy(() =>
+  import("./pages/PrivacyPage").then((module) => ({ default: module.PrivacyPage })),
+);
+const TermsPage = lazy(() =>
+  import("./pages/TermsPage").then((module) => ({ default: module.TermsPage })),
+);
 const NotFoundPage = lazy(() =>
   import("./pages/NotFoundPage").then((module) => ({ default: module.NotFoundPage })),
 );
@@ -101,6 +107,8 @@ export function App() {
         <Route path="account" element={<Suspense fallback={null}><AccountPage /></Suspense>} />
         <Route path="saved" element={<Suspense fallback={<PaperListSkeleton count={3} />}><SavedPapersPage /></Suspense>} />
         <Route path="verify" element={<Suspense fallback={null}><VerifyPage /></Suspense>} />
+        <Route path="privacy" element={<Suspense fallback={null}><PrivacyPage /></Suspense>} />
+        <Route path="terms" element={<Suspense fallback={null}><TermsPage /></Suspense>} />
         <Route
           path="papers/:paperId"
           element={

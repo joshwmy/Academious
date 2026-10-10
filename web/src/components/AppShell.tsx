@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, useNavigate, useSearchParams } from "react-r
 import { useAuth } from "../auth/AuthContext";
 import { filtersToSearchParams, parseFilters } from "../lib/filters";
 import { ExternalLink } from "./ExternalLink";
+import { LegalLinks } from "./LegalLinks";
 import { Logo } from "./Logo";
 import { SearchBar } from "./SearchBar";
 import "./AppShell.css";
@@ -73,6 +74,7 @@ export function AppShell() {
           <div className="app-footer__inner">
             <p className="app-footer__note">Academious searches its own curated corpus of recent research from arXiv, bioRxiv/medRxiv, Europe PMC and OpenAlex. It is not a search over all published science.</p>
             <p className="app-footer__credit">Retraction status from the <ExternalLink href="https://gitlab.com/crossref/retraction-watch-data">Retraction Watch database</ExternalLink>, distributed by Crossref under <ExternalLink href="https://creativecommons.org/licenses/by/4.0/">CC-BY 4.0</ExternalLink>.</p>
+            <LegalLinks className="app-footer__legal" />
           </div>
         </footer>
       </div>

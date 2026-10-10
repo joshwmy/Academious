@@ -190,6 +190,13 @@
   color: var(--success);
 }
 
+.auth__legal {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  text-align: center;
+}
+
 .auth__footer {
   position: relative;
   margin-top: var(--space-5);

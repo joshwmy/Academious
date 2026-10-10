@@ -147,6 +147,11 @@ export function SignUpPage() {
         <button className="button auth__submit" type="submit" disabled={busy}>
           {busy ? "Creating your account…" : "Create account"}
         </button>
+        <p className="auth__legal">
+          By creating an account you agree to the{" "}
+          <Link to="/terms" target="_blank" rel="noopener">terms of use</Link> and confirm you
+          have read the <Link to="/privacy" target="_blank" rel="noopener">privacy policy</Link>.
+        </p>
       </form>
     </AuthLayout>
   );

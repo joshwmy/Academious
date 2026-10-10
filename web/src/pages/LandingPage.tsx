@@ -12,6 +12,7 @@
  */
 
 import { Link } from "react-router-dom";
+import { LegalLinks } from "../components/LegalLinks";
 import { LogoMark, Logo } from "../components/Logo";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
 import { useReveal } from "../hooks/useReveal";
@@ -168,6 +169,7 @@ export function LandingPage() {
           Academious searches its own curated corpus of recent research from arXiv, bioRxiv/medRxiv,
           Europe PMC and OpenAlex. It is not a search over all published science.
         </p>
+        <LegalLinks className="landing-footer__legal" />
       </footer>
     </div>
   );
