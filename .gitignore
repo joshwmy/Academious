@@ -3,6 +3,8 @@ __pycache__/
 .venv/
 venv/
 .env
+# Host-local Caddy site blocks; see the import at the end of Caddyfile.
+caddy.d/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/

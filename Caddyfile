@@ -57,3 +57,10 @@
 		}
 	}
 }
+
+# Sites this host serves for other projects (n8n, and anything else sharing
+# the box) live in caddy.d/*.caddy beside this file. That directory is not
+# committed: it is host configuration, and keeping it out of this tracked
+# file is what lets `git pull` stay a fast-forward. A glob that matches
+# nothing is a warning, not an error, so a fresh checkout still starts.
+import /etc/caddy/sites/*.caddy

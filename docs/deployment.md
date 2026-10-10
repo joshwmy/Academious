@@ -473,6 +473,28 @@ public hostname, so a request addressed to `127.0.0.1` is answered with
 `Invalid host header` before it reaches the route - the endpoint looks broken
 when it is in fact working exactly as configured.
 
+### Other sites on this host
+
+The Caddy container is the only thing on ports 80 and 443, so any other
+project on the box - n8n, and whatever else shares it - is served through it.
+Those site blocks are host configuration, not this repository's, and they live
+in `caddy.d/*.caddy` beside the `Caddyfile`. The directory is gitignored and
+mounted read-only at `/etc/caddy/sites`; the last line of the `Caddyfile`
+imports it.
+
+They used to be edits to the tracked `Caddyfile`, which made every `git pull`
+one upstream change away from a merge conflict on the production proxy. Now the
+tracked file stays clean. To add or change a host-local site:
+
+```bash
+$EDITOR /srv/academious/caddy.d/local.caddy
+docker compose exec caddy caddy validate --config /etc/caddy/Caddyfile
+docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+```
+
+`reload` swaps the configuration without dropping connections, and refuses one
+that does not validate.
+
 ### Host firewall
 
 Configured during provisioning - see "Firewall" above. There is no cloud
